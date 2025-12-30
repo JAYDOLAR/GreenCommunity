@@ -135,21 +135,6 @@ const Dashboard = () => {
           <h1 className="text-2xl sm:text-4xl md:text-4xl font-bold text-gradient mb-1">{t(greetingKey)}, {name}!</h1>
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-2">
             <p className="text-base sm:text-lg md:text-xl text-muted-foreground">Here's your environmental impact overview</p>
-            {(user?.userInfo?.formattedLocation || user?.userInfo?.location) && (
-              <div className="flex items-center gap-2 text-sm sm:text-base text-muted-foreground">
-                <svg className="h-4 w-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                <span>
-                  {user.userInfo.formattedLocation || 
-                   (typeof user.userInfo.location === 'string' 
-                     ? user.userInfo.location 
-                     : (user.userInfo.location?.city || user.userInfo.location?.raw || 'Location not specified'))
-                  }
-                </span>
-              </div>
-            )}
           </div>
         </div>
       </div>
@@ -475,6 +460,8 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+      
+
       
       {/* Bottom Spacing for Mobile */}
       <div className="h-8 sm:h-12 md:h-16"></div>

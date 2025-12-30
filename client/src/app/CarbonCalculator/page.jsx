@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -70,6 +71,8 @@ const CarbonCalculator = () => {
   const [stateSearch, setStateSearch] = useState('');
   const [photoError, setPhotoError] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+  const sidebarRef = useRef(null);
+
   
   const router = useRouter();
 
@@ -292,6 +295,8 @@ const CarbonCalculator = () => {
     fetchCountries();
   }, []);
 
+
+
   // Fetch states when country changes
   useEffect(() => {
     if (data.country) {
@@ -311,6 +316,8 @@ const CarbonCalculator = () => {
   const filteredStates = states.filter(state =>
     state.name.toLowerCase().includes(stateSearch.toLowerCase())
   );
+
+
 
   const fetchCountries = async () => {
     try {
@@ -627,18 +634,58 @@ const CarbonCalculator = () => {
     reader.readAsDataURL(file);
   };
 
+  // Function to trigger file input click
+  const triggerFileInput = () => {
+    const fileInput = document.getElementById('photo-upload');
+    if (fileInput) {
+      fileInput.click();
+    }
+  };
+
+  // Function to handle file input change with better error handling
+  const handleFileInputChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      handlePhotoUpload(e);
+    }
+    // Reset the input value so the same file can be selected again
+    e.target.value = '';
+  };
+
   const handleNext = () => {
     if (step < 14) {
       setStep(step + 1);
+      // Auto-scroll to the new step in sidebar
+      setTimeout(() => {
+        const element = document.getElementById(`sidebar-item-${step + 1}`);
+        if (element) {
+          element.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'center',
+            inline: 'center'
+          });
+        }
+      }, 100);
     } else {
-      // Redirect to dashboard after completing all steps
-      router.push('/dashboard');
+      // Redirect to calculate footprint page after completing all steps
+      router.push('/carbon-calculator/result');
     }
   };
 
   const handlePrevious = () => {
     if (step > 1) {
       setStep(step - 1);
+      // Auto-scroll to the new step in sidebar
+      setTimeout(() => {
+        const element = document.getElementById(`sidebar-item-${step - 1}`);
+        if (element) {
+          element.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'center',
+            inline: 'center'
+          });
+        }
+      }, 100);
     }
   };
 
@@ -700,47 +747,46 @@ const CarbonCalculator = () => {
   };
 
   const renderPersonalInfoStep = () => (
-    <div className="space-y-6 md:space-y-6 lg:space-y-8">
-      <div className="max-w-md mx-auto">
+    <div className="space-y-6 md:space-y-6 lg:space-y-7">
+      <div className="max-w-lg mx-auto">
         {/* Profile Photo */}
         <div className="space-y-4 bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-          <Label className="text-sm font-semibold text-gray-900">Profile Photo</Label>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            <Avatar className="h-20 w-20 md:h-22 md:w-22 lg:h-24 lg:w-24 border-4 border-green-200 shadow-lg">
+          <Label className="text-base font-semibold text-gray-900">Profile Photo</Label>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
+            <Avatar className="h-24 w-24 md:h-28 md:w-28 lg:h-32 lg:w-32 border-4 border-green-200 shadow-lg">
               <AvatarImage src={data.photo} alt={data.fullName} />
-              <AvatarFallback className="bg-gradient-to-br from-green-400 to-emerald-500 text-white font-bold text-lg md:text-xl lg:text-xl">
-                <User className="h-8 w-8 md:h-9 md:w-9 lg:h-10 lg:w-10" />
+              <AvatarFallback className="bg-gradient-to-br from-green-400 to-emerald-500 text-white font-bold text-xl md:text-2xl lg:text-2xl">
+                <User className="h-10 w-10 md:h-12 md:w-12 lg:h-14 lg:w-14" />
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 w-full sm:w-auto">
               <input
                 type="file"
                 accept="image/*"
-                onChange={handlePhotoUpload}
+                onChange={handleFileInputChange}
                 className="hidden"
                 id="photo-upload"
                 disabled={isUploading}
               />
-              <Label htmlFor="photo-upload" className="cursor-pointer w-full">
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  className="flex items-center gap-2 w-full sm:w-auto border-green-200 hover:border-green-300 hover:bg-green-50"
-                  disabled={isUploading}
-                >
-                  {isUploading ? (
-                    <>
-                      <RefreshCw className="h-4 w-4 animate-spin" />
-                      Uploading...
-                    </>
-                  ) : (
-                    <>
-                      <Camera className="h-4 w-4" />
-                      Upload Photo
-                    </>
-                  )}
-                </Button>
-              </Label>
+              <Button 
+                type="button" 
+                variant="outline" 
+                className="flex items-center gap-3 w-full sm:w-auto border-green-200 hover:border-green-300 hover:bg-green-50 h-12 px-4"
+                disabled={isUploading}
+                onClick={triggerFileInput}
+              >
+                {isUploading ? (
+                  <>
+                    <RefreshCw className="h-5 w-5 animate-spin" />
+                    Uploading...
+                  </>
+                ) : (
+                  <>
+                    <Camera className="h-5 w-5" />
+                    Upload Photo
+                  </>
+                )}
+              </Button>
               {data.photo && !isUploading && (
                 <p className="text-xs text-green-600 mt-2 flex items-center gap-1">
                   <Check className="h-3 w-3" />
@@ -759,45 +805,46 @@ const CarbonCalculator = () => {
 
         {/* Full Name */}
         <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-          <Label htmlFor="fullName" className="text-sm font-semibold text-gray-900">Full Name</Label>
+          <Label htmlFor="fullName" className="text-base font-semibold text-gray-900">Full Name</Label>
           <Input
             id="fullName"
             value={data.fullName}
             onChange={(e) => handleInputChange('fullName', e.target.value)}
             placeholder="Enter your full name"
-            className="mt-2 h-12 border-gray-300 focus:border-green-500 focus:ring-green-500"
+            className="mt-3 h-12 border-gray-300 focus:border-green-500 focus:ring-green-500 text-base"
           />
+
         </div>
       </div>
     </div>
   );
 
   const renderCountryStep = () => (
-    <div className="space-y-6 md:space-y-6 lg:space-y-8">
-      <div className="max-w-md mx-auto space-y-6">
+    <div className="space-y-6 md:space-y-6 lg:space-y-7">
+      <div className="max-w-lg mx-auto space-y-5">
         {/* Country Selection */}
         <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-          <Label className="text-sm font-semibold text-gray-900">Country</Label>
+          <Label className="text-base font-semibold text-gray-900">Country</Label>
           <Select value={data.country} onValueChange={(value) => handleInputChange('country', value)}>
-            <SelectTrigger className="h-12 md:h-13 lg:h-14 mt-2 border-gray-300 focus:border-green-500 focus:ring-green-500">
-              <div className="flex items-center gap-2">
-                <Globe className="h-4 w-4 text-green-600" />
+            <SelectTrigger className="h-14 md:h-14 lg:h-16 mt-3 border-gray-300 focus:border-green-500 focus:ring-green-500">
+              <div className="flex items-center gap-3">
+                <Globe className="h-5 w-5 text-green-600" />
                 <SelectValue placeholder={loading ? "Loading countries..." : "Select your country"} />
               </div>
             </SelectTrigger>
             <SelectContent>
               {/* Search Input for Countries */}
-              <div className="p-2">
+              <div className="p-3">
                 <Input
                   placeholder="Search countries..."
                   value={countrySearch}
                   onChange={(e) => setCountrySearch(e.target.value)}
-                  className="h-8"
+                  className="h-10 text-base"
                 />
               </div>
               <div className="max-h-60 overflow-y-auto">
                 {filteredCountries.map((country) => (
-                  <SelectItem key={country.code} value={country.code}>
+                  <SelectItem key={country.code} value={country.code} className="text-base">
                     {country.name}
                   </SelectItem>
                 ))}
@@ -809,33 +856,34 @@ const CarbonCalculator = () => {
         {/* State Selection */}
         {data.country && (
           <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-            <Label className="text-sm font-semibold text-gray-900">State/Province</Label>
+            <Label className="text-base font-semibold text-gray-900">State/Province</Label>
             <Select value={data.state} onValueChange={(value) => handleInputChange('state', value)}>
-              <SelectTrigger className="h-12 md:h-13 lg:h-14 mt-2 border-gray-300 focus:border-green-500 focus:ring-green-500">
-                <div className="flex items-center gap-2">
-                  <MapPin className="h-4 w-4 text-green-600" />
+              <SelectTrigger className="h-14 md:h-14 lg:h-16 mt-3 border-gray-300 focus:border-green-500 focus:ring-green-500">
+                <div className="flex items-center gap-3">
+                  <MapPin className="h-5 w-5 text-green-600" />
                   <SelectValue placeholder={loading ? "Loading states..." : "Select your state"} />
                 </div>
               </SelectTrigger>
               <SelectContent>
                 {/* Search Input for States */}
-                <div className="p-2">
+                <div className="p-3">
                   <Input
                     placeholder="Search states..."
                     value={stateSearch}
                     onChange={(e) => setStateSearch(e.target.value)}
-                    className="h-8"
+                    className="h-10 text-base"
                   />
                 </div>
                 <div className="max-h-60 overflow-y-auto">
                   {filteredStates.map((state) => (
-                    <SelectItem key={state.code} value={state.code}>
+                    <SelectItem key={state.code} value={state.code} className="text-base">
                       {state.name}
                     </SelectItem>
                   ))}
                 </div>
               </SelectContent>
             </Select>
+
           </div>
         )}
       </div>
@@ -846,13 +894,13 @@ const CarbonCalculator = () => {
     const countryCode = getCountryCode(data.country);
     
     return (
-      <div className="space-y-6 md:space-y-6 lg:space-y-8">
-        <div className="max-w-md mx-auto">
+      <div className="space-y-6 md:space-y-6 lg:space-y-7">
+        <div className="max-w-lg mx-auto">
           <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-            <Label htmlFor="mobile" className="text-sm font-semibold text-gray-900">Mobile Number</Label>
-            <div className="flex mt-2">
+            <Label htmlFor="mobile" className="text-base font-semibold text-gray-900">Mobile Number</Label>
+            <div className="flex mt-3">
               {countryCode && (
-                <div className="flex items-center px-3 bg-gray-100 border border-r-0 rounded-l-md text-sm font-medium text-gray-700">
+                <div className="flex items-center px-4 bg-gray-100 border border-r-0 rounded-l-md text-base font-medium text-gray-700 h-12">
                   {countryCode}
                 </div>
               )}
@@ -861,15 +909,16 @@ const CarbonCalculator = () => {
                 value={data.mobile}
                 onChange={(e) => handleInputChange('mobile', e.target.value)}
                 placeholder="Enter your mobile number"
-                className={`${countryCode ? "rounded-l-none" : ""} border-gray-300 focus:border-green-500 focus:ring-green-500`}
+                className={`${countryCode ? "rounded-l-none" : ""} border-gray-300 focus:border-green-500 focus:ring-green-500 h-12 text-base`}
               />
             </div>
             {countryCode && (
-              <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
-                <Globe className="h-3 w-3" />
+              <p className="text-sm text-gray-500 mt-3 flex items-center gap-2">
+                <Globe className="h-4 w-4" />
                 Country code {countryCode} will be automatically added
               </p>
             )}
+
           </div>
         </div>
       </div>
@@ -877,14 +926,14 @@ const CarbonCalculator = () => {
   };
 
   const renderMultipleChoice = (options, currentValue, field) => (
-    <div className="max-w-md mx-auto">
+    <div className="max-w-lg mx-auto">
       <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
         <div className="grid gap-3">
           {options.map((option) => (
             <Button
               key={option.value}
               variant={currentValue === option.value ? "default" : "outline"}
-              className={`justify-start h-12 md:h-13 lg:h-14 text-left font-normal text-sm md:text-base lg:text-base transition-all duration-200 ${
+              className={`justify-start h-14 md:h-14 lg:h-16 text-left font-normal text-base md:text-base lg:text-base transition-all duration-200 ${
                 currentValue === option.value 
                   ? "bg-green-600 hover:bg-green-700 border-green-600 text-white shadow-md" 
                   : "border-gray-300 hover:border-green-300 hover:bg-green-50 text-gray-700"
@@ -1001,37 +1050,37 @@ const CarbonCalculator = () => {
       case 1: return !!data.fullName;
       case 2: return !!data.country && !!data.state;
       case 3: return !!data.mobile;
-      case 4: return !!data.householdSize;
-      case 5: return !!data.carType;
-      case 6: return !!data.shortFlights;
-      case 7: return !!data.longFlights;
-      case 8: return !!data.diet;
-      case 9: return !!data.redMeat;
-      case 10: return !!data.otherProtein;
-      case 11: return !!data.dairy;
-      case 12: return !!data.homeSize;
-      case 13: return !!data.pets;
-      case 14: return !!data.supplies;
+      case 4: return true; // Allow skipping household
+      case 5: return true; // Allow skipping cars
+      case 6: return true; // Allow skipping short flights
+      case 7: return true; // Allow skipping long flights
+      case 8: return true; // Allow skipping diet
+      case 9: return true; // Allow skipping red meat
+      case 10: return true; // Allow skipping other protein
+      case 11: return true; // Allow skipping dairy
+      case 12: return true; // Allow skipping home size
+      case 13: return true; // Allow skipping pets
+      case 14: return true; // Allow skipping lifestyle
       default: return false;
     }
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col md:flex-row lg:flex-row">
+    <div className="h-screen bg-background flex flex-col md:flex-row lg:flex-row overflow-hidden">
       {/* Left Sidebar - Mobile: Full width, Tablet: Fixed width, Desktop: Fixed width */}
-      <div className="w-full md:w-72 lg:w-64 bg-card border-b md:border-r md:border-b-0 lg:border-r lg:border-b-0 border-border p-4 md:p-5 lg:p-6 space-y-4">
-        <div className="flex items-center gap-3 mb-6 md:mb-6 lg:mb-8">
-          <div className="w-8 h-8 md:w-9 md:h-9 lg:w-10 lg:h-10 bg-gradient-primary rounded-xl flex items-center justify-center">
-            <Calculator className="h-4 w-4 md:h-4 md:w-4 lg:h-5 lg:w-5 text-white" />
+      <div className="w-full md:w-80 lg:w-72 bg-card border-b md:border-r md:border-b-0 lg:border-r lg:border-b-0 border-border p-5 md:p-6 lg:p-7 space-y-5 overflow-y-auto">
+        <div className="flex items-center gap-4 mb-6 md:mb-6 lg:mb-7">
+          <div className="w-10 h-10 md:w-11 md:h-11 lg:w-12 lg:h-12 bg-gradient-primary rounded-xl flex items-center justify-center">
+            <Calculator className="h-5 w-5 md:h-5 md:w-5 lg:h-6 lg:w-6 text-white" />
           </div>
           <div>
             <h1 className="font-bold text-foreground text-sm md:text-base lg:text-base">Carbon Calculator</h1>
-            <p className="text-xs text-muted-foreground">Calculate your footprint</p>
+            <p className="text-sm text-muted-foreground">Calculate your footprint</p>
           </div>
         </div>
 
         {/* Mobile: Horizontal scroll, Tablet: Vertical list, Desktop: Vertical list */}
-        <div className="flex md:flex-col lg:flex-col gap-2 overflow-x-auto md:overflow-x-visible lg:overflow-x-visible pb-2 md:pb-0 lg:pb-0">
+        <div className="flex md:flex-col lg:flex-col gap-3 overflow-x-auto md:overflow-x-visible lg:overflow-x-visible pb-2 md:pb-0 lg:pb-0" ref={sidebarRef}>
           {categories.map((category) => {
             const Icon = category.icon;
             const isActive = category.id === step;
@@ -1040,23 +1089,42 @@ const CarbonCalculator = () => {
             return (
               <div
                 key={category.id}
-                className={`flex items-center gap-2 md:gap-3 lg:gap-3 p-2 md:p-3 lg:p-3 rounded-lg transition-colors cursor-pointer whitespace-nowrap md:whitespace-normal lg:whitespace-normal ${
-                  isActive ? 'bg-primary/10 text-primary' : 
-                  isCompleted ? 'text-success' : 'text-muted-foreground hover:text-foreground'
+                id={`sidebar-item-${category.id}`}
+                className={`flex items-center gap-3 md:gap-3 lg:gap-3 p-3 md:p-3 lg:p-3 rounded-lg transition-colors cursor-pointer whitespace-nowrap md:whitespace-normal lg:whitespace-normal ${
+                  isActive ? 'bg-green-100 text-green-700 border border-green-200' : 
+                  isCompleted ? 'text-success bg-success/5' : 'text-muted-foreground hover:text-foreground hover:bg-gray-50'
                 }`}
-                onClick={() => setStep(category.id)}
+                onClick={() => {
+                  setStep(category.id);
+                  // Auto-scroll to the selected item
+                  setTimeout(() => {
+                    const element = document.getElementById(`sidebar-item-${category.id}`);
+                    if (element) {
+                      element.scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'center',
+                        inline: 'center'
+                      });
+                    }
+                  }, 100);
+                }}
               >
-                <div className={`w-6 h-6 md:w-7 md:h-7 lg:w-8 lg:h-8 rounded-lg flex items-center justify-center ${
-                  isActive ? 'bg-primary/20' : 
+                <div className={`w-7 h-7 md:w-8 md:h-8 lg:w-9 lg:h-9 rounded-lg flex items-center justify-center ${
+                  isActive ? 'bg-green-200' : 
                   isCompleted ? 'bg-success/20' : 'bg-muted'
                 }`}>
                   {isCompleted ? (
-                    <Check className="h-3 w-3 md:h-3 md:w-3 lg:h-4 lg:w-4 text-success" />
+                    <Check className="h-4 w-4 md:h-4 md:w-4 lg:h-5 lg:w-5 text-success" />
                   ) : (
-                    <Icon className={`h-3 w-3 md:h-3 md:w-3 lg:h-4 lg:w-4 ${isActive ? 'text-primary' : 'text-muted-foreground'}`} />
+                    <Icon className={`h-4 w-4 md:h-4 md:w-4 lg:h-5 lg:w-5 ${isActive ? 'text-green-700' : 'text-muted-foreground'}`} />
                   )}
                 </div>
-                <span className="text-xs md:text-sm lg:text-sm font-medium">{category.label}</span>
+                <span className="text-sm md:text-sm lg:text-sm font-medium">
+                  {category.label}
+                  {category.id <= 3 && (
+                    <span className="text-red-500 ml-1">*</span>
+                  )}
+                </span>
               </div>
             );
           })}
@@ -1064,72 +1132,87 @@ const CarbonCalculator = () => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="border-b border-border p-4 md:p-5 lg:p-6 bg-gradient-to-r from-green-50 to-emerald-50">
+        <div className="border-b border-border p-5 md:p-6 lg:p-7 bg-gradient-to-r from-green-50 to-emerald-50 flex-shrink-0">
           <div className="max-w-4xl mx-auto flex flex-col md:flex-row lg:flex-row md:items-center lg:items-center md:justify-between lg:justify-between gap-4">
             <div className="space-y-2">
-              <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-gray-900 mb-2">
+              <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-gray-900">
                 {getCurrentStepTitle()}
               </h1>
               <p className="text-sm md:text-base lg:text-base text-gray-600">
                 {getCurrentStepDescription()}
               </p>
             </div>
-            <Badge variant="secondary" className="flex items-center gap-1 w-fit bg-white border border-green-200 text-green-700 whitespace-nowrap">
-              <Leaf className="h-3 w-3" />
-              <span className="whitespace-nowrap">{step} of {categories.length}</span>
-            </Badge>
+            <div className="flex items-center gap-3">
+              <Badge variant="secondary" className="flex items-center gap-2 w-fit bg-white border border-green-200 text-green-700 whitespace-nowrap px-3 py-1">
+                <Leaf className="h-4 w-4" />
+                <span className="whitespace-nowrap text-sm">{step} of {categories.length}</span>
+              </Badge>
+              <p className="text-xs text-gray-500 hidden md:block">
+                * Required steps
+              </p>
+            </div>
           </div>
         </div>
 
         {/* Content */}
-        <div className="flex-1 p-4 md:p-5 lg:p-6">
+        <div className="flex-1 p-5 md:p-6 lg:p-7 content-area overflow-y-auto">
           <div className="max-w-4xl mx-auto">
             {renderCurrentStep()}
           </div>
         </div>
 
         {/* Navigation */}
-        <div className="border-t border-gray-200 p-4 md:p-5 lg:p-6 bg-gray-50">
+        <div className="border-t border-gray-200 p-5 md:p-6 lg:p-7 bg-gray-50 flex-shrink-0">
           <div className="max-w-4xl mx-auto flex flex-col md:flex-row lg:flex-row md:items-center lg:items-center md:justify-between lg:justify-between gap-4">
-            <div className="flex gap-2 justify-center md:justify-start lg:justify-start">
+            <div className="flex gap-3 justify-center md:justify-start lg:justify-start">
               <Button
                 variant="outline"
                 size="icon"
                 onClick={handlePrevious}
                 disabled={step === 1}
-                className="h-10 w-10 md:h-11 md:w-11 lg:h-12 lg:w-12 border-gray-300 hover:border-green-300 hover:bg-green-50"
+                className="h-12 w-12 md:h-12 md:w-12 lg:h-14 lg:w-14 border-gray-300 hover:border-green-300 hover:bg-green-50"
               >
-                <ArrowUp className="h-4 w-4" />
+                <ArrowUp className="h-5 w-5 md:h-5 md:w-5 lg:h-6 lg:w-6" />
               </Button>
               <Button
                 variant="outline"
                 size="icon"
                 onClick={handleNext}
                 disabled={!isStepComplete()}
-                className="h-10 w-10 md:h-11 md:w-11 lg:h-12 lg:w-12 border-gray-300 hover:border-green-300 hover:bg-green-50"
+                className="h-12 w-12 md:h-12 md:w-12 lg:h-14 lg:w-14 border-gray-300 hover:border-green-300 hover:bg-green-50"
               >
-                <ArrowDown className="h-4 w-4" />
+                <ArrowDown className="h-5 w-5 md:h-5 md:w-5 lg:h-6 lg:w-6" />
               </Button>
             </div>
 
-            <div className="flex gap-2 md:gap-3 lg:gap-4 justify-center md:justify-end lg:justify-end">
+            <div className="flex gap-3 md:gap-4 lg:gap-5 justify-center md:justify-end lg:justify-end">
               {step > 1 && (
                 <Button 
                   variant="outline" 
                   onClick={handlePrevious} 
-                  size="sm" 
-                  className="md:size-default lg:size-default border-gray-300 hover:border-green-300 hover:bg-green-50"
+                  size="default" 
+                  className="border-gray-300 hover:border-green-300 hover:bg-green-50 px-6 py-2"
                 >
                   Previous
+                </Button>
+              )}
+              {step > 3 && step < categories.length && (
+                <Button 
+                  variant="outline" 
+                  onClick={handleNext}
+                  size="default" 
+                  className="border-gray-300 hover:border-green-300 hover:bg-green-50 px-6 py-2"
+                >
+                  Skip
                 </Button>
               )}
               <Button 
                 onClick={handleNext}
                 disabled={!isStepComplete()}
-                className="bg-green-600 hover:bg-green-700 text-white shadow-md"
-                size="sm"
+                className="bg-green-600 hover:bg-green-700 text-white shadow-md px-6 py-2"
+                size="default"
               >
                 {step === categories.length ? 'Calculate Footprint' : 'Continue'}
               </Button>
@@ -1139,32 +1222,44 @@ const CarbonCalculator = () => {
       </div>
 
       {/* Right Sidebar - Hidden on mobile, shown on tablet and desktop */}
-      <div className="hidden md:block lg:block w-72 lg:w-80 bg-accent/5 border-l border-border p-5 lg:p-6">
+      <div className="hidden md:block lg:block w-80 lg:w-96 bg-accent/5 border-l border-border p-6 lg:p-7 overflow-y-auto">
         <div className="space-y-6">
-          <div className="bg-card p-4 rounded-lg border">
-            <h3 className="font-semibold text-foreground mb-2">Your Progress</h3>
-            <div className="space-y-2">
+          <div className="bg-card p-5 rounded-lg border">
+            <h3 className="font-semibold text-foreground mb-3 text-base">Your Progress</h3>
+            <div className="space-y-3">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Completed</span>
                 <span className="text-foreground font-medium">
                   {categories.filter(c => c.completed).length}/{categories.length}
                 </span>
               </div>
-              <div className="w-full bg-muted rounded-full h-2">
+              <div className="w-full bg-muted rounded-full h-3">
                 <div 
-                  className="bg-gradient-primary h-2 rounded-full transition-all duration-500"
+                  className="bg-gradient-primary h-3 rounded-full transition-all duration-500"
                   style={{ width: `${(categories.filter(c => c.completed).length / categories.length) * 100}%` }}
                 />
               </div>
             </div>
           </div>
 
-          <div className="bg-primary/5 p-4 rounded-lg border border-primary/20">
-            <h3 className="font-semibold text-primary mb-2">Why This Matters</h3>
+          <div className="bg-primary/5 p-5 rounded-lg border border-primary/20">
+            <h3 className="font-semibold text-primary mb-3 text-base">Why This Matters</h3>
             <p className="text-sm text-muted-foreground">
               Understanding your carbon footprint is the first step toward making meaningful changes for the environment.
             </p>
           </div>
+
+          {/* Simple Carbon Footprint Display */}
+          <div className="bg-white p-8 rounded-lg border border-gray-200 shadow-sm text-center">
+            <h3 className="text-base font-medium text-gray-600 mb-3">
+              Your carbon footprint
+            </h3>
+            <div className="text-6xl font-bold text-gray-800">
+              6.7
+            </div>
+          </div>
+
+
         </div>
       </div>
     </div>

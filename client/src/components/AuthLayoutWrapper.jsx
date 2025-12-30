@@ -7,7 +7,7 @@ export default function AuthLayoutWrapper({ children }) {
   const pathname = usePathname();
   const { user, isLoading } = useUser();
   
-  // Routes that should NOT have the main layout (auth pages and landing)
+  // Routes that should NOT have the main layout (auth pages, landing, and admin pages)
   const noLayoutRoutes = [
     "/login",
     "/signup", 
@@ -19,8 +19,11 @@ export default function AuthLayoutWrapper({ children }) {
     "/verify-email"
   ];
   
-  // Auth pages and landing page don't need layout
-  if (noLayoutRoutes.includes(pathname)) {
+  // Check if current path is an admin route
+  const isAdminRoute = pathname.startsWith('/admin');
+  
+  // Auth pages, landing page, and admin routes don't need main layout
+  if (noLayoutRoutes.includes(pathname) || isAdminRoute) {
     return <>{children}</>;
   }
   

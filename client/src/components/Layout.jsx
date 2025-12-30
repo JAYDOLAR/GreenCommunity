@@ -5,7 +5,7 @@ import FloatingParticles from './FloatingParticles';
 import ProfessionalProgress from './ProfessionalProgress';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Leaf, Menu, X, User, TrendingUp, LogOut } from 'lucide-react';
+import { Leaf, Menu, X, User, TrendingUp, LogOut, LayoutDashboard, FileText, ShoppingCart, TreePine, Users, Settings } from 'lucide-react';
 import { useUser } from '@/context/UserContext';
 import { authAPI } from '@/lib/api';
 import Link from 'next/link';
@@ -14,12 +14,12 @@ import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover
 import { useMediaQuery } from 'react-responsive';
 
 const sidebarItems = [
-  { name: 'Dashboard', path: '/dashboard' },
-  { name: 'Footprint Log', path: '/footprintlog' },
-  { name: 'Marketplace', path: '/marketplace' },
-  { name: 'Projects', path: '/projects' },
-  { name: 'Community', path: '/community' },
-  { name: 'Settings', path: '/settings' },
+  { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
+  { name: 'Footprint Log', path: '/footprintlog', icon: FileText },
+  { name: 'Marketplace', path: '/marketplace', icon: ShoppingCart },
+  { name: 'Projects', path: '/projects', icon: TreePine },
+  { name: 'Community', path: '/community', icon: Users },
+  { name: 'Settings', path: '/settings', icon: Settings },
 ];
 
 export default function Layout({ children }) {
@@ -54,6 +54,15 @@ export default function Layout({ children }) {
       router.push('/dashboard');
     } else {
       router.push('/');
+    }
+  };
+
+  // Navigation click handler
+  const handleNavigationClick = (path) => {
+    if (isAuthenticated) {
+      router.push(path);
+    } else {
+      router.push('/login');
     }
   };
 
@@ -166,25 +175,29 @@ export default function Layout({ children }) {
               />
             </div>
           )}
-          {/* Navigation Buttons (desktop only) */}
-          {!isMobile && !isTablet && (
-            <nav className="hidden lg:flex gap-0.5 md:gap-1 lg:gap-2 ml-2 md:ml-4 lg:ml-6">
-              {sidebarItems.map((item) => (
-                <Link
-                  key={item.path}
-                  href={item.path}
-                  className={`px-1.5 md:px-2 lg:px-2 py-1.5 md:py-2 lg:py-2 rounded-full font-medium transition-colors duration-200 text-xs md:text-sm lg:text-sm whitespace-nowrap
-                    ${(item.path === '/' && (pathname === '/' || pathname === '/dashboard')) || (item.path !== '/' && pathname === item.path)
-                      ? 'bg-primary/90 text-white shadow-sm'
-                      : 'text-foreground hover:bg-primary/10 hover:text-primary'}
-                  `}
-                  style={{ fontWeight: 500, letterSpacing: '0.01em' }}
-                >
-                  {item.name}
-                </Link>
-              ))}
-            </nav>
-          )}
+                     {/* Navigation Buttons (desktop only) */}
+           {!isMobile && !isTablet && (
+             <nav className="hidden lg:flex gap-0.5 md:gap-1 lg:gap-2 ml-2 md:ml-4 lg:ml-6">
+               {sidebarItems.map((item) => {
+                 const Icon = item.icon;
+                 return (
+                   <button
+                     key={item.path}
+                     onClick={() => handleNavigationClick(item.path)}
+                     className={`px-1.5 md:px-2 lg:px-2 py-1.5 md:py-2 lg:py-2 rounded-full font-medium transition-colors duration-200 text-xs md:text-sm lg:text-sm whitespace-nowrap flex items-center gap-1.5 md:gap-2
+                       ${(item.path === '/' && (pathname === '/' || pathname === '/dashboard')) || (item.path !== '/' && pathname === item.path)
+                         ? 'bg-primary/90 text-white shadow-sm'
+                         : 'text-foreground hover:bg-primary/10 hover:text-primary'}
+                     `}
+                     style={{ fontWeight: 500, letterSpacing: '0.01em' }}
+                   >
+                     <Icon className="h-3 w-3 md:h-4 md:w-4 lg:h-4 lg:w-4" />
+                     {item.name}
+                   </button>
+                 );
+               })}
+             </nav>
+           )}
           {/* User Info and Profile (desktop only) */}
           {!isMobile && !isTablet && (
             <div className="flex items-center gap-1 md:gap-2 lg:gap-2">
@@ -278,19 +291,25 @@ export default function Layout({ children }) {
                       <X className="h-5 w-5 sm:h-6 sm:w-6" />
                     </Button>
                   </div>
-                  <nav className="flex-1 flex flex-col gap-2 md:gap-3 p-4 md:p-6">
-                    {sidebarItems.map((item) => (
-                      <Link
-                        key={item.path}
-                        href={item.path}
-                        className={`px-4 md:px-6 py-2 md:py-3 rounded-full font-medium transition-colors duration-200 text-sm md:text-base text-left ${pathname === item.path ? 'bg-primary/90 text-white shadow-sm' : 'text-foreground hover:bg-primary/10 hover:text-primary'}`}
-                        style={{ fontWeight: 500, letterSpacing: '0.01em' }}
-                        onClick={() => setSidebarOpen(false)}
-                      >
-                        {item.name}
-                      </Link>
-                    ))}
-                  </nav>
+                                     <nav className="flex-1 flex flex-col gap-2 md:gap-3 p-4 md:p-6">
+                     {sidebarItems.map((item) => {
+                       const Icon = item.icon;
+                       return (
+                         <button
+                           key={item.path}
+                           onClick={() => {
+                             handleNavigationClick(item.path);
+                             setSidebarOpen(false);
+                           }}
+                           className={`flex items-center gap-3 px-4 md:px-6 py-2 md:py-3 rounded-full font-medium transition-colors duration-200 text-sm md:text-base text-left ${pathname === item.path ? 'bg-primary/90 text-white shadow-sm' : 'text-foreground hover:bg-primary/10 hover:text-primary'}`}
+                           style={{ fontWeight: 500, letterSpacing: '0.01em' }}
+                         >
+                           <Icon className="h-4 w-4 md:h-5 md:w-5" />
+                           {item.name}
+                         </button>
+                       );
+                     })}
+                   </nav>
                   <div className="mt-auto p-4 md:p-6 border-t">
                     <Button 
                       variant="destructive" 

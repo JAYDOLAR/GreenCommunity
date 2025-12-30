@@ -12,7 +12,18 @@ import { TESTING_CONFIG, isTestingMode } from '../../config/testing';
 // Simple JWT decode utility (for client-side use only)
 const decodeJWT = (token) => {
   try {
+    // Check if token exists and is a string
+    if (!token || typeof token !== 'string') {
+      console.error('Invalid token provided to decodeJWT:', token);
+      return null;
+    }
+    
     const base64Url = token.split('.')[1];
+    if (!base64Url) {
+      console.error('Invalid JWT format - missing payload');
+      return null;
+    }
+    
     const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
     const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
       return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
@@ -222,32 +233,7 @@ export default function LoginPage() {
           return;
         }
 
-        // Special handling for Google OAuth testing
-        const decoded = decodeJWT(tempToken);
-        if (decoded && decoded.role === 'temp-2fa-google') {
-            // For Google OAuth, we have the user info from the token
-            const userData = { 
-                id: decoded.id, 
-                name: decoded.name, 
-                email: decoded.email, 
-                isGoogleAuth: true 
-            };
-            
-            // Manually set user and token
-            updateUser(userData);
-            localStorage.setItem('token', tempToken); // Use temp token for simplicity
-            
-            setIsSuccess(true);
-            setShowSuccessNotification(true);
-            
-            setTimeout(() => {
-              setShowSuccessNotification(false);
-              router.push('/dashboard');
-            }, 2000);
-            
-            return;
-        }
-        // Perform the original login again to get the real token and full profile
+        // For testing mode, proceed with original login
         await loginAndSetUser(() => authAPI.login({ email, password }));
         
         setIsSuccess(true);
@@ -263,6 +249,48 @@ export default function LoginPage() {
         
         return;
       }
+      
+      // Special handling for Google OAuth testing
+      const decoded = tempToken ? decodeJWT(tempToken) : null;
+      if (decoded && decoded.role === 'temp-2fa-google') {
+        // For Google OAuth, we have the user info from the token
+        const userData = { 
+          id: decoded.id, 
+          name: decoded.name, 
+          email: decoded.email, 
+          isGoogleAuth: true 
+        };
+        
+        // Manually set user and token
+        updateUser(userData);
+        localStorage.setItem('token', tempToken); // Use temp token for simplicity
+        
+        setIsSuccess(true);
+        setShowSuccessNotification(true);
+        
+        setTimeout(() => {
+          setShowSuccessNotification(false);
+          router.push('/dashboard');
+        }, 2000);
+        
+        return;
+      }
+      
+      // Perform the original login again to get the real token and full profile
+      await loginAndSetUser(() => authAPI.login({ email, password }));
+      
+      setIsSuccess(true);
+      
+      // Show success notification
+      setShowSuccessNotification(true);
+      
+      // Auto-hide success notification and redirect after 2 seconds
+      setTimeout(() => {
+        setShowSuccessNotification(false);
+        router.push('/dashboard');
+      }, 2000);
+      
+      return;
       
       // Normal 2FA verification flow - use loginAndSetUser to get full profile
       const data = await authAPI.verify2FALogin(tempToken, twoFactorCode);
