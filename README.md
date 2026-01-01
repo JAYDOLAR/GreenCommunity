@@ -84,3 +84,4 @@ This project is set up for easy deployment using Docker. Follow the instructions
 
 -   The client application is configured to proxy API requests to the server, so you can make requests to `/api` on the same domain as the client.
 
+# Trigger deployment Sun 17 Aug 11:11:11 IST 2025
