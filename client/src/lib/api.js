@@ -1,9 +1,14 @@
-// API Configuration - Handle both development and container environments
+// API Configuration - Handle both development and production environments
 const API_BASE_URL = (() => {
-  // In browser, use the current host's API or fallback to localhost
+  // In browser, use the current host's API or fallback
   if (typeof window !== 'undefined') {
-    // Client-side: Use relative path for API calls (handled by Next.js rewrites)
-    return '';
+    // Client-side: Use same origin for API calls in production, localhost in development
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      return 'http://localhost:5000';
+    } else {
+      // Production: Use same origin (Azure URL)
+      return window.location.origin;
+    }
   }
   
   // Server-side: Use environment variable or default
