@@ -5,6 +5,8 @@ import session from "express-session";
 import passport from "passport";
 import helmet from "helmet";
 import mongoSanitize from "express-mongo-sanitize";
+import path from "path";
+import { fileURLToPath } from "url";
 import "./config/passport.js";
 import { connectAllDatabases } from "./config/databases.js";
 import authRoutes from "./routes/auth.routes.js";
@@ -12,6 +14,10 @@ import marketplaceRoutes from "./routes/marketplace.routes.js";
 import avatarRoutes from "./routes/avatar.routes.js";
 import footprintLogRoutes from "./routes/footprintlog.routes.js";
 import dotenv from "dotenv";
+
+// Get __dirname equivalent for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 dotenv.config();
 
@@ -106,6 +112,10 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
+// Serve static files from the public directory (includes client static assets)
+app.use(express.static(path.join(__dirname, 'public')));
+
+// API routes
 app.use("/api/auth", authRoutes);
 app.use("/api/marketplace", marketplaceRoutes);
 app.use("/api/avatar", avatarRoutes);
@@ -127,9 +137,37 @@ app.use((err, req, res, next) => {
   });
 });
 
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({ message: "Route not found" });
+// Serve Next.js frontend for all non-API routes
+app.get('*', (req, res) => {
+  // Don't serve HTML for API routes
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({ message: "API route not found" });
+  }
+  
+  // For production, serve a simple landing page
+  // In a full setup, you would serve the built Next.js index.html
+  res.sendFile(path.join(__dirname, 'public', 'index.html'), (err) => {
+    if (err) {
+      // Fallback if no index.html exists
+      res.status(200).send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>GreenCommunity</title>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+        </head>
+        <body>
+          <div id="root">
+            <h1>GreenCommunity API Server</h1>
+            <p>The API is running successfully. Frontend deployment in progress.</p>
+            <p>API endpoints are available at <code>/api/*</code></p>
+          </div>
+        </body>
+        </html>
+      `);
+    }
+  });
 });
 
 export default app;
