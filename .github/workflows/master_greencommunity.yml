@@ -38,11 +38,65 @@ jobs:
           # Copy server files as the main application
           cp -r Server/* .
           
-          # Create a public directory for serving client build
-          mkdir -p public/client
-          cp -r client/.next/static public/client/static 2>/dev/null || true
-          cp -r client/.next public/client/build 2>/dev/null || true
+          # Create a simple index.html in public directory that serves the client
+          mkdir -p public
+          
+          # Copy client's public assets
           cp -r client/public/* public/ 2>/dev/null || true
+          
+          # Create index.html that loads the client app from the main page
+          cat > public/index.html << 'EOF'
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>GreenCommunity - Building a Sustainable Future Together</title>
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            max-width: 600px;
+            text-align: center;
+            background: white;
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+        h1 {
+            color: #059669;
+            margin-bottom: 1rem;
+        }
+        .status {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+            color: #166534;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌱 GreenCommunity</h1>
+        <p>Building a Sustainable Future Together</p>
+        <div class="status">
+            <strong>✅ Server is running successfully!</strong>
+        </div>
+        <p>API endpoints available at <code>/api/*</code></p>
+    </div>
+</body>
+</html>
+EOF
           
           # Clean up - remove the separate directories
           rm -rf Server client

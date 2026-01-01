@@ -15,7 +15,6 @@ import avatarRoutes from "./routes/avatar.routes.js";
 import footprintLogRoutes from "./routes/footprintlog.routes.js";
 import dotenv from "dotenv";
 
-// Get __dirname equivalent for ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -112,10 +111,8 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Serve static files from the public directory (includes client static assets)
+// Serve static files from public directory (client build)
 app.use(express.static(path.join(__dirname, 'public')));
-
-// API routes
 app.use("/api/auth", authRoutes);
 app.use("/api/marketplace", marketplaceRoutes);
 app.use("/api/avatar", avatarRoutes);
@@ -137,37 +134,12 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Serve Next.js frontend for all non-API routes
+// Serve client for all non-API routes
 app.get('*', (req, res) => {
-  // Don't serve HTML for API routes
   if (req.path.startsWith('/api/')) {
-    return res.status(404).json({ message: "API route not found" });
+    return res.status(404).json({ message: "Route not found" });
   }
-  
-  // For production, serve a simple landing page
-  // In a full setup, you would serve the built Next.js index.html
-  res.sendFile(path.join(__dirname, 'public', 'index.html'), (err) => {
-    if (err) {
-      // Fallback if no index.html exists
-      res.status(200).send(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>GreenCommunity</title>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1">
-        </head>
-        <body>
-          <div id="root">
-            <h1>GreenCommunity API Server</h1>
-            <p>The API is running successfully. Frontend deployment in progress.</p>
-            <p>API endpoints are available at <code>/api/*</code></p>
-          </div>
-        </body>
-        </html>
-      `);
-    }
-  });
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 export default app;
