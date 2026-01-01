@@ -7,6 +7,7 @@ import helmet from "helmet";
 import mongoSanitize from "express-mongo-sanitize";
 import path from "path";
 import { fileURLToPath } from "url";
+import next from "next";
 import "./config/passport.js";
 import { connectAllDatabases } from "./config/databases.js";
 import authRoutes from "./routes/auth.routes.js";
@@ -18,12 +19,24 @@ import dotenv from "dotenv";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Initialize Next.js
+const dev = process.env.NODE_ENV !== 'production';
+const nextApp = next({ 
+  dev, 
+  dir: path.join(__dirname, '..', 'client') // Point to client directory
+});
+const handle = nextApp.getRequestHandler();
+
 dotenv.config();
 
 const app = express();
 
 // Connect to all MongoDB databases
 connectAllDatabases();
+
+// Prepare Next.js
+async function createServer() {
+  await nextApp.prepare();
 
 // Security middleware
 app.use(
@@ -134,12 +147,15 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Serve client for all non-API routes
-app.get('*', (req, res) => {
-  if (req.path.startsWith('/api/')) {
-    return res.status(404).json({ message: "Route not found" });
-  }
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
+  // Serve client for all non-API routes using Next.js
+  app.get('*', (req, res) => {
+    if (req.path.startsWith('/api/')) {
+      return res.status(404).json({ message: "Route not found" });
+    }
+    return handle(req, res);
+  });
 
-export default app;
+  return app;
+}
+
+export default createServer;

@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import app from './app.js';
+import createServer from './app.js';
 
 // Fix __dirname in ES Modules
 const __filename = fileURLToPath(import.meta.url);
@@ -13,6 +13,13 @@ dotenv.config({ path: path.join(__dirname, '.env') });
 console.log('MONGO_URI from .env:', process.env.MONGO_URI); // keep this debug
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
+
+// Initialize the server with Next.js
+createServer().then((app) => {
+  app.listen(PORT, () => {
+    console.log(`🚀 Server running on http://localhost:${PORT}`);
+  });
+}).catch((err) => {
+  console.error('Error starting server:', err);
+  process.exit(1);
 });
