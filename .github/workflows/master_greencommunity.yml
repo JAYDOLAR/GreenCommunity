@@ -48,122 +48,79 @@ jobs:
             cp -r client/.next/static public/_next/static 2>/dev/null || true
             
             # Create a simple index.html that will be served by Express
-            # This will show your actual Next.js app content
-            cat > public/index.html << 'EOF'
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>GreenCommunity - Building a Sustainable Future Together</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-            line-height: 1.6;
-            color: #1f2937;
-            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .container {
-            max-width: 800px;
-            padding: 2rem;
-            text-align: center;
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-            margin: 1rem;
-        }
-        .logo {
-            width: 80px;
-            height: 80px;
-            margin: 0 auto 1.5rem;
-            background: linear-gradient(135deg, #059669, #34d399);
-            border-radius: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2rem;
-            color: white;
-            font-weight: bold;
-        }
-        h1 {
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin-bottom: 1rem;
-            background: linear-gradient(135deg, #059669, #34d399);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-        p {
-            font-size: 1.125rem;
-            color: #6b7280;
-            margin-bottom: 2rem;
-            line-height: 1.7;
-        }
-        .status {
-            background: #f0fdf4;
-            border: 1px solid #bbf7d0;
-            border-radius: 8px;
-            padding: 1rem;
-            margin-bottom: 2rem;
-            color: #166534;
-        }
-        .btn {
-            display: inline-block;
-            background: linear-gradient(135deg, #059669, #34d399);
-            color: white;
-            text-decoration: none;
-            padding: 0.75rem 2rem;
-            border-radius: 8px;
-            font-weight: 600;
-            transition: transform 0.2s, box-shadow 0.2s;
-            margin: 0.5rem;
-        }
-        .btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.4);
-        }
-        .footer {
-            margin-top: 2rem;
-            padding-top: 1rem;
-            border-top: 1px solid #e5e7eb;
-            font-size: 0.875rem;
-            color: #9ca3af;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="logo">🌱</div>
-        
-        <h1>GreenCommunity</h1>
-        <p>Building a Sustainable Future Together</p>
-        
-        <div class="status">
-            ✅ <strong>Application Successfully Deployed!</strong>
-        </div>
-        
-        <p>
-            Welcome to GreenCommunity! Calculate your carbon footprint, 
-            discover reduction strategies, offset your impact, and join our 
-            community committed to environmental stewardship.
-        </p>
-        
-        <a href="/api" class="btn">View API Documentation</a>
-        
-        <div class="footer">
-            <p>&copy; 2024 GreenCommunity. All rights reserved.</p>
-            <p>Making environmental impact measurable and actionable.</p>
-        </div>
-    </div>
-</body>
-</html>
-EOF
+            echo '<!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="utf-8" />
+                <meta name="viewport" content="width=device-width, initial-scale=1" />
+                <title>GreenCommunity - Building a Sustainable Future Together</title>
+                <style>
+                    * { margin: 0; padding: 0; box-sizing: border-box; }
+                    body {
+                        font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+                        line-height: 1.6;
+                        color: #1f2937;
+                        background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+                        min-height: 100vh;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                    }
+                    .container {
+                        max-width: 800px;
+                        padding: 2rem;
+                        text-align: center;
+                        background: white;
+                        border-radius: 16px;
+                        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+                        margin: 1rem;
+                    }
+                    .logo {
+                        width: 80px;
+                        height: 80px;
+                        margin: 0 auto 1.5rem;
+                        background: linear-gradient(135deg, #059669, #34d399);
+                        border-radius: 20px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 2rem;
+                        color: white;
+                        font-weight: bold;
+                    }
+                    h1 {
+                        font-size: 2.5rem;
+                        font-weight: 700;
+                        margin-bottom: 1rem;
+                        background: linear-gradient(135deg, #059669, #34d399);
+                        -webkit-background-clip: text;
+                        -webkit-text-fill-color: transparent;
+                        background-clip: text;
+                    }
+                    p { font-size: 1.125rem; color: #6b7280; margin-bottom: 2rem; line-height: 1.7; }
+                    .status { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 1rem; margin-bottom: 2rem; color: #166534; }
+                    .btn { display: inline-block; background: linear-gradient(135deg, #059669, #34d399); color: white; text-decoration: none; padding: 0.75rem 2rem; border-radius: 8px; font-weight: 600; transition: transform 0.2s, box-shadow 0.2s; margin: 0.5rem; }
+                    .btn:hover { transform: translateY(-1px); box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.4); }
+                    .footer { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #e5e7eb; font-size: 0.875rem; color: #9ca3af; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="logo">🌱</div>
+                    <h1>GreenCommunity</h1>
+                    <p>Building a Sustainable Future Together</p>
+                    <div class="status">
+                        ✅ <strong>Application Successfully Deployed!</strong>
+                    </div>
+                    <p>Welcome to GreenCommunity! Calculate your carbon footprint, discover reduction strategies, offset your impact, and join our community committed to environmental stewardship.</p>
+                    <a href="/api" class="btn">View API Documentation</a>
+                    <div class="footer">
+                        <p>&copy; 2024 GreenCommunity. All rights reserved.</p>
+                        <p>Making environmental impact measurable and actionable.</p>
+                    </div>
+                </div>
+            </body>
+            </html>' > public/index.html
           else
             echo "Warning: client/.next directory not found"
             cp -r client/public/* public/ 2>/dev/null || true
