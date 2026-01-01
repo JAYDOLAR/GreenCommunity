@@ -38,8 +38,12 @@ jobs:
           # Copy server files as the main application
           cp -r Server/* .
           
-          # Copy the entire client directory for Next.js integration
-          cp -r client .
+          # Client directory is already in place, no need to copy
+          # Just ensure it has the built files
+          if [ ! -d "client/.next" ]; then
+            echo "Error: Client build files not found"
+            exit 1
+          fi
           
           # Create package-lock.json if it doesn't exist to avoid warnings
           if [ ! -f "package-lock.json" ]; then
