@@ -61,6 +61,14 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  trustedDevices: [{
+    deviceId: { type: String, required: true },
+    deviceName: String,
+    userAgent: String,
+    ipAddress: String,
+    expiresAt: { type: Date, required: true },
+    createdAt: { type: Date, default: Date.now }
+  }],
   lastLogin: Date,
   ipAddress: String,
   userAgent: String,
@@ -386,6 +394,119 @@ userSchema.methods.verifyEmailVerificationCode = function(code) {
 userSchema.methods.clearEmailVerificationCode = function() {
   this.emailVerificationCode = undefined;
   this.emailVerificationCodeExpires = undefined;
+};
+
+// Method to add trusted device
+userSchema.methods.addTrustedDevice = function(deviceInfo, days = 30) {
+  const deviceId = crypto.createHash('sha256')
+    .update(`${deviceInfo.userAgent}-${deviceInfo.ipAddress}-${Date.now()}`)
+    .digest('hex');
+  
+  // Use client timestamp if provided, otherwise server time
+  const createdAt = deviceInfo.clientTimestamp ? new Date(deviceInfo.clientTimestamp) : new Date();
+  const expiresAt = new Date(createdAt);
+  expiresAt.setDate(expiresAt.getDate() + days);
+  
+  // Remove any existing trusted devices that have expired
+  this.trustedDevices = this.trustedDevices.filter(device => device.expiresAt > new Date());
+  
+  // Add new trusted device
+  this.trustedDevices.push({
+    deviceId,
+    deviceName: deviceInfo.deviceName || this.extractDeviceName(deviceInfo.userAgent),
+    userAgent: deviceInfo.userAgent,
+    ipAddress: deviceInfo.ipAddress,
+    expiresAt,
+    createdAt
+  });
+  
+  // Keep only the 10 most recent trusted devices
+  if (this.trustedDevices.length > 10) {
+    this.trustedDevices = this.trustedDevices
+      .sort((a, b) => b.createdAt - a.createdAt)
+      .slice(0, 10);
+  }
+  
+  return deviceId;
+};
+
+// Method to check if device is trusted
+userSchema.methods.isDeviceTrusted = function(userAgent, ipAddress) {
+  // Clean up expired devices first
+  this.trustedDevices = this.trustedDevices.filter(device => device.expiresAt > new Date());
+  
+  return this.trustedDevices.some(device => 
+    device.userAgent === userAgent && 
+    device.ipAddress === ipAddress &&
+    device.expiresAt > new Date()
+  );
+};
+
+// Method to remove trusted device
+userSchema.methods.removeTrustedDevice = function(deviceId) {
+  this.trustedDevices = this.trustedDevices.filter(device => device.deviceId !== deviceId);
+  return this.save();
+};
+
+// Method to extract device name from user agent
+userSchema.methods.extractDeviceName = function(userAgent) {
+  if (!userAgent) return 'Unknown Device';
+  
+  const ua = userAgent.toLowerCase();
+  
+  // Mobile devices - more specific detection
+  if (ua.includes('iphone')) {
+    if (ua.includes('iphone os 15')) return 'iPhone (iOS 15)';
+    if (ua.includes('iphone os 16')) return 'iPhone (iOS 16)';
+    if (ua.includes('iphone os 17')) return 'iPhone (iOS 17)';
+    if (ua.includes('iphone os 18')) return 'iPhone (iOS 18)';
+    return 'iPhone';
+  }
+  
+  if (ua.includes('ipad')) {
+    if (ua.includes('os 15')) return 'iPad (iPadOS 15)';
+    if (ua.includes('os 16')) return 'iPad (iPadOS 16)';
+    if (ua.includes('os 17')) return 'iPad (iPadOS 17)';
+    if (ua.includes('os 18')) return 'iPad (iPadOS 18)';
+    return 'iPad';
+  }
+  
+  if (ua.includes('android')) {
+    if (ua.includes('mobile')) return 'Android Phone';
+    if (ua.includes('tablet')) return 'Android Tablet';
+    return 'Android Device';
+  }
+  
+  // Desktop Operating Systems
+  if (ua.includes('windows nt 10')) return 'Windows 10/11 PC';
+  if (ua.includes('windows nt 6.3')) return 'Windows 8.1 PC';
+  if (ua.includes('windows nt 6.1')) return 'Windows 7 PC';
+  if (ua.includes('windows')) return 'Windows PC';
+  
+  if (ua.includes('macintosh') || ua.includes('mac os x')) {
+    if (ua.includes('mac os x 10_15')) return 'macOS Catalina';
+    if (ua.includes('mac os x 11')) return 'macOS Big Sur';
+    if (ua.includes('mac os x 12')) return 'macOS Monterey';
+    if (ua.includes('mac os x 13')) return 'macOS Ventura';
+    if (ua.includes('mac os x 14')) return 'macOS Sonoma';
+    return 'Mac';
+  }
+  
+  if (ua.includes('linux')) {
+    if (ua.includes('ubuntu')) return 'Ubuntu Linux';
+    if (ua.includes('fedora')) return 'Fedora Linux';
+    if (ua.includes('debian')) return 'Debian Linux';
+    return 'Linux PC';
+  }
+  
+  // Browsers - as fallback
+  if (ua.includes('chrome') && !ua.includes('edge')) return 'Chrome Browser';
+  if (ua.includes('firefox')) return 'Firefox Browser';
+  if (ua.includes('safari') && !ua.includes('chrome')) return 'Safari Browser';
+  if (ua.includes('edge')) return 'Edge Browser';
+  if (ua.includes('opera')) return 'Opera Browser';
+  
+  return 'Unknown Device';
 };
 
 // Indexes for performance optimization

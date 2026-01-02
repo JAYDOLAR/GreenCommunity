@@ -7,6 +7,7 @@ import { FcGoogle } from 'react-icons/fc';
 import { Eye, EyeOff, AlertCircle, X, Check } from 'lucide-react';
 import { authAPI } from '../../lib/api';
 import { useUser } from '@/context/UserContext';
+import { getDeviceInfo } from '../../lib/deviceUtils';
 
 // Simple JWT decode utility (for client-side use only)
 const decodeJWT = (token) => {
@@ -51,6 +52,11 @@ export default function LoginPage() {
   const [tempToken, setTempToken] = useState('');
   const [twoFactorCode, setTwoFactorCode] = useState('');
   const [showSuccessNotification, setShowSuccessNotification] = useState(false);
+  
+  // Remember device states
+  const [rememberDevice, setRememberDevice] = useState(false);
+  const [rememberDays, setRememberDays] = useState(30);
+  const [customDeviceName, setCustomDeviceName] = useState('');
   
   // Client-side validation states
   const [emailError, setEmailError] = useState('');
@@ -205,8 +211,19 @@ export default function LoginPage() {
     try {
       console.log('Attempting 2FA verification:', { tempToken: tempToken?.substring(0, 20) + '...', code: twoFactorCode });
       
+      // Prepare request data with remember device options
+      const deviceInfo = getDeviceInfo();
+      const requestData = {
+        tempToken,
+        token: twoFactorCode,
+        rememberDevice,
+        rememberDays: rememberDevice ? rememberDays : undefined,
+        deviceName: rememberDevice && customDeviceName ? customDeviceName : (rememberDevice ? deviceInfo.deviceName : undefined),
+        clientTimestamp: rememberDevice ? deviceInfo.timestamp : undefined // Send client device time
+      };
+      
       // Normal 2FA verification flow - use loginAndSetUser to get full profile
-      const data = await authAPI.verify2FALogin(tempToken, twoFactorCode);
+      const data = await authAPI.verify2FALogin(requestData.tempToken, requestData.token, requestData);
       console.log('2FA verification successful:', data);
       
       // Use loginAndSetUser to store token and get full profile
@@ -407,6 +424,63 @@ export default function LoginPage() {
               className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary bg-card text-foreground placeholder:text-muted-foreground transition-colors border-border text-center text-lg font-mono"
               autoFocus
             />
+          </div>
+
+          {/* Remember Device Section */}
+          <div className="space-y-3 border-t pt-4">
+            <div className="flex items-center space-x-2">
+              <input
+                id="rememberDevice"
+                type="checkbox"
+                checked={rememberDevice}
+                onChange={(e) => setRememberDevice(e.target.checked)}
+                className="w-4 h-4 text-primary bg-background border-border rounded focus:ring-primary focus:ring-2"
+              />
+              <label htmlFor="rememberDevice" className="text-sm font-medium text-foreground">
+                Remember this device
+              </label>
+            </div>
+            
+            {rememberDevice && (
+              <div className="space-y-3 pl-6 border-l-2 border-border">
+                <div>
+                  <label htmlFor="rememberDays" className="block text-xs font-medium mb-1 text-muted-foreground">
+                    For how many days?
+                  </label>
+                  <select
+                    id="rememberDays"
+                    value={rememberDays}
+                    onChange={(e) => setRememberDays(parseInt(e.target.value))}
+                    className="w-full px-2 py-1 text-sm border rounded-md focus:outline-none focus:ring-1 focus:ring-primary bg-card text-foreground border-border"
+                  >
+                    <option value={7}>7 days</option>
+                    <option value={14}>14 days</option>
+                    <option value={30}>30 days</option>
+                    <option value={60}>60 days</option>
+                    <option value={90}>90 days</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label htmlFor="customDeviceName" className="block text-xs font-medium mb-1 text-muted-foreground">
+                    Device name (optional)
+                  </label>
+                  <input
+                    id="customDeviceName"
+                    type="text"
+                    placeholder={`Default: ${getDeviceInfo().deviceName}`}
+                    value={customDeviceName}
+                    onChange={(e) => setCustomDeviceName(e.target.value)}
+                    className="w-full px-2 py-1 text-sm border rounded-md focus:outline-none focus:ring-1 focus:ring-primary bg-card text-foreground placeholder:text-muted-foreground border-border"
+                    maxLength={50}
+                  />
+                </div>
+                
+                <p className="text-xs text-muted-foreground">
+                  You won&apos;t need to enter 2FA codes on this device for the selected period.
+                </p>
+              </div>
+            )}
           </div>
           
           <button

@@ -133,9 +133,55 @@ export const loginUser = asyncHandler(async (req, res) => {
   // Reset login attempts on successful login
   await user.resetLoginAttempts();
   
+  // Get accurate IP address (handle proxies/load balancers)
+  const getClientIP = (req) => {
+    return req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
+           req.headers['x-real-ip'] ||
+           req.connection?.remoteAddress ||
+           req.socket?.remoteAddress ||
+           req.ip ||
+           'unknown';
+  };
+  
   // Check if 2FA is enabled for this user
   if (user.twoFactorEnabled) {
-    // Store temporary login data (don't generate final token yet)
+    // Check if this device is trusted
+    const userAgent = req.get('User-Agent');
+    const ipAddress = getClientIP(req);
+    
+    if (user.isDeviceTrusted(userAgent, ipAddress)) {
+      // Device is trusted, skip 2FA
+      // Update last login info
+      user.lastLogin = new Date();
+      user.ipAddress = ipAddress;
+      user.userAgent = userAgent;
+      await user.save();
+
+      const token = generateToken(user._id);
+
+      // Set HTTP-only cookie for security
+      res.cookie('authToken', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 24 * 60 * 60 * 1000 // 24 hours
+      });
+
+      return res.status(200).json({
+        message: 'Login successful',
+        token: token,
+        user: { 
+          id: user._id, 
+          name: user.name, 
+          email: user.email,
+          isEmailVerified: user.isEmailVerified,
+          role: user.role,
+          twoFactorEnabled: user.twoFactorEnabled
+        }
+      });
+    }
+    
+    // Device not trusted - require 2FA verification
     const tempToken = generateToken(user._id, 'temp-2fa');
     
     return res.status(200).json({
@@ -778,7 +824,7 @@ export const disable2FA = asyncHandler(async (req, res) => {
 
 // Verify 2FA during login
 export const verify2FALogin = asyncHandler(async (req, res) => {
-    const { tempToken, token } = req.body;
+    const { tempToken, token, rememberDevice, rememberDays } = req.body;
     
     if (!tempToken || !token) {
         return res.status(400).json({ message: 'Temporary token and 2FA code are required' });
@@ -814,6 +860,31 @@ export const verify2FALogin = asyncHandler(async (req, res) => {
             return res.status(400).json({ message: 'Invalid 2FA code' });
         }
         
+        // Handle remember device option
+        let deviceId = null;
+        if (rememberDevice) {
+            const days = parseInt(rememberDays) || 30; // Default to 30 days
+            
+            // Get accurate IP address (handle proxies/load balancers)
+            const getClientIP = (req) => {
+                return req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
+                       req.headers['x-real-ip'] ||
+                       req.connection?.remoteAddress ||
+                       req.socket?.remoteAddress ||
+                       req.ip ||
+                       'unknown';
+            };
+            
+            const deviceInfo = {
+                userAgent: req.get('User-Agent'),
+                ipAddress: getClientIP(req),
+                deviceName: req.body.deviceName, // Optional custom device name
+                clientTimestamp: req.body.clientTimestamp // Client device time
+            };
+            
+            deviceId = user.addTrustedDevice(deviceInfo, days);
+        }
+        
         // Update last login info
         user.lastLogin = new Date();
         user.ipAddress = req.ip;
@@ -834,6 +905,7 @@ export const verify2FALogin = asyncHandler(async (req, res) => {
         res.status(200).json({
             message: 'Login successful',
             token: finalToken,
+            deviceId: deviceId, // Return device ID if device was remembered
             user: { 
                 id: user._id, 
                 name: user.name, 
@@ -848,4 +920,63 @@ export const verify2FALogin = asyncHandler(async (req, res) => {
         console.error('2FA verification error:', error);
         return res.status(401).json({ message: 'Invalid or expired temporary token' });
     }
+});
+
+// Get user's trusted devices
+export const getTrustedDevices = asyncHandler(async (req, res) => {
+    const user = await User.findById(req.user.id).select('trustedDevices');
+    
+    if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Clean up expired devices
+    user.trustedDevices = user.trustedDevices.filter(device => device.expiresAt > new Date());
+    await user.save();
+    
+    // Return devices without sensitive info
+    const devices = user.trustedDevices.map(device => ({
+        deviceId: device.deviceId,
+        deviceName: device.deviceName,
+        createdAt: device.createdAt,
+        expiresAt: device.expiresAt
+    }));
+    
+    res.json({ trustedDevices: devices });
+});
+
+// Remove a trusted device
+export const removeTrustedDevice = asyncHandler(async (req, res) => {
+    const { deviceId } = req.params;
+    
+    const user = await User.findById(req.user.id);
+    
+    if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+    }
+    
+    const initialCount = user.trustedDevices.length;
+    user.trustedDevices = user.trustedDevices.filter(device => device.deviceId !== deviceId);
+    
+    if (user.trustedDevices.length === initialCount) {
+        return res.status(404).json({ message: 'Trusted device not found' });
+    }
+    
+    await user.save();
+    
+    res.json({ message: 'Trusted device removed successfully' });
+});
+
+// Clear all trusted devices
+export const clearAllTrustedDevices = asyncHandler(async (req, res) => {
+    const user = await User.findById(req.user.id);
+    
+    if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+    }
+    
+    user.trustedDevices = [];
+    await user.save();
+    
+    res.json({ message: 'All trusted devices cleared successfully' });
 });
