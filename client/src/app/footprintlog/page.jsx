@@ -25,6 +25,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 import ProtectedLayout from '@/components/ProtectedLayout';
+import ChatBot from '@/components/ChatBot';
 
 const FootprintLog = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -562,6 +563,7 @@ const FootprintLog = () => {
           </Card>
         </div>
       </div>
+      <ChatBot />
     </div>
   );
 };

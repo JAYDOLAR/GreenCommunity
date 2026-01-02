@@ -35,6 +35,7 @@ import { useUser } from '@/context/UserContext';
 import toast from 'react-hot-toast';
 
 import ProtectedLayout from '@/components/ProtectedLayout';
+import ChatBot from '@/components/ChatBot';
 
 const Settings = () => {
   const { t } = useTranslation();
@@ -858,6 +859,7 @@ const Settings = () => {
           </div>
         </div>
       )}
+      <ChatBot />
     </div>
   );
 };

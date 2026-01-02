@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
+import ChatBot from '@/components/ChatBot';
 
 // Dynamically import Leaflet components to avoid SSR issues
 const MapContainer = dynamic(() => import('react-leaflet').then(mod => mod.MapContainer), { 
@@ -816,6 +817,7 @@ const Projects = () => {
             <p className="text-muted-foreground text-xs sm:text-base">Try adjusting your search or filters</p>
           </div>
         )}
+        <ChatBot />
       </div>
     );
   } catch (err) {

@@ -10,6 +10,7 @@ export function UserProvider({ children }) {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isClient, setIsClient] = useState(false);
+  const [backendStatus, setBackendStatus] = useState('unknown'); // 'unknown' | 'checking' | 'connected' | 'offline' | 'error'
   
   // Function to update user after login
   const updateUser = (userData) => {
@@ -38,8 +39,10 @@ export function UserProvider({ children }) {
     
     try {
       setIsLoading(true);
+      setBackendStatus('checking');
       const data = await authAPI.getCurrentUser();
       setUser(data.user);
+      setBackendStatus('connected');
       
       // Update localStorage with fresh data
       if (data.user) {
@@ -50,6 +53,14 @@ export function UserProvider({ children }) {
     } catch (error) {
       console.warn('Failed to refresh user data:', error);
       setIsLoading(false);
+      const msg = String(error?.message || '').toLowerCase();
+      if (msg.includes('network error') || msg.includes('temporarily unavailable') || msg.includes('service not found')) {
+        setBackendStatus('offline');
+      } else if (msg.includes('unauthorized') || msg.includes('invalid token') || msg.includes('invalid credentials') || msg.includes('401') || msg.includes('403')) {
+        setBackendStatus('connected');
+      } else {
+        setBackendStatus('error');
+      }
     }
   };
   
@@ -110,8 +121,10 @@ export function UserProvider({ children }) {
       }
       
       try {
+        setBackendStatus('checking');
         const data = await authAPI.getCurrentUser();
         setUser(data.user); // The API returns { user: userData }
+        setBackendStatus('connected');
         
         // Also update localStorage with fresh data
         if (data.user) {
@@ -132,6 +145,11 @@ export function UserProvider({ children }) {
             error.message?.includes('403')) {
           localStorage.removeItem('token');
           localStorage.removeItem('userData');
+          setBackendStatus('connected');
+        } else if (error.message?.includes('Network error') || error.message?.includes('Service temporarily unavailable') || error.message?.includes('Service not found')) {
+          setBackendStatus('offline');
+        } else {
+          setBackendStatus('error');
         }
         setUser(null);
         setIsLoading(false);
@@ -141,7 +159,7 @@ export function UserProvider({ children }) {
   }, [isClient]);
 
   return (
-    <UserContext.Provider value={{ user, updateUser, loginAndSetUser, refreshUser, clearUser, isLoading }}>
+    <UserContext.Provider value={{ user, updateUser, loginAndSetUser, refreshUser, clearUser, isLoading, backendStatus }}>
       {children}
     </UserContext.Provider>
   );

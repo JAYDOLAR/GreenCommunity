@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import FloatingParticles from './FloatingParticles';
 import ProfessionalProgress from './ProfessionalProgress';
@@ -29,12 +29,29 @@ export default function Layout({ children }) {
   const router = useRouter();
   const isAuthenticated = !!user;
   const name = user?.name || 'Guest';
-  const city = user?.userInfo?.location?.city || 'Unknown';
-  const country = user?.userInfo?.location?.country || 'Location';
+  const city = (user?.userInfo?.location?.city || '').trim();
+  const country = (user?.userInfo?.location?.country || '').trim();
+  const locationText = [city, country].filter(Boolean).join(', ');
+  const hasLocation = Boolean(locationText);
+  const [fallbackLocation, setFallbackLocation] = useState('');
   const monthlyGoal = isAuthenticated ? 75 : 0;
   const pathname = usePathname();
   const isMobile = useMediaQuery({ maxWidth: 767 });
   const isTablet = useMediaQuery({ minWidth: 768, maxWidth: 1024 });
+  
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const saved = localStorage.getItem('selectedLocation');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        const stateName = (parsed?.stateName || '').trim();
+        const countryName = (parsed?.countryName || '').trim();
+        const composed = [stateName, countryName].filter(Boolean).join(', ');
+        if (composed) setFallbackLocation(composed);
+      }
+    } catch {}
+  }, []);
   
   // Don't render the layout if logging out to prevent flash
   if (isLoggingOut) {
@@ -91,11 +108,13 @@ export default function Layout({ children }) {
     // Don't reset isLoggingOut here to prevent flash
   };
 
+  const displayLocation = hasLocation ? locationText : (fallbackLocation || 'Unknown');
+
   return (
     <div className="min-h-screen bg-background relative">
       <FloatingParticles />
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-white border-b border-border/30 shadow-sm">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-border/30 shadow-sm">
         <div className="flex items-center justify-between px-4 sm:px-6 md:px-8 h-16 md:h-20 relative">
           {/* Logo and Navigation */}
           {isMobile || isTablet ? (
@@ -136,7 +155,7 @@ export default function Layout({ children }) {
                       </Avatar>
                       <div>
                         <div className="font-semibold text-xs sm:text-sm text-foreground">{name}</div>
-                        <div className="text-xs sm:text-sm text-muted-foreground">{city}, {country}</div>
+                        <div className="text-xs sm:text-sm text-muted-foreground">{displayLocation}</div>
                       </div>
                     </div>
                     <div className="flex flex-col gap-2 mt-2">
@@ -185,7 +204,7 @@ export default function Layout({ children }) {
                      key={item.path}
                      onClick={() => handleNavigationClick(item.path)}
                      className={`px-1.5 md:px-2 lg:px-2 py-1.5 md:py-2 lg:py-2 rounded-full font-medium transition-colors duration-200 text-xs md:text-sm lg:text-sm whitespace-nowrap flex items-center gap-1.5 md:gap-2
-                       ${(item.path === '/' && (pathname === '/' || pathname === '/dashboard')) || (item.path !== '/' && pathname === item.path)
+                       ${(item.path === '/' && (pathname === '/' || pathname.startsWith('/dashboard'))) || (item.path !== '/' && (pathname === item.path || pathname.startsWith(item.path + '/')))
                          ? 'bg-primary/90 text-white shadow-sm'
                          : 'text-foreground hover:bg-primary/10 hover:text-primary'}
                      `}
@@ -204,7 +223,7 @@ export default function Layout({ children }) {
               <div className="hidden lg:flex flex-col items-end">
                 <span className="text-xs md:text-sm font-semibold text-foreground">{name}</span>
                 <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <span>{city}, {country}</span>
+                  <span>{displayLocation}</span>
                   <TrendingUp className="h-3 w-3 text-success" />
                 </div>
               </div>
@@ -238,7 +257,7 @@ export default function Layout({ children }) {
                     </Avatar>
                     <div>
                       <div className="font-semibold text-xs md:text-sm lg:text-sm text-foreground">{name}</div>
-                      <div className="text-xs md:text-sm text-muted-foreground">{city}, {country}</div>
+                      <div className="text-xs md:text-sm text-muted-foreground">{displayLocation}</div>
                     </div>
                   </div>
                   <div className="flex flex-col gap-2 mt-2">
@@ -301,7 +320,7 @@ export default function Layout({ children }) {
                              handleNavigationClick(item.path);
                              setSidebarOpen(false);
                            }}
-                           className={`flex items-center gap-3 px-4 md:px-6 py-2 md:py-3 rounded-full font-medium transition-colors duration-200 text-sm md:text-base text-left ${pathname === item.path ? 'bg-primary/90 text-white shadow-sm' : 'text-foreground hover:bg-primary/10 hover:text-primary'}`}
+                           className={`flex items-center gap-3 px-4 md:px-6 py-2 md:py-3 rounded-full font-medium transition-colors duration-200 text-sm md:text-base text-left ${(item.path === '/' && (pathname === '/' || pathname.startsWith('/dashboard'))) || (item.path !== '/' && (pathname === item.path || pathname.startsWith(item.path + '/'))) ? 'bg-primary/90 text-white shadow-sm' : 'text-foreground hover:bg-primary/10 hover:text-primary'}`}
                            style={{ fontWeight: 500, letterSpacing: '0.01em' }}
                          >
                            <Icon className="h-4 w-4 md:h-5 md:w-5" />
@@ -337,7 +356,7 @@ export default function Layout({ children }) {
         </div>
       </header>
       {/* Main Content */}
-      <main className="flex-1 min-h-screen relative z-10">
+      <main className="flex-1 min-h-screen relative z-10 pt-16 md:pt-20">
         <div className="animate-fade-in">
           {children}
         </div>

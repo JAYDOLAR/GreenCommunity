@@ -12,6 +12,7 @@ import {
   Leaf
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import ChatBot from '@/components/ChatBot';
 
 const USD_TO_INR = 83;
 
@@ -454,12 +455,17 @@ const Marketplace = () => {
   const isMobile = useMediaQuery({ maxWidth: 767 });
   const isTablet = useMediaQuery({ minWidth: 768, maxWidth: 1023 });
 
-  if (isMobile) {
-    return <MobileMarketplaceView />;
-  }
-  if (isTablet) {
-    return <TabletMarketplaceView />;
-  }
-  return <DesktopMarketplaceView />;
+  const view = isMobile
+    ? <MobileMarketplaceView />
+    : isTablet
+      ? <TabletMarketplaceView />
+      : <DesktopMarketplaceView />;
+
+  return (
+    <div className="relative">
+      {view}
+      <ChatBot />
+    </div>
+  );
 };
 export default Marketplace;

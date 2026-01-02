@@ -27,6 +27,12 @@ import toast, { Toaster } from 'react-hot-toast';
 import { motion } from 'framer-motion';
 
 const LandingPage = () => {
+  const [mounted, setMounted] = useState(false);
+  
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  
   const features = [
     {
       icon: Calculator,
@@ -124,8 +130,20 @@ const LandingPage = () => {
   };
 
 
+  // Prevent hydration mismatch by not rendering until mounted
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-gradient-to-r from-green-50 via-white to-white relative overflow-hidden flex items-center justify-center">
+        <div className="flex items-center gap-3 text-muted-foreground">
+          <div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+          <span>Loading...</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-r from-green-50 via-white to-white relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-r from-green-50 via-white to-white relative overflow-hidden" suppressHydrationWarning>
       <Toaster position="top-center" toastOptions={{ duration: 2500, style: { fontSize: '1rem', fontFamily: 'Inter, sans-serif' } }} />
       {/* Header */}
       <header className="sticky top-0 z-50 glass border-b border-border/30 backdrop-blur-xl animate-fade-in-down">
@@ -148,12 +166,12 @@ const LandingPage = () => {
           {/* Right: Sign In and Sign Up Buttons */}
           <div className="flex items-center gap-2 sm:gap-3 md:gap-4 flex-shrink-0">
             <Link href="/login">
-              <button className="border border-green-600 text-green-600 hover:bg-green-50 hover:border-green-700 font-semibold px-3 sm:px-4 md:px-6 py-1.5 sm:py-2 md:py-2.5 rounded-full shadow-md transition-all duration-300 transform hover:scale-105 hover:shadow-lg text-sm sm:text-base whitespace-nowrap cursor-pointer" style={{ fontFamily: "'Inter', sans-serif" }}>
+              <button className="border border-green-600 text-green-600 hover:bg-green-50 hover:border-green-700 font-semibold px-3 sm:px-4 md:px-6 py-1.5 sm:py-2 md:py-2.5 rounded-full shadow-md transition-all duration-300 transform hover:scale-105 hover:shadow-lg text-sm sm:text-base whitespace-nowrap cursor-pointer" style={{ fontFamily: "'Inter', sans-serif" }} suppressHydrationWarning>
                 Sign In
               </button>
             </Link>
             <Link href="/Signup">
-              <button className="bg-green-600 hover:bg-green-700 text-white font-semibold px-3 sm:px-4 md:px-6 py-1.5 sm:py-2 md:py-2.5 rounded-full shadow-md transition-all duration-300 transform hover:scale-105 hover:shadow-lg text-sm sm:text-base whitespace-nowrap cursor-pointer" style={{ fontFamily: "'Inter', sans-serif" }}>
+              <button className="bg-green-600 hover:bg-green-700 text-white font-semibold px-3 sm:px-4 md:px-6 py-1.5 sm:py-2 md:py-2.5 rounded-full shadow-md transition-all duration-300 transform hover:scale-105 hover:shadow-lg text-sm sm:text-base whitespace-nowrap cursor-pointer" style={{ fontFamily: "'Inter', sans-serif" }} suppressHydrationWarning>
                 Sign Up
               </button>
             </Link>
@@ -215,7 +233,7 @@ const LandingPage = () => {
               variants={itemVariants}
             >
               <Link href="/Signup" className="flex-1">
-                <button className="w-full flex items-center justify-center px-3 sm:px-6 py-3 rounded-full shadow-lg font-bold text-white bg-green-600 hover:bg-green-700 transition hover:scale-105 text-sm sm:text-base whitespace-nowrap cursor-pointer">
+                <button className="w-full flex items-center justify-center px-3 sm:px-6 py-3 rounded-full shadow-lg font-bold text-white bg-green-600 hover:bg-green-700 transition hover:scale-105 text-sm sm:text-base whitespace-nowrap cursor-pointer" suppressHydrationWarning>
                   <span className="hidden sm:inline">Calculate My Carbon Footprint</span>
                   <span className="sm:hidden">Calculate My Carbon Footprint</span>
                   <HiArrowRight className="ml-2 w-4 h-4 sm:w-5 sm:h-5" />

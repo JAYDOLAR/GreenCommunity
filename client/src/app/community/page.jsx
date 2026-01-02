@@ -25,6 +25,7 @@ import {
   Share,
   Heart
 } from 'lucide-react';
+import ChatBot from '@/components/ChatBot';
 
 const Community = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -456,6 +457,7 @@ const Community = () => {
           </div>
         </TabsContent>
       </Tabs>
+      <ChatBot />
     </div>
   );
 };

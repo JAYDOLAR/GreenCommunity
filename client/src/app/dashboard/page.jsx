@@ -73,6 +73,7 @@ const getGreetingKey = () => {
 };
 
 import ProtectedLayout from '@/components/ProtectedLayout';
+import ChatBot from '@/components/ChatBot';
 
 const Dashboard = () => {
   const { user, isLoading } = useUser();
@@ -465,6 +466,9 @@ const Dashboard = () => {
       
       {/* Bottom Spacing for Mobile */}
       <div className="h-8 sm:h-12 md:h-16"></div>
+
+      {/* ChatBot */}
+      <ChatBot />
     </div>
   );
 };
