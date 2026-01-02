@@ -144,7 +144,7 @@ export const useFootprintLog = () => {
     const calculateEmissionsWithAPI = useCallback(async (activityData) => {
         setLoading(true);
         setError(null);
-        
+
         try {
             const result = await footprintLogAPI.calculateEmissionsPreview(activityData);
             return result;

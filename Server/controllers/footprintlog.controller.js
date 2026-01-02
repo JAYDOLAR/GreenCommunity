@@ -45,7 +45,7 @@ export async function previewEmissions(req, res) {
   try {
     let calculation, emission;
     const { activityType, activity, details } = req.body;
-    
+
     if (activityType === "transport") {
       calculation = ipcc.calculateTransport(details);
       emission = calculation.emission;
@@ -67,7 +67,7 @@ export async function previewEmissions(req, res) {
         factors: req.body.calculationFactors || {},
       };
     }
-    
+
     // Return the calculation without saving to database
     res.json({
       emission: emission,

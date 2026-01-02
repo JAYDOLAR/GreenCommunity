@@ -163,7 +163,7 @@ const FootprintLog = () => {
       factor: 0,
       category: 'Transportation'
     },
-    
+
     // Energy & Utilities
     {
       value: 'energy-electricity',
@@ -214,7 +214,7 @@ const FootprintLog = () => {
       factor: 4200,
       category: 'Energy'
     },
-    
+
     // Food & Diet
     {
       value: 'food-beef',
@@ -293,7 +293,7 @@ const FootprintLog = () => {
       factor: 0.3,
       category: 'Food'
     },
-    
+
     // Waste & Recycling
     {
       value: 'waste-general',
@@ -321,7 +321,7 @@ const FootprintLog = () => {
       factor: -0.2,
       category: 'Waste'
     },
-    
+
     // Water Usage
     {
       value: 'water-usage',
@@ -356,7 +356,7 @@ const FootprintLog = () => {
       category: 'Water',
       requiresWaterTemp: true
     },
-    
+
     // Shopping & Consumer Goods
     {
       value: 'shopping-clothing',
@@ -489,18 +489,18 @@ const FootprintLog = () => {
   // Helper function to get dynamic field label based on activity type
   const getQuantityLabel = () => {
     if (!activityType) return 'Quantity';
-    
+
     const selectedActivity = activityTypes.find(type => type.value === activityType);
     if (!selectedActivity) return 'Quantity';
-    
+
     const unit = selectedActivity.unit;
-    
+
     // Create contextual labels based on activity category and unit
     switch (selectedActivity.category) {
       case 'Transportation':
         if (unit === 'miles') return 'Distance';
         return 'Quantity';
-        
+
       case 'Energy':
         if (unit === 'kWh') return 'Energy Usage';
         if (unit === 'therms') return 'Gas Usage';
@@ -508,26 +508,26 @@ const FootprintLog = () => {
         if (unit === 'lbs') return 'Weight';
         if (unit === 'cords') return 'Wood Amount';
         return 'Quantity';
-        
+
       case 'Food':
         if (unit === 'lbs') return 'Weight';
         if (unit === 'dozen') return 'Number of Dozens';
         return 'Amount';
-        
+
       case 'Waste':
         if (unit === 'lbs') return 'Weight';
         return 'Amount';
-        
+
       case 'Water':
         if (unit === 'gallons') return 'Water Volume';
         if (unit === 'minutes') return 'Duration';
         if (unit === 'loads') return 'Number of Loads';
         return 'Amount';
-        
+
       case 'Shopping':
         if (unit === 'items') return 'Number of Items';
         return 'Quantity';
-        
+
       default:
         return 'Quantity';
     }
@@ -536,36 +536,36 @@ const FootprintLog = () => {
   // Helper function to get placeholder text based on activity type
   const getQuantityPlaceholder = () => {
     if (!activityType) return '0';
-    
+
     const selectedActivity = activityTypes.find(type => type.value === activityType);
     if (!selectedActivity) return '0';
-    
+
     const unit = selectedActivity.unit;
-    
+
     switch (selectedActivity.category) {
       case 'Transportation':
         return unit === 'miles' ? 'Enter distance' : 'Enter quantity';
-        
+
       case 'Energy':
         if (unit === 'kWh') return 'Enter kWh used';
         if (unit === 'therms') return 'Enter therms used';
         if (unit === 'gallons') return 'Enter gallons used';
         return 'Enter amount';
-        
+
       case 'Food':
         return unit === 'dozen' ? 'Enter dozens' : 'Enter weight in lbs';
-        
+
       case 'Waste':
         return 'Enter weight in lbs';
-        
+
       case 'Water':
         if (unit === 'minutes') return 'Enter minutes';
         if (unit === 'loads') return 'Enter number';
         return 'Enter gallons';
-        
+
       case 'Shopping':
         return 'Enter number of items';
-        
+
       default:
         return 'Enter amount';
     }
@@ -574,10 +574,10 @@ const FootprintLog = () => {
   // Helper function to check if all required fields are filled
   const isFormValid = () => {
     if (!activityType || !quantity) return false;
-    
+
     const selectedActivity = activityTypes.find(type => type.value === activityType);
     if (!selectedActivity) return false;
-    
+
     // Check required fields based on activity type
     if (selectedActivity.requiresFuelType && !fuelType) return false;
     if (selectedActivity.requiresFlightClass && !flightClass) return false;
@@ -588,7 +588,7 @@ const FootprintLog = () => {
     if (selectedActivity.requiresClothingType && !clothingType) return false;
     if (selectedActivity.requiresElectronicsType && !electronicsType) return false;
     if (selectedActivity.requiresFurnitureType && !furnitureType) return false;
-    
+
     return true;
   };
 
@@ -620,7 +620,7 @@ const FootprintLog = () => {
         const result = await calculateEmissionsWithAPI(activityData);
         setCalculatedEmissions(result.emission);
         setShowResult(true);
-        
+
         // Show success message with calculation method
         toast.success(`✅ Impact calculated successfully using ${result.calculation?.method || 'backend'} method`);
       } catch (error) {
@@ -883,7 +883,7 @@ const FootprintLog = () => {
                     {['Transportation', 'Energy', 'Food', 'Waste', 'Water', 'Shopping'].map((category) => {
                       const categoryActivities = activityTypes.filter(type => type.category === category);
                       if (categoryActivities.length === 0) return null;
-                      
+
                       return (
                         <div key={category}>
                           <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
@@ -990,24 +990,24 @@ const FootprintLog = () => {
               )}
 
               {/* Food Type for All Food Categories */}
-              {(activityType === 'food-beef' || activityType === 'food-pork' || activityType === 'food-chicken' || 
+              {(activityType === 'food-beef' || activityType === 'food-pork' || activityType === 'food-chicken' ||
                 activityType === 'food-fish' || activityType === 'food-dairy') && (
-                <div>
-                  <Label className="text-sm sm:text-base">Food Type</Label>
-                  <Select value={foodType} onValueChange={setFoodType}>
-                    <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="Select food type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {foodTypes.map((food) => (
-                        <SelectItem key={food.value} value={food.value}>
-                          {food.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
+                  <div>
+                    <Label className="text-sm sm:text-base">Food Type</Label>
+                    <Select value={foodType} onValueChange={setFoodType}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder="Select food type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {foodTypes.map((food) => (
+                          <SelectItem key={food.value} value={food.value}>
+                            {food.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
 
               {/* Waste Type for Waste Activities */}
               {(activityType === 'waste-general' || activityType === 'waste-recycling') && (
@@ -1105,31 +1105,31 @@ const FootprintLog = () => {
               )}
 
               {/* Number of Passengers for Transport */}
-              {(activityType.startsWith('transport-') && 
+              {(activityType.startsWith('transport-') &&
                 !['transport-bicycle', 'transport-walking'].includes(activityType)) && (
-                <div>
-                  <Label className="text-sm sm:text-base">Total Passengers</Label>
-                  <Input
-                    type="number"
-                    min="1"
-                    placeholder="1"
-                    value={passengers}
-                    onChange={(e) => {
-                      setPassengers(e.target.value);
-                    }}
-                    onBlur={(e) => {
-                      const value = parseInt(e.target.value);
-                      if (isNaN(value) || value < 1) {
-                        setPassengers('1');
-                      }
-                    }}
-                    className="mt-1"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Impact will be calculated per person based on total passengers
-                  </p>
-                </div>
-              )}
+                  <div>
+                    <Label className="text-sm sm:text-base">Total Passengers</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      placeholder="1"
+                      value={passengers}
+                      onChange={(e) => {
+                        setPassengers(e.target.value);
+                      }}
+                      onBlur={(e) => {
+                        const value = parseInt(e.target.value);
+                        if (isNaN(value) || value < 1) {
+                          setPassengers('1');
+                        }
+                      }}
+                      className="mt-1"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Impact will be calculated per person based on total passengers
+                    </p>
+                  </div>
+                )}
 
               {/* Date */}
               <div>

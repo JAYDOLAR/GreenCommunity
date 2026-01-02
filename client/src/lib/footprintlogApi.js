@@ -81,13 +81,13 @@ export const footprintLogAPI = {
     calculateEmissionsPreview: async (activityData) => {
         // Format the data for backend calculation
         const formattedData = footprintLogAPI.formatLogData(activityData);
-        
+
         // Create a temporary log entry for calculation only
         const tempData = {
             ...formattedData,
             preview: true // Flag to indicate this is just for calculation
         };
-        
+
         return apiRequest('/api/footprintlog/preview', {
             method: 'POST',
             body: JSON.stringify(tempData),
