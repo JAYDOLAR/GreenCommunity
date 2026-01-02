@@ -207,6 +207,11 @@ export default function SignUpPage() {
   };
 
   const handleGoogleSignUp = () => {
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('oauthIntent', 'signup');
+      }
+    } catch {}
     authAPI.googleLogin();
   };
 

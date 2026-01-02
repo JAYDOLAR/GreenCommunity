@@ -11,19 +11,22 @@ const AdminLayout = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check if user is authenticated
-    const adminAuthenticated = localStorage.getItem('adminAuthenticated');
-    
-    if (adminAuthenticated === 'true') {
-      setIsAuthenticated(true);
-    } else {
-      // If not authenticated and not on login page, redirect to login
-      if (pathname !== '/admin/login') {
-        router.push('/admin/login');
+    try {
+      const adminAuthenticated = typeof window !== 'undefined' ? localStorage.getItem('adminAuthenticated') : null;
+      if (adminAuthenticated === 'true') {
+        setIsAuthenticated(true);
+      } else if (pathname !== '/admin/login') {
+        // Use replace to avoid back button loop; also provide a delayed fallback
+        router.replace('/admin/login');
+        setTimeout(() => {
+          if (typeof window !== 'undefined' && window.location.pathname !== '/admin/login') {
+            window.location.href = '/admin/login';
+          }
+        }, 300);
       }
+    } finally {
+      setIsLoading(false);
     }
-    
-    setIsLoading(false);
   }, [pathname, router]);
 
   // Show loading spinner while checking authentication
@@ -43,9 +46,17 @@ const AdminLayout = ({ children }) => {
     return <>{children}</>;
   }
 
-  // If not authenticated, don't render anything (will redirect)
-  if (!isAuthenticated) {
-    return null;
+  // If not authenticated, show a small fallback with manual link
+  if (!isAuthenticated && pathname !== '/admin/login') {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 mb-2">Redirecting to admin login…</p>
+          <a href="/admin/login" className="text-green-600 underline">Go to Admin Login</a>
+        </div>
+      </div>
+    );
   }
 
   // Show admin layout with sidebar

@@ -186,23 +186,23 @@ const LandingPage = () => {
       </div>
 
       {/* Hero */}
-      <section className="w-full flex justify-center items-center py-6 sm:py-8 md:py-12">
+      <section className="w-full flex justify-center items-center py-7 sm:py-10 md:py-14">
         <motion.div
-          className="relative max-w-7xl w-full mx-4 sm:mx-6 lg:mx-8 rounded-2xl sm:rounded-3xl shadow-xl overflow-hidden border border-green-200"
+          className="relative max-w-7xl w-full mx-4 sm:mx-6 lg:mx-8 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden border border-green-200 min-h-[360px] sm:min-h-[460px] md:min-h-[560px]"
           style={{
             background:
-              "radial-gradient(circle at 0% 0%, #059669 0%, #34d399 30%, #fff 70%)"
+              "linear-gradient(90deg, rgba(5,150,105,0.15) 0%, rgba(52,211,153,0.18) 40%, rgba(255,255,255,1) 100%)"
           }}
           initial="hidden"
           animate="visible"
           variants={containerVariants}
         >
-          <div className="relative z-10 flex flex-col items-center px-4 sm:px-6 md:px-8 lg:px-12 py-8 sm:py-12 md:py-16 lg:py-20">
+          <div className="relative z-10 flex flex-col items-center px-5 sm:px-8 md:px-12 lg:px-16 py-10 sm:py-14 md:py-18 lg:py-20">
             <motion.h1
               className="text-center font-bold mb-4 sm:mb-6 leading-tight"
               style={{
                 fontFamily: "Inter, sans-serif",
-                fontSize: "clamp(24px, 5vw, 65px)"
+                fontSize: "clamp(32px, 5.5vw, 80px)"
               }}
               variants={itemVariants}
             >
@@ -219,7 +219,7 @@ const LandingPage = () => {
               className="text-center text-gray-700 max-w-2xl mb-6 sm:mb-8 px-2 sm:px-0"
               style={{
                 fontFamily: "Inter, sans-serif",
-                fontSize: "clamp(14px, 2vw, 18px)"
+                fontSize: "clamp(15px, 2.2vw, 18px)"
               }}
               variants={itemVariants}
             >
@@ -229,18 +229,18 @@ const LandingPage = () => {
             </motion.p>
 
             <motion.div
-              className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-6 sm:mb-8 w-full max-w-2xl"
+              className="flex flex-col sm:flex-row gap-3.5 sm:gap-4 mb-7 sm:mb-9 w-full max-w-2xl"
               variants={itemVariants}
             >
-              <Link href="/Signup" className="flex-1">
-                <button className="w-full flex items-center justify-center px-3 sm:px-6 py-3 rounded-full shadow-lg font-bold text-white bg-green-600 hover:bg-green-700 transition hover:scale-105 text-sm sm:text-base whitespace-nowrap cursor-pointer" suppressHydrationWarning>
+              <Link href="/CarbonCalculator" className="flex-1">
+                <button aria-label="Calculate My Carbon Footprint" className="w-full flex items-center justify-center px-5 sm:px-7 py-3.5 rounded-full shadow-xl font-bold text-white bg-green-600 hover:bg-green-700 transition hover:scale-105 text-sm sm:text-base whitespace-nowrap cursor-pointer" suppressHydrationWarning>
                   <span className="hidden sm:inline">Calculate My Carbon Footprint</span>
                   <span className="sm:hidden">Calculate My Carbon Footprint</span>
                   <HiArrowRight className="ml-2 w-4 h-4 sm:w-5 sm:h-5" />
                 </button>
               </Link>
-              <Link href="/Signup" className="flex-1">
-                <button className="w-full bg-white border-2 border-green-400 text-green-600 rounded-full shadow-lg px-3 sm:px-6 py-3 hover:shadow-xl hover:bg-green-50 transition hover:scale-105 text-sm sm:text-base whitespace-nowrap cursor-pointer">
+              <Link href="/community" className="flex-1">
+                <button aria-label="Join the Community" className="w-full bg-white border-2 border-green-400 text-green-600 rounded-full shadow-xl px-5 sm:px-7 py-3.5 hover:shadow-2xl hover:bg-green-50 transition hover:scale-105 text-sm sm:text-base whitespace-nowrap cursor-pointer">
                   Join the Community
                 </button>
               </Link>

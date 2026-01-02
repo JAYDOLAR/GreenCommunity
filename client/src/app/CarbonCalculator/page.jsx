@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { useUser } from '@/context/UserContext';
 
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -75,6 +76,86 @@ const CarbonCalculator = () => {
 
   
   const router = useRouter();
+  const { user, updateUser } = useUser();
+
+  // Helper: map codes to display names
+  const getCountryNameByCode = (code) => {
+    if (!code) return '';
+    const found = countries.find((c) => c.code === code);
+    return found?.name || '';
+  };
+  const getStateNameByCode = (code) => {
+    if (!code) return '';
+    const found = states.find((s) => s.code === code);
+    return found?.name || '';
+  };
+
+  // Persist location selection for dashboard display and update user context
+  useEffect(() => {
+    try {
+      const countryName = getCountryNameByCode(data.country);
+      const stateName = getStateNameByCode(data.state);
+      if (countryName || stateName) {
+        const payload = { stateName: stateName || '', countryName: countryName || '' };
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('selectedLocation', JSON.stringify(payload));
+        }
+        if (user && updateUser) {
+          const updatedUser = {
+            ...user,
+            userInfo: {
+              ...(user.userInfo || {}),
+              location: {
+                ...((user.userInfo && user.userInfo.location) || {}),
+                city: stateName || '',
+                country: countryName || ''
+              }
+            }
+          };
+          updateUser(updatedUser);
+        }
+      }
+    } catch {}
+  }, [data.country, data.state]);
+
+  // Prefill full name from user context/localStorage after signup/login
+  useEffect(() => {
+    try {
+      const cachedUserRaw = typeof window !== 'undefined' ? localStorage.getItem('userData') : null;
+      let cachedName = '';
+      if (cachedUserRaw) {
+        try {
+          const parsed = JSON.parse(cachedUserRaw);
+          cachedName = parsed?.name || '';
+        } catch {
+          cachedName = '';
+        }
+      }
+      const nameFromContext = user?.name || cachedName;
+      if (nameFromContext && !data.fullName) {
+        setData(prev => ({ ...prev, fullName: nameFromContext }));
+      }
+    } catch {
+      // no-op
+    }
+  }, [user]);
+
+  // When user edits full name here, reflect it in user context for dashboard/header
+  useEffect(() => {
+    try {
+      const newName = (data.fullName || '').trim();
+      if (!newName) return;
+      if (user && user.name !== newName && updateUser) {
+        updateUser({ ...user, name: newName });
+      } else if (!user && typeof window !== 'undefined') {
+        // Persist name for fallback if user is not yet in context
+        const existing = localStorage.getItem('userData');
+        let parsed = {};
+        try { parsed = existing ? JSON.parse(existing) : {}; } catch {}
+        localStorage.setItem('userData', JSON.stringify({ ...parsed, name: newName }));
+      }
+    } catch {}
+  }, [data.fullName]);
 
   // Get country code for mobile number
   const getCountryCode = (countryCode) => {
@@ -667,8 +748,8 @@ const CarbonCalculator = () => {
         }
       }, 100);
     } else {
-      // Redirect to calculate footprint page after completing all steps
-      router.push('/carbon-calculator/result');
+      // All steps completed → go to dashboard
+      router.push('/dashboard');
     }
   };
 

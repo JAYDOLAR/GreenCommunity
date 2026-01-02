@@ -138,6 +138,7 @@ const Dashboard = () => {
             <p className="text-base sm:text-lg md:text-xl text-muted-foreground">Here's your environmental impact overview</p>
           </div>
         </div>
+
       </div>
 
       {/* Key Metrics Cards with Staggered Animation */}

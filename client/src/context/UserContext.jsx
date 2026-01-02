@@ -100,6 +100,21 @@ export function UserProvider({ children }) {
         localStorage.setItem('token', token);
         // Clean URL using Next.js router
         router.replace(window.location.pathname, undefined, { shallow: true });
+        // After setting token on OAuth success, decide where to go based on intent
+        try {
+          const intent = localStorage.getItem('oauthIntent');
+          if (intent) {
+            // We will redirect after we fetch user to ensure context is updated
+            setTimeout(() => {
+              if (intent === 'signup') {
+                router.replace('/CarbonCalculator');
+              } else {
+                router.replace('/dashboard');
+              }
+              localStorage.removeItem('oauthIntent');
+            }, 0);
+          }
+        } catch {}
       }
       
       if (!token) {
@@ -157,6 +172,24 @@ export function UserProvider({ children }) {
     }
     fetchUser();
   }, [isClient]);
+
+  // After user is established (including OAuth flows without query params),
+  // honor stored oauth intent for final redirect and then clear it.
+  useEffect(() => {
+    if (!isClient) return;
+    if (!user) return;
+    try {
+      const intent = localStorage.getItem('oauthIntent');
+      if (intent) {
+        if (intent === 'signup') {
+          router.replace('/CarbonCalculator');
+        } else {
+          router.replace('/dashboard');
+        }
+        localStorage.removeItem('oauthIntent');
+      }
+    } catch {}
+  }, [user, isClient]);
 
   return (
     <UserContext.Provider value={{ user, updateUser, loginAndSetUser, refreshUser, clearUser, isLoading, backendStatus }}>

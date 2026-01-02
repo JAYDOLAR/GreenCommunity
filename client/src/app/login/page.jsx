@@ -343,6 +343,11 @@ export default function LoginPage() {
   };
   
   const handleGoogleLogin = () => {
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('oauthIntent', 'login');
+      }
+    } catch {}
     authAPI.googleLogin();
   };
 
