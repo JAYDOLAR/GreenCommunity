@@ -1,4 +1,4 @@
-import FootprintLog from "../models/FootprintLog.model.js";
+import { getFootprintLogModel } from "../models/FootprintLog.model.js";
 import "../models/User.model.js"; // Ensure User model is registered
 import ipcc from "../lib/ipccEmissionCalculator.js";
 
@@ -27,6 +27,7 @@ export async function createLog(req, res) {
         factors: req.body.calculationFactors || {},
       };
     }
+    const FootprintLog = await getFootprintLogModel();
     const log = await FootprintLog.create({
       ...req.body,
       user: req.user._id,
@@ -69,6 +70,7 @@ export async function getUserLogs(req, res) {
       if (endDate) query.createdAt.$lte = new Date(endDate);
     }
 
+    const FootprintLog = await getFootprintLogModel();
     const logs = await FootprintLog.find(query).sort({ createdAt: -1 });
     res.json(logs);
   } catch (err) {
@@ -79,6 +81,7 @@ export async function getUserLogs(req, res) {
 // Get a single log by ID
 export async function getLogById(req, res) {
   try {
+    const FootprintLog = await getFootprintLogModel();
     const log = await FootprintLog.findOne({
       _id: req.params.id,
       user: req.user._id,
@@ -93,6 +96,7 @@ export async function getLogById(req, res) {
 // Update a log
 export async function updateLog(req, res) {
   try {
+    const FootprintLog = await getFootprintLogModel();
     const log = await FootprintLog.findOneAndUpdate(
       { _id: req.params.id, user: req.user._id },
       req.body,
@@ -108,6 +112,7 @@ export async function updateLog(req, res) {
 // Delete a log
 export async function deleteLog(req, res) {
   try {
+    const FootprintLog = await getFootprintLogModel();
     const log = await FootprintLog.findOneAndDelete({
       _id: req.params.id,
       user: req.user._id,
@@ -144,6 +149,7 @@ export async function getTotalEmissions(req, res) {
       if (endDate) match.createdAt.$lte = new Date(endDate);
     }
 
+    const FootprintLog = await getFootprintLogModel();
     const result = await FootprintLog.aggregate([
       { $match: match },
       { $group: { _id: null, total: { $sum: "$emission" } } },
@@ -158,6 +164,7 @@ export async function getTotalEmissions(req, res) {
 export async function getEmissionsByActivityType(req, res) {
   try {
     const match = { user: req.user._id };
+    const FootprintLog = await getFootprintLogModel();
     const result = await FootprintLog.aggregate([
       { $match: match },
       { $group: { _id: "$activityType", total: { $sum: "$emission" } } },
@@ -172,6 +179,7 @@ export async function getEmissionsByActivityType(req, res) {
 export async function getEmissionsByCategory(req, res) {
   try {
     const match = { user: req.user._id };
+    const FootprintLog = await getFootprintLogModel();
     const result = await FootprintLog.aggregate([
       { $match: match },
       { $group: { _id: "$category", total: { $sum: "$emission" } } },
