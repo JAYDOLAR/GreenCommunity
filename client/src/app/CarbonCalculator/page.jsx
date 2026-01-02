@@ -10,10 +10,10 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { 
-  Globe, 
-  Users, 
-  Car, 
+import {
+  Globe,
+  Users,
+  Car,
   Plane,
   Utensils,
   Beef,
@@ -38,6 +38,8 @@ import {
   RefreshCw,
   AlertCircle
 } from 'lucide-react';
+import { toast } from 'react-hot-toast';
+import { useFootprintLog } from '@/lib/useFootprintLog';
 
 const CarbonCalculator = () => {
   const [step, setStep] = useState(1);
@@ -73,7 +75,9 @@ const CarbonCalculator = () => {
   const [isUploading, setIsUploading] = useState(false);
   const sidebarRef = useRef(null);
 
-  
+  // Footprint log integration
+  const { createLog, loading: logLoading } = useFootprintLog();
+
   const router = useRouter();
 
   // Get country code for mobile number
@@ -327,7 +331,7 @@ const CarbonCalculator = () => {
           'X-CSCAPI-KEY': 'YOUR_API_KEY' // You'll need to get a free API key from https://countrystatecity.in/
         }
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         const sortedCountries = data
@@ -380,7 +384,7 @@ const CarbonCalculator = () => {
           'X-CSCAPI-KEY': 'YOUR_API_KEY' // You'll need to get a free API key from https://countrystatecity.in/
         }
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         const sortedStates = data
@@ -593,7 +597,7 @@ const CarbonCalculator = () => {
   const handlePhotoUpload = (e) => {
     const file = e.target.files[0];
     setPhotoError('');
-    
+
     if (!file) {
       return;
     }
@@ -614,7 +618,7 @@ const CarbonCalculator = () => {
     setIsUploading(true);
 
     const reader = new FileReader();
-    
+
     reader.onload = (e) => {
       try {
         setData(prev => ({ ...prev, photo: e.target.result }));
@@ -652,23 +656,109 @@ const CarbonCalculator = () => {
     e.target.value = '';
   };
 
-  const handleNext = () => {
+  const calculateCarbonFootprint = () => {
+    // Simple carbon footprint calculation based on user inputs
+    let totalEmissions = 0;
+
+    // Transportation emissions
+    const carMiles = parseFloat(data.carMiles) || 0;
+    const carTypeMultiplier = data.carType === 'gas' ? 0.4 : data.carType === 'hybrid' ? 0.25 : 0.1;
+    totalEmissions += carMiles * carTypeMultiplier * 52; // Per year
+
+    // Flight emissions
+    const shortFlights = parseFloat(data.shortFlights) || 0;
+    const longFlights = parseFloat(data.longFlights) || 0;
+    totalEmissions += shortFlights * 1000 * 0.2; // kg CO2 per mile for short flights
+    totalEmissions += longFlights * 2000 * 0.25; // kg CO2 per mile for long flights
+
+    // Diet emissions (annual)
+    const dietMultiplier = data.diet === 'high-meat' ? 1000 : data.diet === 'some-meat' ? 750 : 500;
+    totalEmissions += dietMultiplier;
+
+    // Housing emissions
+    const householdSize = parseFloat(data.householdSize) || 1;
+    const homeSize = data.homeSize === 'large' ? 3000 : data.homeSize === 'medium' ? 2000 : 1000;
+    totalEmissions += (homeSize * 5.0) / householdSize; // Divided by household members
+
+    return totalEmissions;
+  };
+
+  const handleNext = async () => {
     if (step < 14) {
       setStep(step + 1);
       // Auto-scroll to the new step in sidebar
       setTimeout(() => {
         const element = document.getElementById(`sidebar-item-${step + 1}`);
         if (element) {
-          element.scrollIntoView({ 
-            behavior: 'smooth', 
+          element.scrollIntoView({
+            behavior: 'smooth',
             block: 'center',
             inline: 'center'
           });
         }
       }, 100);
     } else {
-      // Redirect to calculate footprint page after completing all steps
-      router.push('/carbon-calculator/result');
+      // Calculate carbon footprint and save to API
+      try {
+        setLoading(true);
+        const totalEmissions = calculateCarbonFootprint();
+
+        // Create a comprehensive footprint log entry
+        const logData = {
+          activityType: 'other',
+          quantity: 1,
+          selectedDate: new Date(),
+          activity: 'Annual Carbon Footprint Assessment',
+          details: {
+            totalEmissions: totalEmissions,
+            breakdown: {
+              transportation: {
+                carMiles: data.carMiles,
+                carType: data.carType,
+                shortFlights: data.shortFlights,
+                longFlights: data.longFlights,
+                publicTransit: data.publicTransit
+              },
+              diet: {
+                type: data.diet,
+                redMeat: data.redMeat,
+                otherProtein: data.otherProtein,
+                dairy: data.dairy
+              },
+              housing: {
+                size: data.homeSize,
+                householdSize: data.householdSize
+              },
+              lifestyle: {
+                pets: data.pets,
+                furnishings: data.furnishings,
+                clothes: data.clothes,
+                supplies: data.supplies
+              }
+            },
+            userProfile: {
+              fullName: data.fullName,
+              country: data.country,
+              state: data.state,
+              mobile: data.mobile
+            },
+            unit: 'kg CO2 annually',
+            category: 'assessment',
+            calculationMethod: 'comprehensive-lifestyle-assessment'
+          }
+        };
+
+        await createLog(logData);
+        toast.success(`Carbon footprint calculated: ${totalEmissions.toFixed(1)} kg CO₂ annually`);
+
+        // Redirect to footprint log to see the results
+        router.push('/footprintlog');
+      } catch (error) {
+        console.error('Failed to save carbon footprint:', error);
+        toast.error('Failed to save carbon footprint assessment');
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -679,8 +769,8 @@ const CarbonCalculator = () => {
       setTimeout(() => {
         const element = document.getElementById(`sidebar-item-${step - 1}`);
         if (element) {
-          element.scrollIntoView({ 
-            behavior: 'smooth', 
+          element.scrollIntoView({
+            behavior: 'smooth',
             block: 'center',
             inline: 'center'
           });
@@ -707,7 +797,7 @@ const CarbonCalculator = () => {
   ];
 
   const getCurrentStepTitle = () => {
-    switch(step) {
+    switch (step) {
       case 1: return "Let's start with your personal information";
       case 2: return "Where are you located?";
       case 3: return "How can we reach you?";
@@ -727,7 +817,7 @@ const CarbonCalculator = () => {
   };
 
   const getCurrentStepDescription = () => {
-    switch(step) {
+    switch (step) {
       case 1: return "Please provide your basic information to get started.";
       case 2: return "Select your country and state to help us calculate your carbon footprint accurately.";
       case 3: return "We'll use this to send you updates about your carbon footprint and environmental tips.";
@@ -768,9 +858,9 @@ const CarbonCalculator = () => {
                 id="photo-upload"
                 disabled={isUploading}
               />
-              <Button 
-                type="button" 
-                variant="outline" 
+              <Button
+                type="button"
+                variant="outline"
                 className="flex items-center gap-3 w-full sm:w-auto border-green-200 hover:border-green-300 hover:bg-green-50 h-12 px-4"
                 disabled={isUploading}
                 onClick={triggerFileInput}
@@ -892,7 +982,7 @@ const CarbonCalculator = () => {
 
   const renderMobileStep = () => {
     const countryCode = getCountryCode(data.country);
-    
+
     return (
       <div className="space-y-6 md:space-y-6 lg:space-y-7">
         <div className="max-w-lg mx-auto">
@@ -933,11 +1023,10 @@ const CarbonCalculator = () => {
             <Button
               key={option.value}
               variant={currentValue === option.value ? "default" : "outline"}
-              className={`justify-start h-14 md:h-14 lg:h-16 text-left font-normal text-base md:text-base lg:text-base transition-all duration-200 ${
-                currentValue === option.value 
-                  ? "bg-green-600 hover:bg-green-700 border-green-600 text-white shadow-md" 
+              className={`justify-start h-14 md:h-14 lg:h-16 text-left font-normal text-base md:text-base lg:text-base transition-all duration-200 ${currentValue === option.value
+                  ? "bg-green-600 hover:bg-green-700 border-green-600 text-white shadow-md"
                   : "border-gray-300 hover:border-green-300 hover:bg-green-50 text-gray-700"
-              }`}
+                }`}
               onClick={() => handleInputChange(field, option.value)}
             >
               {option.label}
@@ -949,7 +1038,7 @@ const CarbonCalculator = () => {
   );
 
   const renderCurrentStep = () => {
-    switch(step) {
+    switch (step) {
       case 1:
         return renderPersonalInfoStep();
       case 2:
@@ -1046,7 +1135,7 @@ const CarbonCalculator = () => {
   };
 
   const isStepComplete = () => {
-    switch(step) {
+    switch (step) {
       case 1: return !!data.fullName;
       case 2: return !!data.country && !!data.state;
       case 3: return !!data.mobile;
@@ -1085,23 +1174,22 @@ const CarbonCalculator = () => {
             const Icon = category.icon;
             const isActive = category.id === step;
             const isCompleted = category.completed;
-            
+
             return (
               <div
                 key={category.id}
                 id={`sidebar-item-${category.id}`}
-                className={`flex items-center gap-3 md:gap-3 lg:gap-3 p-3 md:p-3 lg:p-3 rounded-lg transition-colors cursor-pointer whitespace-nowrap md:whitespace-normal lg:whitespace-normal ${
-                  isActive ? 'bg-green-100 text-green-700 border border-green-200' : 
-                  isCompleted ? 'text-success bg-success/5' : 'text-muted-foreground hover:text-foreground hover:bg-gray-50'
-                }`}
+                className={`flex items-center gap-3 md:gap-3 lg:gap-3 p-3 md:p-3 lg:p-3 rounded-lg transition-colors cursor-pointer whitespace-nowrap md:whitespace-normal lg:whitespace-normal ${isActive ? 'bg-green-100 text-green-700 border border-green-200' :
+                    isCompleted ? 'text-success bg-success/5' : 'text-muted-foreground hover:text-foreground hover:bg-gray-50'
+                  }`}
                 onClick={() => {
                   setStep(category.id);
                   // Auto-scroll to the selected item
                   setTimeout(() => {
                     const element = document.getElementById(`sidebar-item-${category.id}`);
                     if (element) {
-                      element.scrollIntoView({ 
-                        behavior: 'smooth', 
+                      element.scrollIntoView({
+                        behavior: 'smooth',
                         block: 'center',
                         inline: 'center'
                       });
@@ -1109,10 +1197,9 @@ const CarbonCalculator = () => {
                   }, 100);
                 }}
               >
-                <div className={`w-7 h-7 md:w-8 md:h-8 lg:w-9 lg:h-9 rounded-lg flex items-center justify-center ${
-                  isActive ? 'bg-green-200' : 
-                  isCompleted ? 'bg-success/20' : 'bg-muted'
-                }`}>
+                <div className={`w-7 h-7 md:w-8 md:h-8 lg:w-9 lg:h-9 rounded-lg flex items-center justify-center ${isActive ? 'bg-green-200' :
+                    isCompleted ? 'bg-success/20' : 'bg-muted'
+                  }`}>
                   {isCompleted ? (
                     <Check className="h-4 w-4 md:h-4 md:w-4 lg:h-5 lg:w-5 text-success" />
                   ) : (
@@ -1189,32 +1276,39 @@ const CarbonCalculator = () => {
 
             <div className="flex gap-3 md:gap-4 lg:gap-5 justify-center md:justify-end lg:justify-end">
               {step > 1 && (
-                <Button 
-                  variant="outline" 
-                  onClick={handlePrevious} 
-                  size="default" 
+                <Button
+                  variant="outline"
+                  onClick={handlePrevious}
+                  size="default"
                   className="border-gray-300 hover:border-green-300 hover:bg-green-50 px-6 py-2"
                 >
                   Previous
                 </Button>
               )}
               {step > 3 && step < categories.length && (
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={handleNext}
-                  size="default" 
+                  size="default"
                   className="border-gray-300 hover:border-green-300 hover:bg-green-50 px-6 py-2"
                 >
                   Skip
                 </Button>
               )}
-              <Button 
+              <Button
                 onClick={handleNext}
-                disabled={!isStepComplete()}
+                disabled={!isStepComplete() || loading || logLoading}
                 className="bg-green-600 hover:bg-green-700 text-white shadow-md px-6 py-2"
                 size="default"
               >
-                {step === categories.length ? 'Calculate Footprint' : 'Continue'}
+                {loading || logLoading ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    {step === categories.length ? 'Calculating...' : 'Processing...'}
+                  </>
+                ) : (
+                  step === categories.length ? 'Calculate & Save Footprint' : 'Continue'
+                )}
               </Button>
             </div>
           </div>
@@ -1234,7 +1328,7 @@ const CarbonCalculator = () => {
                 </span>
               </div>
               <div className="w-full bg-muted rounded-full h-3">
-                <div 
+                <div
                   className="bg-gradient-primary h-3 rounded-full transition-all duration-500"
                   style={{ width: `${(categories.filter(c => c.completed).length / categories.length) * 100}%` }}
                 />

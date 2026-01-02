@@ -40,6 +40,48 @@ export async function createLog(req, res) {
   }
 }
 
+// Preview emissions calculation without saving to database
+export async function previewEmissions(req, res) {
+  try {
+    let calculation, emission;
+    const { activityType, activity, details } = req.body;
+    
+    if (activityType === "transport") {
+      calculation = ipcc.calculateTransport(details);
+      emission = calculation.emission;
+    } else if (activityType === "energy") {
+      calculation = ipcc.calculateEnergy(details);
+      emission = calculation.emission;
+    } else if (activityType === "food") {
+      calculation = ipcc.calculateFood(details);
+      emission = calculation.emission;
+    } else if (activityType === "waste") {
+      calculation = ipcc.calculateWaste(details);
+      emission = calculation.emission;
+    } else {
+      // For other activities, use manual calculation or default
+      emission = req.body.emission || 0;
+      calculation = {
+        method: "manual",
+        source: req.body.calculationSource || "user",
+        factors: req.body.calculationFactors || {},
+      };
+    }
+    
+    // Return the calculation without saving to database
+    res.json({
+      emission: emission,
+      calculation: calculation,
+      preview: true,
+      activityType: activityType,
+      activity: activity,
+      details: details
+    });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+}
+
 // Get all logs for the authenticated user with advanced filtering
 export async function getUserLogs(req, res) {
   try {
