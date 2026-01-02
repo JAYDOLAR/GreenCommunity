@@ -7,7 +7,6 @@ import { FcGoogle } from 'react-icons/fc';
 import { Eye, EyeOff, AlertCircle, X, Check } from 'lucide-react';
 import { authAPI } from '../../lib/api';
 import { useUser } from '@/context/UserContext';
-import { TESTING_CONFIG, isTestingMode } from '../../config/testing';
 
 // Simple JWT decode utility (for client-side use only)
 const decodeJWT = (token) => {
@@ -53,9 +52,6 @@ export default function LoginPage() {
   const [twoFactorCode, setTwoFactorCode] = useState('');
   const [showSuccessNotification, setShowSuccessNotification] = useState(false);
   
-  // Testing: Force 2FA for all logins
-  const [showTestingNote, setShowTestingNote] = useState(false);
-  
   // Client-side validation states
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
@@ -66,12 +62,10 @@ export default function LoginPage() {
     const params = new URLSearchParams(window.location.search);
     const requires2FAFromUrl = params.get('requires2FA') === 'true';
     const tempTokenFromUrl = params.get('tempToken');
-    const isTestMode = params.get('testMode') === 'true';
     
     if (requires2FAFromUrl && tempTokenFromUrl) {
       setRequires2FA(true);
       setTempToken(tempTokenFromUrl);
-      setShowTestingNote(isTestMode && TESTING_CONFIG.SHOW_TESTING_INDICATORS);
       
       // Remove query params from URL
       window.history.replaceState({}, document.title, window.location.pathname);
@@ -140,16 +134,6 @@ export default function LoginPage() {
 
     try {
       const data = await authAPI.login({ email, password });
-      
-      // TESTING: Force 2FA input for all users (controlled by config)
-      if (!data.requires2FA && isTestingMode()) {
-        // For testing: simulate 2FA requirement even if user doesn't have it enabled
-        setRequires2FA(true);
-        setTempToken('testing-token'); // Use a testing token
-        setShowTestingNote(TESTING_CONFIG.SHOW_TESTING_INDICATORS);
-        setIsSubmitting(false);
-        return;
-      }
       
       // Check if 2FA is required (normal flow)
       if (data.requires2FA && data.tempToken) {
@@ -220,35 +204,6 @@ export default function LoginPage() {
     
     try {
       console.log('Attempting 2FA verification:', { tempToken: tempToken?.substring(0, 20) + '...', code: twoFactorCode });
-      
-      // TESTING: For testing mode, accept specific test codes and proceed with original login
-      if (tempToken === 'testing-token') {
-        console.log('Testing mode: Checking for valid test code');
-        
-        // Check if the entered code is one of the accepted test codes
-        if (!TESTING_CONFIG.TEST_2FA_CODES.includes(twoFactorCode)) {
-          setError(`Invalid test code. Try one of: ${TESTING_CONFIG.TEST_2FA_CODES.join(', ')}`);
-          setErrorType('auth');
-          setIsSubmitting(false);
-          return;
-        }
-
-        // For testing mode, proceed with original login
-        await loginAndSetUser(() => authAPI.login({ email, password }));
-        
-        setIsSuccess(true);
-        
-        // Show success notification
-        setShowSuccessNotification(true);
-        
-        // Auto-hide success notification and redirect after 2 seconds
-        setTimeout(() => {
-          setShowSuccessNotification(false);
-          router.push('/dashboard');
-        }, 2000);
-        
-        return;
-      }
       
       // Normal 2FA verification flow - use loginAndSetUser to get full profile
       const data = await authAPI.verify2FALogin(tempToken, twoFactorCode);
@@ -432,19 +387,8 @@ export default function LoginPage() {
           <div className="text-center mb-4">
             <h2 className="text-xl font-semibold text-foreground">Two-Factor Authentication</h2>
             <p className="text-sm text-muted-foreground mt-1">
-              {showTestingNote ? (
-                <>
-                  <span className="text-orange-600 font-medium">TESTING MODE:</span> Enter one of these codes: {TESTING_CONFIG.TEST_2FA_CODES.join(', ')}
-                </>
-              ) : (
-                'Please enter the 6-digit code from your authenticator app'
-              )}
+              Please enter the 6-digit code from your authenticator app
             </p>
-            {showTestingNote && (
-              <div className="mt-2 p-2 bg-orange-50 border border-orange-200 rounded text-xs text-orange-700">
-                <strong>Testing Mode Active:</strong> This forces 2FA for all users. Valid test codes: {TESTING_CONFIG.TEST_2FA_CODES.join(', ')}
-              </div>
-            )}
           </div>
           
           <div>
@@ -497,7 +441,6 @@ export default function LoginPage() {
               setTempToken('');
               setTwoFactorCode('');
               setError('');
-              setShowTestingNote(false);
             }}
             className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors"
           >

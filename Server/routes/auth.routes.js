@@ -2,7 +2,6 @@ import express from 'express';
 import passport from 'passport';
 import jwt from 'jsonwebtoken';
 import rateLimit from 'express-rate-limit';
-import { isTestingMode } from '../config/testing.js';
 import { 
   registerUser, 
   loginUser, 
@@ -109,25 +108,7 @@ router.get('/google/callback',
     try {
       const redirectUrl = process.env.CLIENT_URL || 'http://localhost:3000';
       
-      // TESTING: Check if we should force 2FA for Google OAuth users
-      if (isTestingMode() && !req.user.twoFactorEnabled) {
-        // Store user info in session for 2FA verification
-        const tempToken = jwt.sign(
-          { 
-            id: req.user._id, 
-            role: 'temp-2fa-google',
-            email: req.user.email,
-            name: req.user.name
-          }, 
-          process.env.JWT_SECRET, 
-          { expiresIn: '10m' }
-        );
-        
-        // Redirect to login page with 2FA requirement
-        return res.redirect(`${redirectUrl}/login?requires2FA=true&tempToken=${tempToken}&testMode=true`);
-      }
-      
-      // Normal flow - check if user actually has 2FA enabled
+      // Check if user actually has 2FA enabled
       if (req.user.twoFactorEnabled) {
         // Generate temporary token for real 2FA verification
         const tempToken = jwt.sign(

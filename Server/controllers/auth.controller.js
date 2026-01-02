@@ -10,7 +10,6 @@ import { generateJwtId, hashData, calculateDelay } from '../utils/security.js';
 import { upload, deleteImage, cloudinary } from '../config/cloudinary.js';
 import speakeasy from 'speakeasy';
 import QRCode from 'qrcode';
-import { isTestingMode } from '../config/testing.js';
 
 
 // Generate JWT token with additional security
@@ -789,7 +788,7 @@ export const verify2FALogin = asyncHandler(async (req, res) => {
         // Verify the temporary token
         const decoded = jwt.verify(tempToken, process.env.JWT_SECRET);
         
-        if (decoded.role !== 'temp-2fa' && decoded.role !== 'temp-2fa-google') {
+        if (decoded.role !== 'temp-2fa') {
             return res.status(401).json({ message: 'Invalid temporary token' });
         }
         
@@ -798,25 +797,21 @@ export const verify2FALogin = asyncHandler(async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
         
-        // Handle testing mode for Google OAuth users
-        if (decoded.role === 'temp-2fa-google' && isTestingMode()) {
-            // In testing mode, accept specific test codes for Google OAuth users
-            const testCodes = ['123456', '000000', '111111', '999999'];
-            if (!testCodes.includes(token)) {
-                return res.status(400).json({ message: `Invalid test code. Valid codes: ${testCodes.join(', ')}` });
-            }
-            // Skip TOTP verification for testing
-        } else {
-            // Normal 2FA verification
-            const verified = speakeasy.totp.verify({
-                secret: user.twoFactorSecret,
-                encoding: 'base32',
-                token: token
-            });
-            
-            if (!verified) {
-                return res.status(400).json({ message: 'Invalid 2FA code' });
-            }
+        // Verify that user actually has 2FA enabled and has a secret
+        if (!user.twoFactorEnabled || !user.twoFactorSecret) {
+            return res.status(400).json({ message: 'Two-factor authentication is not enabled for this account' });
+        }
+        
+        // Verify the TOTP code
+        const verified = speakeasy.totp.verify({
+            secret: user.twoFactorSecret,
+            encoding: 'base32',
+            token: token,
+            window: 1 // Allow 1 time step tolerance for clock skew
+        });
+        
+        if (!verified) {
+            return res.status(400).json({ message: 'Invalid 2FA code' });
         }
         
         // Update last login info
