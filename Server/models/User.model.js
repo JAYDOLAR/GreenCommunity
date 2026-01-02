@@ -1,6 +1,8 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
-import { generateSecureToken, generateSecureCode, hashData } from '../utils/security.js';
+import crypto from 'node:crypto';
+import { generateSecureToken, generateSecureCode, hashData, isCommonPassword } from '../utils/security.js';
+import { getConnection, DB_NAMES } from '../config/databases.js';
 
 const userSchema = new mongoose.Schema({
   name: { 

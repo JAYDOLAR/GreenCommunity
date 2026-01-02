@@ -1,11 +1,13 @@
 import asyncHandler from '../utils/asyncHandler.js';
 import User from '../models/User.model.js';
-import { UserInfo } from '../models/UserInfo.model.js';
+import { UserInfo, initializeUserInfoModel } from '../models/UserInfo.model.js';
+import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'node:crypto';
 import { validationResult } from 'express-validator';
 import emailService from '../services/email.service.js';
-import { generateJwtId } from '../utils/security.js';
+import { generateJwtId, hashData, calculateDelay } from '../utils/security.js';
+import { upload, deleteImage, cloudinary } from '../config/cloudinary.js';
 import speakeasy from 'speakeasy';
 import QRCode from 'qrcode';
 import { isTestingMode } from '../config/testing.js';
@@ -470,6 +472,8 @@ export const updateProfile = asyncHandler(async (req, res) => {
     location,
     bio,
     preferredUnits,
+    firstName,
+    lastName,
     dateOfBirth,
     gender,
     profession
@@ -602,6 +606,9 @@ export const updateNotificationPreferences = asyncHandler(async (req, res) => {
     };
 
     // Update or create UserInfo record with notification preferences
+    const updatedUserInfo = await UserInfo.createOrUpdate(req.user.id, {
+      notifications: notificationPreferences
+    });
 
     res.status(200).json({
       message: 'Notification preferences updated successfully',
@@ -646,6 +653,9 @@ export const updateAppPreferences = asyncHandler(async (req, res) => {
     };
 
     // Update or create UserInfo record with app preferences
+    const updatedUserInfo = await UserInfo.createOrUpdate(req.user.id, {
+      preferences: appPreferences
+    });
 
     res.status(200).json({
       message: 'App preferences updated successfully',

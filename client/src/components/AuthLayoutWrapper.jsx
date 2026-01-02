@@ -31,22 +31,13 @@ export default function AuthLayoutWrapper({ children }) {
   const isLoginPage = pathname === '/login' || pathname.startsWith('/login');
   const isSignupPage = pathname === '/Signup' || pathname === '/signup' || pathname.startsWith('/Signup') || pathname.startsWith('/signup');
   
-  // Debug logging (remove this after fixing)
-  console.log('Current pathname:', pathname);
-  console.log('Is login page:', isLoginPage);
-  console.log('Is signup page:', isSignupPage);
-  console.log('Should skip layout:', shouldSkipLayout);
-  console.log('No layout routes:', noLayoutRoutes);
-  
   // Force skip layout for login and signup pages
   if (isLoginPage || isSignupPage) {
-    console.log('Forcing skip layout for auth page:', pathname);
     return <>{children}</>;
   }
   
   // Auth pages, landing page, and admin routes don't need main layout
   if (shouldSkipLayout) {
-    console.log('Skipping layout for:', pathname);
     return <>{children}</>;
   }
   
