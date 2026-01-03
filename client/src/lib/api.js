@@ -264,10 +264,33 @@ export const authAPI = {
     });
   },
 
-  verify2FALogin: async (tempToken, token) => {
+  verify2FALogin: async (tempToken, token, options = {}) => {
+    const body = {
+      tempToken,
+      token,
+      ...options
+    };
+    
     return apiRequest('/api/auth/2fa/verify-login', {
       method: 'POST',
-      body: JSON.stringify({ tempToken, token }),
+      body: JSON.stringify(body),
+    });
+  },
+
+  // Trusted device management
+  getTrustedDevices: async () => {
+    return apiRequest('/api/auth/trusted-devices');
+  },
+
+  removeTrustedDevice: async (deviceId) => {
+    return apiRequest(`/api/auth/trusted-devices/${deviceId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  clearAllTrustedDevices: async () => {
+    return apiRequest('/api/auth/trusted-devices', {
+      method: 'DELETE',
     });
   },
 };

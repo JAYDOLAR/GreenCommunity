@@ -1,4 +1,6 @@
-import { Schema, model } from "mongoose";
+import { Schema } from "mongoose";
+import mongoose from 'mongoose';
+import { getConnection } from '../config/databases.js';
 
 const FootprintLogSchema = new Schema(
   {
@@ -43,4 +45,14 @@ const FootprintLogSchema = new Schema(
 
 FootprintLogSchema.index({ user: 1, activityType: 1, date: -1 });
 
-export default model("FootprintLog", FootprintLogSchema);
+// Get footprint log model with footprint database connection
+const getFootprintLogModel = async () => {
+  const footprintConnection = await getConnection('FOOTPRINT_DB');
+  return footprintConnection.model('FootprintLog', FootprintLogSchema);
+};
+
+// For synchronous usage (when connection is already established)
+const FootprintLog = mongoose.model('FootprintLog', FootprintLogSchema);
+
+export { getFootprintLogModel };
+export default FootprintLog;

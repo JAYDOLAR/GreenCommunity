@@ -7,7 +7,7 @@ import { FcGoogle } from 'react-icons/fc';
 import { Eye, EyeOff, AlertCircle, X, Check } from 'lucide-react';
 import { authAPI } from '../../lib/api';
 import { useUser } from '@/context/UserContext';
-import { TESTING_CONFIG, isTestingMode } from '../../config/testing';
+import { getDeviceInfo } from '../../lib/deviceUtils';
 
 // Simple JWT decode utility (for client-side use only)
 const decodeJWT = (token) => {
@@ -53,8 +53,10 @@ export default function LoginPage() {
   const [twoFactorCode, setTwoFactorCode] = useState('');
   const [showSuccessNotification, setShowSuccessNotification] = useState(false);
   
-  // Testing: Force 2FA for all logins
-  const [showTestingNote, setShowTestingNote] = useState(false);
+  // Remember device states
+  const [rememberDevice, setRememberDevice] = useState(false);
+  const [rememberDays, setRememberDays] = useState(30);
+  const [customDeviceName, setCustomDeviceName] = useState('');
   
   // Client-side validation states
   const [emailError, setEmailError] = useState('');
@@ -66,12 +68,10 @@ export default function LoginPage() {
     const params = new URLSearchParams(window.location.search);
     const requires2FAFromUrl = params.get('requires2FA') === 'true';
     const tempTokenFromUrl = params.get('tempToken');
-    const isTestMode = params.get('testMode') === 'true';
     
     if (requires2FAFromUrl && tempTokenFromUrl) {
       setRequires2FA(true);
       setTempToken(tempTokenFromUrl);
-      setShowTestingNote(isTestMode && TESTING_CONFIG.SHOW_TESTING_INDICATORS);
       
       // Remove query params from URL
       window.history.replaceState({}, document.title, window.location.pathname);
@@ -140,16 +140,6 @@ export default function LoginPage() {
 
     try {
       const data = await authAPI.login({ email, password });
-      
-      // TESTING: Force 2FA input for all users (controlled by config)
-      if (!data.requires2FA && isTestingMode()) {
-        // For testing: simulate 2FA requirement even if user doesn't have it enabled
-        setRequires2FA(true);
-        setTempToken('testing-token'); // Use a testing token
-        setShowTestingNote(TESTING_CONFIG.SHOW_TESTING_INDICATORS);
-        setIsSubmitting(false);
-        return;
-      }
       
       // Check if 2FA is required (normal flow)
       if (data.requires2FA && data.tempToken) {
@@ -221,79 +211,19 @@ export default function LoginPage() {
     try {
       console.log('Attempting 2FA verification:', { tempToken: tempToken?.substring(0, 20) + '...', code: twoFactorCode });
       
-      // TESTING: For testing mode, accept specific test codes and proceed with original login
-      if (tempToken === 'testing-token') {
-        console.log('Testing mode: Checking for valid test code');
-        
-        // Check if the entered code is one of the accepted test codes
-        if (!TESTING_CONFIG.TEST_2FA_CODES.includes(twoFactorCode)) {
-          setError(`Invalid test code. Try one of: ${TESTING_CONFIG.TEST_2FA_CODES.join(', ')}`);
-          setErrorType('auth');
-          setIsSubmitting(false);
-          return;
-        }
-
-        // For testing mode, proceed with original login
-        await loginAndSetUser(() => authAPI.login({ email, password }));
-        
-        setIsSuccess(true);
-        
-        // Show success notification
-        setShowSuccessNotification(true);
-        
-        // Auto-hide success notification and redirect after 2 seconds
-        setTimeout(() => {
-          setShowSuccessNotification(false);
-          router.push('/dashboard');
-        }, 2000);
-        
-        return;
-      }
-      
-      // Special handling for Google OAuth testing
-      const decoded = tempToken ? decodeJWT(tempToken) : null;
-      if (decoded && decoded.role === 'temp-2fa-google') {
-        // For Google OAuth, we have the user info from the token
-        const userData = { 
-          id: decoded.id, 
-          name: decoded.name, 
-          email: decoded.email, 
-          isGoogleAuth: true 
-        };
-        
-        // Manually set user and token
-        updateUser(userData);
-        localStorage.setItem('token', tempToken); // Use temp token for simplicity
-        
-        setIsSuccess(true);
-        setShowSuccessNotification(true);
-        
-        setTimeout(() => {
-          setShowSuccessNotification(false);
-          router.push('/dashboard');
-        }, 2000);
-        
-        return;
-      }
-      
-      // Perform the original login again to get the real token and full profile
-      await loginAndSetUser(() => authAPI.login({ email, password }));
-      
-      setIsSuccess(true);
-      
-      // Show success notification
-      setShowSuccessNotification(true);
-      
-      // Auto-hide success notification and redirect after 2 seconds
-      setTimeout(() => {
-        setShowSuccessNotification(false);
-        router.push('/dashboard');
-      }, 2000);
-      
-      return;
+      // Prepare request data with remember device options
+      const deviceInfo = getDeviceInfo();
+      const requestData = {
+        tempToken,
+        token: twoFactorCode,
+        rememberDevice,
+        rememberDays: rememberDevice ? rememberDays : undefined,
+        deviceName: rememberDevice && customDeviceName ? customDeviceName : (rememberDevice ? deviceInfo.deviceName : undefined),
+        clientTimestamp: rememberDevice ? deviceInfo.timestamp : undefined // Send client device time
+      };
       
       // Normal 2FA verification flow - use loginAndSetUser to get full profile
-      const data = await authAPI.verify2FALogin(tempToken, twoFactorCode);
+      const data = await authAPI.verify2FALogin(requestData.tempToken, requestData.token, requestData);
       console.log('2FA verification successful:', data);
       
       // Use loginAndSetUser to store token and get full profile
@@ -479,19 +409,8 @@ export default function LoginPage() {
           <div className="text-center mb-4">
             <h2 className="text-xl font-semibold text-foreground">Two-Factor Authentication</h2>
             <p className="text-sm text-muted-foreground mt-1">
-              {showTestingNote ? (
-                <>
-                  <span className="text-orange-600 font-medium">TESTING MODE:</span> Enter one of these codes: {TESTING_CONFIG.TEST_2FA_CODES.join(', ')}
-                </>
-              ) : (
-                'Please enter the 6-digit code from your authenticator app'
-              )}
+              Please enter the 6-digit code from your authenticator app
             </p>
-            {showTestingNote && (
-              <div className="mt-2 p-2 bg-orange-50 border border-orange-200 rounded text-xs text-orange-700">
-                <strong>Testing Mode Active:</strong> This forces 2FA for all users. Valid test codes: {TESTING_CONFIG.TEST_2FA_CODES.join(', ')}
-              </div>
-            )}
           </div>
           
           <div>
@@ -510,6 +429,63 @@ export default function LoginPage() {
               className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary bg-card text-foreground placeholder:text-muted-foreground transition-colors border-border text-center text-lg font-mono"
               autoFocus
             />
+          </div>
+
+          {/* Remember Device Section */}
+          <div className="space-y-3 border-t pt-4">
+            <div className="flex items-center space-x-2">
+              <input
+                id="rememberDevice"
+                type="checkbox"
+                checked={rememberDevice}
+                onChange={(e) => setRememberDevice(e.target.checked)}
+                className="w-4 h-4 text-primary bg-background border-border rounded focus:ring-primary focus:ring-2"
+              />
+              <label htmlFor="rememberDevice" className="text-sm font-medium text-foreground">
+                Remember this device
+              </label>
+            </div>
+            
+            {rememberDevice && (
+              <div className="space-y-3 pl-6 border-l-2 border-border">
+                <div>
+                  <label htmlFor="rememberDays" className="block text-xs font-medium mb-1 text-muted-foreground">
+                    For how many days?
+                  </label>
+                  <select
+                    id="rememberDays"
+                    value={rememberDays}
+                    onChange={(e) => setRememberDays(parseInt(e.target.value))}
+                    className="w-full px-2 py-1 text-sm border rounded-md focus:outline-none focus:ring-1 focus:ring-primary bg-card text-foreground border-border"
+                  >
+                    <option value={7}>7 days</option>
+                    <option value={14}>14 days</option>
+                    <option value={30}>30 days</option>
+                    <option value={60}>60 days</option>
+                    <option value={90}>90 days</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label htmlFor="customDeviceName" className="block text-xs font-medium mb-1 text-muted-foreground">
+                    Device name (optional)
+                  </label>
+                  <input
+                    id="customDeviceName"
+                    type="text"
+                    placeholder={`Default: ${getDeviceInfo().deviceName}`}
+                    value={customDeviceName}
+                    onChange={(e) => setCustomDeviceName(e.target.value)}
+                    className="w-full px-2 py-1 text-sm border rounded-md focus:outline-none focus:ring-1 focus:ring-primary bg-card text-foreground placeholder:text-muted-foreground border-border"
+                    maxLength={50}
+                  />
+                </div>
+                
+                <p className="text-xs text-muted-foreground">
+                  You won&apos;t need to enter 2FA codes on this device for the selected period.
+                </p>
+              </div>
+            )}
           </div>
           
           <button
@@ -544,7 +520,6 @@ export default function LoginPage() {
               setTempToken('');
               setTwoFactorCode('');
               setError('');
-              setShowTestingNote(false);
             }}
             className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors"
           >

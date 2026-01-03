@@ -36,6 +36,7 @@ import toast from 'react-hot-toast';
 
 import ProtectedLayout from '@/components/ProtectedLayout';
 import ChatBot from '@/components/ChatBot';
+import TrustedDevicesManager from '@/components/TrustedDevicesManager';
 
 const Settings = () => {
   const { t } = useTranslation();
@@ -833,6 +834,13 @@ const Settings = () => {
                   <Button type="submit" className="btn-hero">Submit</Button>
                   {passwordMessage && <div className="text-sm text-primary mt-2">{passwordMessage}</div>}
                 </form>
+              )}
+              
+              {/* Trusted Devices Management - Only show if 2FA is enabled */}
+              {user?.twoFactorEnabled && (
+                <div className="mt-6">
+                  <TrustedDevicesManager />
+                </div>
               )}
             </CardContent>
           </Card>

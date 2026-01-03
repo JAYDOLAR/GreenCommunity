@@ -2,7 +2,6 @@ import express from 'express';
 import passport from 'passport';
 import jwt from 'jsonwebtoken';
 import rateLimit from 'express-rate-limit';
-import { isTestingMode } from '../config/testing.js';
 import { 
   registerUser, 
   loginUser, 
@@ -24,7 +23,10 @@ import {
   generate2FASecret,
   verify2FAToken,
   disable2FA,
-  verify2FALogin
+  verify2FALogin,
+  getTrustedDevices,
+  removeTrustedDevice,
+  clearAllTrustedDevices
 } from '../controllers/auth.controller.js';
 import { 
   validateRegister, 
@@ -97,6 +99,11 @@ router.post('/2fa/verify', authenticate, verify2FAToken);
 router.post('/2fa/disable', authenticate, disable2FA);
 router.post('/2fa/verify-login', verify2FALogin);
 
+// Trusted Devices Routes
+router.get('/trusted-devices', authenticate, getTrustedDevices);
+router.delete('/trusted-devices/:deviceId', authenticate, removeTrustedDevice);
+router.delete('/trusted-devices', authenticate, clearAllTrustedDevices);
+
 // Google OAuth - Start login flow
 router.get('/google', passport.authenticate('google', {
   scope: ['profile', 'email']
@@ -109,27 +116,47 @@ router.get('/google/callback',
     try {
       const redirectUrl = process.env.CLIENT_URL || 'http://localhost:3000';
       
-      // TESTING: Check if we should force 2FA for Google OAuth users
-      if (isTestingMode() && !req.user.twoFactorEnabled) {
-        // Store user info in session for 2FA verification
-        const tempToken = jwt.sign(
-          { 
-            id: req.user._id, 
-            role: 'temp-2fa-google',
-            email: req.user.email,
-            name: req.user.name
-          }, 
-          process.env.JWT_SECRET, 
-          { expiresIn: '10m' }
-        );
-        
-        // Redirect to login page with 2FA requirement
-        return res.redirect(`${redirectUrl}/login?requires2FA=true&tempToken=${tempToken}&testMode=true`);
-      }
+      // Get accurate IP address (handle proxies/load balancers)
+      const getClientIP = (req) => {
+        return req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
+               req.headers['x-real-ip'] ||
+               req.connection?.remoteAddress ||
+               req.socket?.remoteAddress ||
+               req.ip ||
+               'unknown';
+      };
       
-      // Normal flow - check if user actually has 2FA enabled
+      // Check if user actually has 2FA enabled
       if (req.user.twoFactorEnabled) {
-        // Generate temporary token for real 2FA verification
+        // Check if this device is trusted
+        const userAgent = req.get('User-Agent');
+        const ipAddress = getClientIP(req);
+        
+        if (req.user.isDeviceTrusted(userAgent, ipAddress)) {
+          // Device is trusted, skip 2FA
+          const token = jwt.sign({ id: req.user._id }, process.env.JWT_SECRET, {
+            expiresIn: '1d'
+          });
+
+          // Update last login info
+          req.user.lastLogin = new Date();
+          req.user.ipAddress = ipAddress;
+          req.user.userAgent = userAgent;
+          req.user.save();
+
+          // Set HTTP-only cookie for security
+          res.cookie('authToken', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 24 * 60 * 60 * 1000 // 24 hours
+          });
+
+          // Redirect with token as URL parameter for client-side storage
+          return res.redirect(`${redirectUrl}/dashboard?auth=success&token=${token}`);
+        }
+        
+        // Device not trusted - require 2FA verification
         const tempToken = jwt.sign(
           { 
             id: req.user._id, 
@@ -151,7 +178,7 @@ router.get('/google/callback',
 
       // Update last login info
       req.user.lastLogin = new Date();
-      req.user.ipAddress = req.ip;
+      req.user.ipAddress = getClientIP(req);
       req.user.userAgent = req.get('User-Agent');
       req.user.save();
 

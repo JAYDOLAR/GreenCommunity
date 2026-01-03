@@ -16,9 +16,10 @@ if (!process.env.MONGO_URI) {
 const DB_CONFIG = {
   AUTH_DB: 'greencommunity-auth',
   USER_INFO_DB: 'greencommunity-user-info',
-  MARKETPLACE_DB: 'greencommunity-marketplace', 
+  MARKETPLACE_DB: 'greencommunity-marketplace',
   COMMUNITY_DB: 'greencommunity-community',
-  ANALYTICS_DB: 'greencommunity-analytics'
+  ANALYTICS_DB: 'greencommunity-analytics',
+  FOOTPRINT_DB: 'greencommunity-footprint'
 };
 
 // Store database connections
@@ -35,7 +36,7 @@ export const getConnection = async (dbName) => {
   }
 
   const dbFullName = DB_CONFIG[dbName];
-  
+
   if (connections[dbFullName]) {
     return connections[dbFullName];
   }
@@ -50,7 +51,7 @@ export const getConnection = async (dbName) => {
 
     connections[dbFullName] = connection;
     console.log(`✅ MongoDB connected to ${dbFullName}`);
-    
+
     // Handle connection events
     connection.on('error', (error) => {
       console.error(`❌ MongoDB error in ${dbFullName}:`, error);
@@ -81,16 +82,25 @@ export const connectAllDatabases = async () => {
       socketTimeoutMS: 45000,
     });
     console.log(`✅ Default connection established to ${DB_CONFIG.AUTH_DB}`);
-    
+
+    // Connect to auth database
+    await getConnection('AUTH_DB');
+
     // Connect to user info database
     await getConnection('USER_INFO_DB');
-    
+
     // Connect to marketplace database
     await getConnection('MARKETPLACE_DB');
-    
+
     // Connect to community database  
     await getConnection('COMMUNITY_DB');
-    
+
+    // Connect to footprint database
+    await getConnection('FOOTPRINT_DB');
+
+    // Connect to analytics database
+    await getConnection('ANALYTICS_DB');
+
     console.log('🎉 All databases connected successfully');
   } catch (error) {
     console.error('❌ Failed to connect to databases:', error);

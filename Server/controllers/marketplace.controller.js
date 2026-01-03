@@ -1,6 +1,5 @@
 import asyncHandler from '../utils/asyncHandler.js';
 import { getProductModel } from '../models/Product.model.js';
-import User from '../models/User.model.js';
 import { validationResult } from 'express-validator';
 import mongoose from 'mongoose';
 
