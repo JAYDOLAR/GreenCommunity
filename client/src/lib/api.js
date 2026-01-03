@@ -41,24 +41,26 @@ const apiRequest = async (endpoint, options = {}) => {
     }
 
     let data;
+    const rawText = await response.text();
     try {
-      data = await response.json();
+      data = rawText ? JSON.parse(rawText) : {};
     } catch (jsonError) {
-      throw new Error('Server response error. Please try again later.');
+      // Include body preview in error to help debug 500s
+      const preview = rawText?.slice(0, 300) || '';
+      const err = new Error(`Server response error. Status ${response.status}. Body: ${preview}`);
+      err.status = response.status;
+      throw err;
     }
 
     if (!response.ok) {
-      // Check for specific server error messages and convert them to user-friendly ones
-      let errorMessage = data.message || getFriendlyErrorMessage(response.status);
-      
-      // Convert server error messages to user-friendly messages
-      if (errorMessage === 'Invalid credentials') {
-        errorMessage = 'Invalid email or password. Please check your credentials and try again.';
-      } else if (errorMessage === 'Email already in use') {
-        errorMessage = 'An account with this email already exists. Please try logging in instead.';
-      }
-      
-      throw new Error(errorMessage);
+      // Prefer server-provided error
+      const serverMsg = data.error || data.message;
+      const details = data.details || data.errors;
+      const detailStr = details ? ` Details: ${JSON.stringify(details).slice(0,200)}` : '';
+      const message = serverMsg || getFriendlyErrorMessage(response.status);
+      const err = new Error(`${message} (HTTP ${response.status}).${detailStr}`);
+      err.status = response.status;
+      throw err;
     }
 
     return data;
@@ -298,3 +300,19 @@ export const authAPI = {
 // Export the base API request function for other uses
 export { apiRequest };
 export default authAPI;
+
+// Challenges API (frontend integration with backend)
+export const challengesAPI = {
+  list: async () => {
+    return apiRequest('/api/challenges');
+  },
+  complete: async (challengeId) => {
+    return apiRequest(`/api/challenges/complete/${challengeId}`, { method: 'POST' });
+  },
+  me: async () => {
+    return apiRequest('/api/challenges/me');
+  },
+  leaderboard: async () => {
+    return apiRequest('/api/challenges/leaderboard');
+  }
+};

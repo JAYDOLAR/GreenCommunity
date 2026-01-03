@@ -34,7 +34,8 @@ export async function createLog(req, res) {
       emission,
       calculation,
     });
-    res.status(201).json(log);
+    const equivalents = ipcc.toEquivalents(emission);
+    res.status(201).json({ ...log.toObject(), equivalents });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -68,14 +69,16 @@ export async function previewEmissions(req, res) {
       };
     }
 
-    // Return the calculation without saving to database
+    // Return the calculation without saving to database, include equivalents
+    const equivalents = ipcc.toEquivalents(emission);
     res.json({
       emission: emission,
       calculation: calculation,
       preview: true,
       activityType: activityType,
       activity: activity,
-      details: details
+      details: details,
+      equivalents
     });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -196,7 +199,9 @@ export async function getTotalEmissions(req, res) {
       { $match: match },
       { $group: { _id: null, total: { $sum: "$emission" } } },
     ]);
-    res.json({ total: result[0]?.total || 0 });
+    const total = result[0]?.total || 0;
+    const equivalents = ipcc.toEquivalents(total);
+    res.json({ total, equivalents });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

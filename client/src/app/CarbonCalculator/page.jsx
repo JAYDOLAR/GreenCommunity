@@ -794,6 +794,7 @@ const CarbonCalculator = () => {
           quantity: 1,
           selectedDate: new Date(),
           activity: 'Annual Carbon Footprint Assessment',
+          emission: totalEmissions,
           details: {
             totalEmissions: totalEmissions,
             breakdown: {
@@ -834,7 +835,11 @@ const CarbonCalculator = () => {
         };
 
         await createLog(logData);
-        toast.success(`Carbon footprint calculated: ${totalEmissions.toFixed(1)} kg CO₂ annually`);
+        // Compute simple equivalents on client for display (server also computes when logging granular activities)
+        const trees = totalEmissions / 21;
+        const cars = totalEmissions / (170 * 1000);
+        const kwh = totalEmissions / 0.82;
+        toast.success(`Annual footprint: ${totalEmissions.toFixed(1)} kg CO₂ • ≈ ${trees.toFixed(1)} trees • ${cars.toFixed(3)} cars • ${Math.round(kwh)} kWh`);
 
         // Redirect to footprint log to see the results
         router.push('/footprintlog');

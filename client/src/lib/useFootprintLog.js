@@ -33,10 +33,12 @@ export const useFootprintLog = () => {
     }, []);
 
     // Fetch total emissions
+    const [equivalents, setEquivalents] = useState({ trees: 0, cars: 0, kwh: 0 });
     const fetchTotalEmissions = useCallback(async (filters = {}) => {
         try {
             const response = await footprintLogAPI.getTotalEmissions(filters);
             setTotalEmissions(response.total || 0);
+            if (response.equivalents) setEquivalents(response.equivalents);
         } catch (err) {
             console.error('Failed to fetch total emissions:', err);
         }
@@ -254,6 +256,7 @@ export const useFootprintLog = () => {
         loading,
         error,
         breakdownData,
+        equivalents,
 
         // Actions
         fetchLogs,

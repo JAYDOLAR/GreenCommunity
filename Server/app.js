@@ -11,6 +11,9 @@ import "./config/passport.js";
 import { connectAllDatabases } from "./config/databases.js";
 import authRoutes from "./routes/auth.routes.js";
 import marketplaceRoutes from "./routes/marketplace.routes.js";
+import challengeRoutes from "./routes/challenges.routes.js";
+import groupsRoutes from "./routes/groups.routes.js";
+import eventsRoutes from "./routes/events.routes.js";
 import avatarRoutes from "./routes/avatar.routes.js";
 import footprintLogRoutes from "./routes/footprintlog.routes.js";
 import dotenv from "dotenv";
@@ -119,6 +122,9 @@ app.use("/api/auth", authRoutes);
 app.use("/api/marketplace", marketplaceRoutes);
 app.use("/api/avatar", avatarRoutes);
 app.use("/api/footprintlog", footprintLogRoutes);
+app.use("/api/challenges", challengeRoutes);
+app.use("/api/groups", groupsRoutes);
+app.use("/api/events", eventsRoutes);
 
 // Global error handler
 app.use((err, req, res, next) => {

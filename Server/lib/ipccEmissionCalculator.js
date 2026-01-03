@@ -73,4 +73,15 @@ export default {
   calculateFood,
   calculateWaste,
   IPCC_FACTORS,
+  // Utility to compute equivalences
+  toEquivalents(totalCO2Kg) {
+    const trees = totalCO2Kg / 21; // trees needed to absorb this per year
+    const cars = totalCO2Kg / (170 * 1000); // convert kg to tons; 170 g/km ~ 0.17 kg/km
+    const kwh = totalCO2Kg / 0.82; // kg CO2 per kWh
+    return {
+      trees: Math.max(0, trees),
+      cars: Math.max(0, cars),
+      kwh: Math.max(0, kwh),
+    };
+  }
 };

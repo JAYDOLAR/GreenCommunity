@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Image from 'next/image';
+import ReactMarkdown from "react-markdown";
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -61,20 +62,13 @@ const ChatBot = () => {
 
     // Add user message
     setMessages(prev => [...prev, { role: 'user', content: input }]);
-    // Call server API -> OpenRouter
+    // Call new Gemini-backed API
     const userInput = input;
     setInput('');
     ;(async () => {
       try {
-        const payload = {
-          model: undefined,
-          messages: [
-            { role: 'system', content: 'You are Eco Assistant. Provide concise, friendly sustainability help.' },
-            ...messages.map(m => ({ role: m.role, content: m.content })),
-            { role: 'user', content: userInput },
-          ]
-        };
-        const res = await fetch('/api/chat', {
+        const payload = { question: userInput, context: '' };
+        const res = await fetch('/api/ai/ask', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -192,10 +186,17 @@ const ChatBot = () => {
                   {messages.map((message, index) => (
                     <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                       <div className={`max-w-[90%] p-3 rounded-2xl ${message.role === 'user' ? 'bg-green-600 text-white ml-3' : 'bg-white border border-primary/10 mr-3'}`}>
-                        {message.content}
+                        {message.role === 'assistant' ? (
+                          <div className="prose prose-sm max-w-none">
+                            <ReactMarkdown>{message.content}</ReactMarkdown>
+                          </div>
+                        ) : (
+                          message.content
+                        )}
                       </div>
                     </div>
                   ))}
+
                   {/* auto-scroll anchor */}
                   <div ref={(el) => { if (el) try { el.scrollIntoView({ behavior: 'smooth' }); } catch {} }} />
                 </div>

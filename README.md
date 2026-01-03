@@ -10,6 +10,7 @@ A comprehensive platform for tracking environmental impact, managing carbon foot
 - **User Management**: Complete authentication and profile management
 - **Admin Panel**: Administrative tools for platform management
 - **Real-time Chat**: Community interaction features
+ - **AI Coach (Gemini)**: Gemini Pro powered coach and tips
 
 ## 🛠️ Tech Stack
 
@@ -33,6 +34,9 @@ A comprehensive platform for tracking environmental impact, managing carbon foot
 - [Docker](https://www.docker.com/products/docker-desktop) installed on your system
 - [Docker Compose](https://docs.docker.com/compose/install/) installed on your system
 - [Node.js](https://nodejs.org/) (if running locally without Docker)
+
+Environment variables (client):
+- `GEMINI_API_KEY` for AI endpoints `/api/ai/*`
 
 ## 🚀 Quick Start with Docker
 

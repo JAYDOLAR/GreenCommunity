@@ -34,6 +34,7 @@ import DashboardSkeleton from '@/components/DashboardSkeleton';
 import { Calendar as CustomCalendar } from '@/components/ui/calendar';
 import Link from 'next/link';
 import { useFootprintLog } from '@/lib/useFootprintLog';
+import ReactMarkdown from 'react-markdown';
 
 const translations = {
   en: {
@@ -94,10 +95,27 @@ const Dashboard = () => {
     recentActivities,
     logs,
     breakdownData,
+    equivalents,
     getWeeklyTotal,
     getMonthlyTotal,
     loading: footprintLoading
   } = useFootprintLog();
+
+  // AI Tips from Gemini (must be declared before any early returns)
+  const [tips, setTips] = useState([]);
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/ai/generate-tips', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ electricity: 200, gas: 15, petrol: 30 })
+        });
+        const data = await res.json();
+        if (Array.isArray(data?.tips)) setTips(data.tips);
+      } catch {}
+    })();
+  }, []);
 
   // Helper function to format emissions display
   const formatEmissions = (value, unit = 'kg') => {
@@ -168,6 +186,7 @@ const Dashboard = () => {
 
   const displayBreakdown = footprintBreakdown.length > 0 ? footprintBreakdown : fallbackBreakdown;
 
+
   // Format recent activities from API data - use recentActivities from hook or fallback to logs
   const formattedActivities = (recentActivities.length > 0 ? recentActivities : logs.slice(0, 3)).map(log => ({
     type: log.category || log.activityType,
@@ -223,7 +242,7 @@ const Dashboard = () => {
                   <AnimatedCounter end={currentFootprint} decimals={1} />
                   <span className="text-sm sm:text-base md:text-lg font-normal text-muted-foreground ml-1">tons CO₂</span>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   {isAboveTarget ? (
                     <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-warning animate-bounce" />
                   ) : (
@@ -236,6 +255,11 @@ const Dashboard = () => {
                       'No target set'
                     )}
                   </span>
+                  {equivalents ? (
+                    <span className="text-xs sm:text-sm md:text-base text-muted-foreground ml-2">
+                      ≈ {Math.round(equivalents.kwh)} kWh • {equivalents.trees?.toFixed?.(1)} trees • {equivalents.cars?.toFixed?.(3)} cars
+                    </span>
+                  ) : null}
                 </div>
                 <ProfessionalProgress value={80} className="mt-2 sm:mt-3 md:mt-4" />
               </div>
@@ -548,7 +572,7 @@ const Dashboard = () => {
               </CardContent>
             </Card>
           </div>
-          {/* Enhanced Tip of the Day */}
+          {/* Enhanced Tip of the Day powered by Gemini */}
           <div className="animate-slide-up" style={{ animationDelay: '0.9s' }}>
             <Card className="card-premium hover-glow border-2 border-primary/20 relative overflow-hidden">
               <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-primary opacity-10 rounded-full -translate-y-10 translate-x-10" />
@@ -559,10 +583,17 @@ const Dashboard = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-4 md:p-6">
-                <p className="text-base md:text-lg text-muted-foreground leading-relaxed">
-                  Try meal prepping with seasonal, local ingredients this week. It can reduce your food-related emissions by up to
-                  <span className="font-bold text-success"> 20%</span> while saving time and money!
-                </p>
+                {tips && tips.length > 0 ? (
+                  <div className="prose prose-sm max-w-none text-muted-foreground">
+                    <ReactMarkdown>
+                      {tips.map(t => t.startsWith('-') || t.startsWith('*') ? t : `- ${t}`).join('\n')}
+                    </ReactMarkdown>
+                  </div>
+                ) : (
+                  <p className="text-base md:text-lg text-muted-foreground leading-relaxed">
+                    Getting your personalized tips...
+                  </p>
+                )}
               </CardContent>
             </Card>
           </div>

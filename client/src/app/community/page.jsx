@@ -1,5 +1,6 @@
 "use client";
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { challengesAPI } from '@/lib/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -30,6 +31,37 @@ import ChatBot from '@/components/ChatBot';
 const Community = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('challenges');
+  const [serverChallenges, setServerChallenges] = useState([]);
+  const [leaderboard, setLeaderboard] = useState([]);
+  const [impact, setImpact] = useState({ totalPoints: 0, history: [] });
+  const [loading, setLoading] = useState({ challenges: false, leaderboard: false, impact: false });
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        setLoading((s) => ({ ...s, challenges: true, leaderboard: true, impact: true }));
+        const [chData, lbData] = await Promise.all([
+          challengesAPI.list().catch((e)=>{ throw e; }),
+          challengesAPI.leaderboard().catch((e)=>{ throw e; })
+        ]);
+        if (Array.isArray(chData)) setServerChallenges(chData);
+        if (Array.isArray(lbData)) setLeaderboard(lbData);
+      } catch (e) {
+        setError(e?.message || 'Failed to load challenges');
+      } finally {
+        setLoading((s) => ({ ...s, challenges: false, leaderboard: false }));
+      }
+      try {
+        const me = await challengesAPI.me();
+        setImpact({ totalPoints: me.totalPoints || 0, history: me.history || [] });
+      } catch {
+        // likely 401 when not logged in; keep defaults
+      } finally {
+        setLoading((s) => ({ ...s, impact: false }));
+      }
+    })();
+  }, []);
 
   const challenges = [
     {
@@ -169,13 +201,16 @@ const Community = () => {
     }
   ];
 
-  const leaderboard = [
-    { rank: 1, name: 'Sarah Chen', points: 2450, avatar: '👩‍🦱', streak: 45, badges: 12 },
-    { rank: 2, name: 'Mike Rodriguez', points: 2380, avatar: '👨‍🦲', streak: 38, badges: 10 },
-    { rank: 3, name: 'Emma Johnson', points: 2290, avatar: '👩‍🦳', streak: 52, badges: 14 },
-    { rank: 4, name: 'David Kim', points: 2150, avatar: '👨‍🦱', streak: 29, badges: 8 },
-    { rank: 5, name: 'Alex Thompson', points: 2050, avatar: '👩‍🦰', streak: 41, badges: 11 }
-  ];
+  const displayLeaderboard = leaderboard.length > 0
+    ? leaderboard.map((u, idx) => ({
+        rank: idx + 1,
+        name: (u.userId && (u.userId.name || u.userId.email)) || 'User',
+        points: u.totalPoints || 0,
+        avatar: (u.userId && (u.userId.profile?.avatar?.url)) ? (
+          <Avatar className="h-6 w-6"><AvatarImage src={u.userId.profile.avatar.url} /><AvatarFallback>🧑</AvatarFallback></Avatar>
+        ) : '🧑'
+      }))
+    : [];
 
   const getDifficultyColor = (difficulty) => {
     switch (difficulty) {
@@ -223,11 +258,11 @@ const Community = () => {
         {/* Challenges Tab */}
         <TabsContent value="challenges" className="space-y-3 sm:space-y-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
-            {challenges.map(challenge => (
-              <Card key={challenge.id} className={`card-gradient hover-lift`}>
+            {(serverChallenges.length > 0 ? serverChallenges : challenges).map(challenge => (
+              <Card key={challenge._id || challenge.id} className={`card-gradient hover-lift`}>
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between gap-2">
-                    <div className="text-2xl sm:text-3xl">{challenge.image}</div>
+                    <div className="text-2xl sm:text-3xl">{challenge.image || '🎯'}</div>
                     <Badge className={getDifficultyColor(challenge.difficulty) + ' text-xs'}>
                       {challenge.difficulty}
                     </Badge>
@@ -240,27 +275,53 @@ const Community = () => {
                   <div className="grid grid-cols-2 gap-2 sm:gap-3 text-xs sm:text-sm">
                     <div className="flex items-center gap-1 sm:gap-2">
                       <Users className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
-                      <span>{challenge.participants} joined</span>
+                      <span>{challenge.participants || 0} joined</span>
                     </div>
                     <div className="flex items-center gap-1 sm:gap-2">
                       <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
-                      <span>{challenge.timeRemaining}</span>
+                      <span>{challenge.timeRemaining || 'Ongoing'}</span>
                     </div>
                   </div>
                   <div className="space-y-1 sm:space-y-2">
                     <div className="flex justify-between text-xs sm:text-sm">
                       <span className="text-muted-foreground">Progress</span>
-                      <span className="font-medium">{challenge.progress}%</span>
+                      <span className="font-medium">{challenge.progress || 0}%</span>
                     </div>
                     <Progress value={challenge.progress} className="h-1.5 sm:h-2 progress-eco" />
                   </div>
                   <div className="flex items-center justify-between pt-2 border-t border-border/50">
                     <div className="flex items-center gap-1 text-success">
                       <Trophy className="h-3 w-3 sm:h-4 sm:w-4" />
-                      <span className="text-xs sm:text-sm font-medium">{challenge.reward}</span>
+                      <span className="text-xs sm:text-sm font-medium">{challenge.reward || `${challenge.points || 0} eco-points`}</span>
                     </div>
-                    <Button size="sm" className="bg-gradient-primary hover:shadow-medium text-xs sm:text-sm px-2 sm:px-4 py-1 sm:py-2">
-                      Join Challenge
+                    {/* Button state maps to completion & auth */}
+                    <Button
+                      size="sm"
+                      className="bg-gradient-primary hover:shadow-medium text-xs sm:text-sm px-2 sm:px-4 py-1 sm:py-2 disabled:opacity-60"
+                      disabled={!!challenge.completed}
+                      onClick={async () => {
+                        try {
+                          await challengesAPI.complete(challenge._id || challenge.id);
+                          // Refresh challenges & leaderboard & impact
+                          const [chData, lbData] = await Promise.all([
+                            challengesAPI.list(),
+                            challengesAPI.leaderboard()
+                          ]);
+                          if (Array.isArray(chData)) setServerChallenges(chData);
+                          if (Array.isArray(lbData)) setLeaderboard(lbData);
+                          try { const me = await challengesAPI.me(); setImpact({ totalPoints: me.totalPoints||0, history: me.history||[] }); } catch {}
+                        } catch (e) {
+                          if (e?.status === 401) {
+                            alert('Please log in to join challenges.');
+                          } else if (e?.status === 409) {
+                            alert('Already completed.');
+                          } else {
+                            alert(e?.message || 'Failed to join challenge');
+                          }
+                        }
+                      }}
+                    >
+                      {challenge.completed ? 'Completed' : 'Join Challenge'}
                     </Button>
                   </div>
                 </CardContent>
@@ -382,7 +443,7 @@ const Community = () => {
                 <CardDescription className="text-xs sm:text-sm">Top contributors this month</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {leaderboard.map(user => (
+                {displayLeaderboard.map(user => (
                   <div key={user.rank} className="flex items-center gap-2 sm:gap-4 p-2 sm:p-3 rounded-lg border border-border/50">
                     <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm ${
                       user.rank === 1 ? 'bg-yellow-100 text-yellow-700' :
@@ -392,13 +453,13 @@ const Community = () => {
                     }`}>
                       #{user.rank}
                     </div>
-                    
                     <div className="text-lg sm:text-2xl">{user.avatar}</div>
                     
                     <div className="flex-1">
                       <div className="font-medium text-xs sm:text-base text-foreground">{user.name}</div>
                       <div className="text-[10px] sm:text-sm text-muted-foreground">
-                        {user.streak} day streak • {user.badges} badges
+                        {/* streak and badges are placeholders until backend adds them */}
+                        0 day streak • 0 badges
                       </div>
                     </div>
                     
@@ -423,7 +484,7 @@ const Community = () => {
               <CardContent className="space-y-3 sm:space-y-6">
                 <div className="grid grid-cols-2 gap-2 sm:gap-4">
                   <div className="text-center p-2 sm:p-3 bg-background/50 rounded-lg">
-                    <div className="text-lg sm:text-2xl font-bold text-foreground">1,850</div>
+                    <div className="text-lg sm:text-2xl font-bold text-foreground">{impact.totalPoints || 0}</div>
                     <div className="text-xs sm:text-sm text-muted-foreground">Eco-Points</div>
                   </div>
                   <div className="text-center p-2 sm:p-3 bg-background/50 rounded-lg">
@@ -441,15 +502,16 @@ const Community = () => {
                 </div>
                 <div className="space-y-2 sm:space-y-3">
                   <h4 className="font-medium text-xs sm:text-base text-foreground">Recent Achievements</h4>
+                  {/* History from backend (still basic; badges TBD) */}
                   <div className="space-y-1 sm:space-y-2">
-                    <div className="flex items-center gap-2 sm:gap-3 p-2 bg-success/10 rounded-lg">
-                      <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-success" />
-                      <span className="text-xs sm:text-sm">Completed Zero Waste Week</span>
-                    </div>
-                    <div className="flex items-center gap-2 sm:gap-3 p-2 bg-primary/10 rounded-lg">
-                      <Award className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
-                      <span className="text-xs sm:text-sm">Earned Eco Warrior Badge</span>
-                    </div>
+                    {impact.history && impact.history.length > 0 ? impact.history.slice(0,4).map((h, idx) => (
+                      <div key={idx} className="flex items-center gap-2 sm:gap-3 p-2 bg-success/10 rounded-lg">
+                        <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-success" />
+                        <span className="text-xs sm:text-sm">Completed {h.title || 'a challenge'}</span>
+                      </div>
+                    )) : (
+                      <div className="text-xs sm:text-sm text-muted-foreground">No recent achievements yet</div>
+                    )}
                   </div>
                 </div>
               </CardContent>
