@@ -779,6 +779,10 @@ const CarbonCalculator = () => {
         }
       }, 100);
     } else {
+ HEAD
+      // All steps completed → go to dashboard
+      router.push('/dashboard');
+
       // Calculate carbon footprint and save to API
       try {
         setLoading(true);
@@ -840,8 +844,7 @@ const CarbonCalculator = () => {
       } finally {
         setLoading(false);
       }
-      // All steps completed → go to dashboard
-      router.push('/dashboard');
+
     }
   };
 
