@@ -17,6 +17,7 @@ import eventsRoutes from "./routes/events.routes.js";
 import avatarRoutes from "./routes/avatar.routes.js";
 import footprintLogRoutes from "./routes/footprintlog.routes.js";
 import dotenv from "dotenv";
+import aiRoutes from "./routes/ai.routes.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -125,6 +126,7 @@ app.use("/api/footprintlog", footprintLogRoutes);
 app.use("/api/challenges", challengeRoutes);
 app.use("/api/groups", groupsRoutes);
 app.use("/api/events", eventsRoutes);
+app.use("/api/ai", aiRoutes);
 
 // Global error handler
 app.use((err, req, res, next) => {

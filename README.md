@@ -285,4 +285,4 @@ For questions or support, please contact the development team or create an issue
 
 ---
 
-**Last Updated:** August 18, 2025
+**Last Updated:** August 21, 2025

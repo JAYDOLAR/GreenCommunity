@@ -1,8 +1,6 @@
-// Deprecated: This route used to proxy OpenRouter. Keeping minimal compatibility redirect.
+// Deprecated: Keep behavior, but under frontend proxy shim
 export async function POST() {
-  return Response.json({
-    error: 'Deprecated endpoint. Use /api/ai/ask instead.'
-  }, { status: 410 });
+  return Response.json({ error: 'Deprecated endpoint. Use /api/ai/ask instead.' }, { status: 410 });
 }
 
 
