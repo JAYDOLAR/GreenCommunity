@@ -1,4 +1,5 @@
 import { SITE_CONTEXT } from '../api/chat/siteContext.js';
+import { getChatSessionModel } from '../models/ChatSession.model.js';
 
 const SYSTEM_PROMPT = `You are GreenCommunity’s AI Climate Coach.
 Be practical, cost-saving, and India-specific.
@@ -36,8 +37,19 @@ export const ask = async (req, res) => {
         __gc_userProfiles[sessionId] = { ...(__gc_userProfiles[sessionId] || {}), ...cleaned };
       }
     }
-    const userProfile = __gc_userProfiles[sessionId];
-    const history = Array.isArray(__gc_conversations[sessionId]) ? __gc_conversations[sessionId] : [];
+    const ChatSession = await getChatSessionModel();
+    // Load or create persistent session
+    let session = await ChatSession.findOne({ sessionId });
+    if (!session) {
+      session = await ChatSession.create({ sessionId, profile: __gc_userProfiles[sessionId] || {} });
+    }
+    // Merge provided profile
+    if (profile && typeof profile === 'object') {
+      session.profile = { ...(session.profile || {}), ...profile };
+      await session.save();
+    }
+    const userProfile = session.profile || __gc_userProfiles[sessionId];
+    const history = Array.isArray(session.history) && session.history.length ? session.history : (Array.isArray(__gc_conversations[sessionId]) ? __gc_conversations[sessionId] : []);
     const MAX_MESSAGES = 10;
     const recentHistory = history.slice(-MAX_MESSAGES);
     const historyTranscript = recentHistory.map(m => `${m.role === 'assistant' ? 'Assistant' : 'User'}: ${m.content}`).join('\n');
@@ -64,15 +76,40 @@ export const ask = async (req, res) => {
       question ? `\nCurrent question: ${question}` : ''
     ].join('\n');
 
-    const result = await model.generateContent(fullPrompt);
-    const text = result?.response?.text?.() || '';
+    // Streaming response
+    const stream = await model.generateContentStream(fullPrompt);
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
 
-    const nextHistory = [...recentHistory, { role: 'user', content: String(question || '').slice(0, 4000) }, { role: 'assistant', content: text.slice(0, 4000) }];
+    let fullText = '';
+    for await (const chunk of stream.stream) {
+      const part = chunk.text();
+      if (part) {
+        fullText += part;
+        res.write(`data: ${JSON.stringify({ delta: part })}\n\n`);
+      }
+    }
+    // Finish event
+    res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+    res.end();
+
+    const nextHistory = [...recentHistory, { role: 'user', content: String(question || '').slice(0, 4000) }, { role: 'assistant', content: fullText.slice(0, 16000) }];
     __gc_conversations[sessionId] = nextHistory.slice(-MAX_MESSAGES);
+    session.history = nextHistory.slice(-MAX_MESSAGES);
+    await session.save();
 
-    return res.json({ reply: text, sessionId });
+    // Note: with SSE we have already ended the response; nothing to return
+    return;
   } catch (error) {
-    return res.status(500).json({ error: error?.message || 'Failed to generate reply' });
+    // Attempt to end SSE properly if headers were sent
+    try {
+      if (!res.headersSent) return res.status(500).json({ error: error?.message || 'Failed to generate reply' });
+      res.write(`data: ${JSON.stringify({ error: 'stream_error', message: error?.message || 'Failed to stream reply' })}\n\n`);
+      res.end();
+    } catch {
+      // ignore
+    }
   }
 };
 

@@ -19,7 +19,8 @@ const DB_CONFIG = {
   MARKETPLACE_DB: 'greencommunity-marketplace',
   COMMUNITY_DB: 'greencommunity-community',
   ANALYTICS_DB: 'greencommunity-analytics',
-  FOOTPRINT_DB: 'greencommunity-footprint'
+  FOOTPRINT_DB: 'greencommunity-footprint',
+  AI_DB: 'greencommunity-ai'
 };
 
 // Store database connections
@@ -100,6 +101,9 @@ export const connectAllDatabases = async () => {
 
     // Connect to analytics database
     await getConnection('ANALYTICS_DB');
+
+    // Connect to AI database
+    await getConnection('AI_DB');
 
     console.log('🎉 All databases connected successfully');
   } catch (error) {

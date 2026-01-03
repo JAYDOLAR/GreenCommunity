@@ -62,26 +62,103 @@ const ChatBot = () => {
 
     // Add user message
     setMessages(prev => [...prev, { role: 'user', content: input }]);
-    // Call new Gemini-backed API
+    // Call streaming AI API (SSE)
     const userInput = input;
     setInput('');
     ;(async () => {
       try {
-        const payload = { question: userInput, context: '' };
-        const res = await fetch('/api/ai/ask', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
+        // Determine backend URL (prefer NEXT_PUBLIC_API_URL)
+        const base = (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_API_URL) || '';
+        const askUrl = `${base}/api/ai/ask`;
+
+        // Ensure a stable session id for personalization/memory
+        let sid = null;
+        try {
+          sid = localStorage.getItem('gc_session_id');
+          if (!sid) {
+            sid = Math.random().toString(36).slice(2) + Date.now().toString(36);
+            localStorage.setItem('gc_session_id', sid);
+          }
+        } catch {}
+
+        // Insert a placeholder assistant message to stream into
+        let assistantIndex = -1;
+        setMessages(prev => {
+          const next = [...prev, { role: 'assistant', content: '' }];
+          assistantIndex = next.length - 1;
+          return next;
         });
-        const data = await res.json();
-        if (data?.reply) {
-          setMessages(prev => [...prev, { role: 'assistant', content: data.reply }]);
-          // Auto-scroll to bottom after response
-          setTimeout(() => {
-            try { messagesRef.current?.scrollTo({ top: messagesRef.current.scrollHeight, behavior: 'smooth' }); } catch {}
-          }, 50);
-        } else {
-          throw new Error(data?.error || 'No reply');
+
+        const res = await fetch(askUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(sid ? { 'x-session-id': sid } : {})
+          },
+          body: JSON.stringify({ question: userInput, context: '' })
+        });
+
+        if (!res.ok) {
+          // Try to parse error JSON; fallback to text
+          let errMsg = 'Request failed';
+          try { const j = await res.json(); errMsg = j?.error || errMsg; } catch { errMsg = await res.text(); }
+          throw new Error(errMsg || `HTTP ${res.status}`);
+        }
+
+        // Stream reading
+        const reader = res.body?.getReader?.();
+        if (!reader) {
+          // Non-streaming fallback
+          const data = await res.json();
+          const text = data?.reply || '';
+          setMessages(prev => {
+            const next = [...prev];
+            const idx = assistantIndex >= 0 ? assistantIndex : next.findIndex((m, i) => i === next.length - 1 && m.role === 'assistant');
+            if (idx >= 0) next[idx] = { ...next[idx], content: text };
+            return next;
+          });
+          return;
+        }
+
+        const decoder = new TextDecoder('utf-8');
+        let buffer = '';
+        const flushChunks = (chunkStr) => {
+          // SSE frames separated by double newlines
+          const events = chunkStr.split('\n\n');
+          for (const ev of events) {
+            const line = ev.trim();
+            if (!line.startsWith('data:')) continue;
+            try {
+              const payload = JSON.parse(line.slice(5).trim());
+              if (payload.delta) {
+                const piece = payload.delta;
+                setMessages(prev => {
+                  const next = [...prev];
+                  const idx = assistantIndex >= 0 ? assistantIndex : next.findIndex((m, i) => i === next.length - 1 && m.role === 'assistant');
+                  if (idx >= 0) next[idx] = { ...next[idx], content: (next[idx].content || '') + piece };
+                  return next;
+                });
+              }
+              if (payload.done) {
+                // Scroll to bottom on completion
+                setTimeout(() => {
+                  try { messagesRef.current?.scrollTo({ top: messagesRef.current.scrollHeight, behavior: 'smooth' }); } catch {}
+                }, 50);
+              }
+            } catch {}
+          }
+        };
+
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) { if (buffer) flushChunks(buffer); break; }
+          buffer += decoder.decode(value, { stream: true });
+          const idx = buffer.lastIndexOf('\n\n');
+          if (idx !== -1) {
+            const complete = buffer.slice(0, idx + 2);
+            buffer = buffer.slice(idx + 2);
+            flushChunks(complete);
+          }
         }
       } catch (err) {
         setMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, I had trouble responding. Please try again.' }]);
