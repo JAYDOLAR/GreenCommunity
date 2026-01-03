@@ -4,12 +4,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
-import { 
-  TrendingUp, 
-  TrendingDown, 
-  Target, 
-  Plus, 
-  Zap, 
+import {
+  TrendingUp,
+  TrendingDown,
+  Target,
+  Plus,
+  Zap,
   Users,
   Calendar,
   Car,
@@ -19,7 +19,8 @@ import {
   Award,
   Leaf,
   BarChart3,
-  ArrowRight} from 'lucide-react';
+  ArrowRight
+} from 'lucide-react';
 import AnimatedCounter from '@/components/AnimatedCounter';
 import ProfessionalProgress from '@/components/ProfessionalProgress';
 import AnimatedCircularProgress from '@/components/AnimatedCircularProgress';
@@ -32,6 +33,7 @@ import { usePreferences, useTranslation } from "@/context/PreferencesContext";
 import DashboardSkeleton from '@/components/DashboardSkeleton';
 import { Calendar as CustomCalendar } from '@/components/ui/calendar';
 import Link from 'next/link';
+import { useFootprintLog } from '@/lib/useFootprintLog';
 
 const translations = {
   en: {
@@ -84,6 +86,16 @@ const Dashboard = () => {
   const units = unitLabels[preferences.units] || unitLabels.metric;
   const [date, setDate] = useState(new Date());
 
+  // Footprint log integration
+  const {
+    totalEmissions,
+    logs,
+    breakdownData,
+    getWeeklyTotal,
+    getMonthlyTotal,
+    loading: footprintLoading
+  } = useFootprintLog();
+
   // Handle client-side tasks
   useEffect(() => {
     // Set the correct greeting when component mounts
@@ -97,26 +109,69 @@ const Dashboard = () => {
   const isAuthenticated = !!user;
   const name = (user?.name && typeof user.name === 'string') ? user.name : 'Guest';
   const goalProgress = isAuthenticated ? 75 : 0;
-  
+
+  // Calculate footprint stats
+  const weeklyEmissions = getWeeklyTotal();
+  const monthlyEmissions = getMonthlyTotal();
+  const averageDailyEmissions = weeklyEmissions / 7;
+
 
   // Mock data - in a real app, this would come from an API
   const currentFootprint = 2.4; // tons CO2 per month
   const targetFootprint = 20.0;
-  const dailyEmissions = [1.2, 2.1, 1.8, 2.5, 1.9, 2.3, 1.7]; // Last 7 days
-  const weeklyTotal = dailyEmissions.reduce((a, b) => a + b, 0);
 
-  const footprintBreakdown = [
-    { category: 'Transportation', amount: 0.8, percentage: 33, icon: Car, color: 'text-blue-500' },
-    { category: 'Energy', amount: 0.7, percentage: 29, icon: Home, color: 'text-yellow-500' },
-    { category: 'Food', amount: 0.6, percentage: 25, icon: Utensils, color: 'text-green-500' },
-    { category: 'Travel', amount: 0.3, percentage: 13, icon: Plane, color: 'text-purple-500' },
+  // Use real footprint breakdown data from API
+  const footprintBreakdown = breakdownData.byActivityType.map(item => {
+    const iconMap = {
+      'transport': Car,
+      'energy': Home,
+      'food': Utensils,
+      'waste': BarChart3,
+      'other': Target
+    };
+
+    const colorMap = {
+      'transport': 'text-blue-500',
+      'energy': 'text-yellow-500',
+      'food': 'text-green-500',
+      'waste': 'text-orange-500',
+      'other': 'text-purple-500'
+    };
+
+    const percentage = totalEmissions > 0 ? (item.total / totalEmissions) * 100 : 0;
+
+    return {
+      category: item._id.charAt(0).toUpperCase() + item._id.slice(1),
+      amount: item.total,
+      percentage: Math.round(percentage),
+      icon: iconMap[item._id] || Target,
+      color: colorMap[item._id] || 'text-gray-500'
+    };
+  });
+
+  // Fallback breakdown if no data
+  const fallbackBreakdown = [
+    { category: 'Transportation', amount: 0, percentage: 0, icon: Car, color: 'text-blue-500' },
+    { category: 'Energy', amount: 0, percentage: 0, icon: Home, color: 'text-yellow-500' },
+    { category: 'Food', amount: 0, percentage: 0, icon: Utensils, color: 'text-green-500' },
   ];
 
-  const recentActivities = [
-    { type: 'Transportation', description: 'Commute to work (15 miles)', co2: 0.8, date: 'Today' },
-    { type: 'Energy', description: 'Home electricity usage', co2: 0.6, date: 'Yesterday' },
-    { type: 'Food', description: 'Groceries - mostly organic', co2: 0.4, date: 'Yesterday' },
+  const displayBreakdown = footprintBreakdown.length > 0 ? footprintBreakdown : fallbackBreakdown;
+
+  // Format recent activities from API data
+  const recentActivities = logs.slice(0, 3).map(log => ({
+    type: log.category || log.activityType,
+    description: log.activity || `${log.activityType} activity`,
+    co2: log.emission || 0,
+    date: log.createdAt ? new Date(log.createdAt).toLocaleDateString() : 'Today'
+  }));
+
+  // Fallback data if no logs available
+  const fallbackActivities = [
+    { type: 'Transportation', description: 'Start logging your activities!', co2: 0, date: 'Today' },
   ];
+
+  const displayActivities = recentActivities.length > 0 ? recentActivities : fallbackActivities;
 
   const achievements = [
     { title: 'Week Streak', description: '7 days of logging', icon: Award, earned: true },
@@ -179,7 +234,7 @@ const Dashboard = () => {
             <CardContent className="p-4 md:p-6">
               <div className="space-y-2 sm:space-y-3 md:space-y-4">
                 <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground">
-                  <AnimatedCounter end={weeklyTotal} decimals={1} />
+                  <AnimatedCounter end={weeklyEmissions} decimals={1} />
                   <span className="text-sm sm:text-base md:text-lg font-normal text-muted-foreground ml-1">kg CO₂</span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -250,7 +305,7 @@ const Dashboard = () => {
               </CardHeader>
               <CardContent className="p-4 md:p-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 md:gap-4">
-                  {footprintBreakdown.map((item, index) => {
+                  {displayBreakdown.map((item, index) => {
                     const Icon = item.icon;
                     return (
                       <div
@@ -302,30 +357,58 @@ const Dashboard = () => {
                 <CardDescription className="text-sm md:text-base">Your latest carbon footprint entries</CardDescription>
               </CardHeader>
               <CardContent className="p-4 md:p-6">
-                <div className="space-y-3 sm:space-y-4 md:space-y-5">
-                  {recentActivities.map((activity, index) => (
-                    <div 
-                      key={index} 
-                      className="flex items-center justify-between p-3 sm:p-4 md:p-6 rounded-xl border border-border/30 hover:bg-accent/20 hover:shadow-lg transition-all duration-300 animate-fade-in hover-lift group"
-                      style={{ animationDelay: `${0.7 + (index * 0.1)}s` }}
-                    >
-                      <div className="flex-1">
-                        <div className="font-semibold text-foreground text-base sm:text-lg md:text-xl group-hover:text-primary transition-colors">
-                          {activity.description}
+                {footprintLoading ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-2"></div>
+                    <p className="text-muted-foreground">Loading activities...</p>
+                  </div>
+                ) : logs.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Calendar className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                    <p className="text-muted-foreground mb-2">No activities logged yet</p>
+                    <Link href="/footprintlog">
+                      <Button variant="outline" size="sm">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Start Logging
+                      </Button>
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="space-y-3 sm:space-y-4 md:space-y-5">
+                    {displayActivities.map((activity, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-3 sm:p-4 md:p-6 rounded-xl border border-border/30 hover:bg-accent/20 hover:shadow-lg transition-all duration-300 animate-fade-in hover-lift group"
+                        style={{ animationDelay: `${0.7 + (index * 0.1)}s` }}
+                      >
+                        <div className="flex-1">
+                          <div className="font-semibold text-foreground text-base sm:text-lg md:text-xl group-hover:text-primary transition-colors">
+                            {activity.description}
+                          </div>
+                          <div className="text-xs sm:text-sm md:text-base text-muted-foreground mt-1">
+                            {activity.type} • {activity.date}
+                          </div>
                         </div>
-                        <div className="text-xs sm:text-sm md:text-base text-muted-foreground mt-1">
-                          {activity.type} • {activity.date}
+                        <div className="text-right">
+                          <div className="text-lg sm:text-xl md:text-2xl font-bold text-foreground group-hover:text-primary transition-colors">
+                            +<AnimatedCounter end={activity.co2} decimals={1} /> kg
+                          </div>
+                          <div className="text-xs md:text-sm text-muted-foreground">CO₂</div>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <div className="text-lg sm:text-xl md:text-2xl font-bold text-foreground group-hover:text-primary transition-colors">
-                          +<AnimatedCounter end={activity.co2} decimals={1} /> kg
-                        </div>
-                        <div className="text-xs md:text-sm text-muted-foreground">CO₂</div>
+                    ))}
+                    {logs.length > 3 && (
+                      <div className="pt-4 border-t">
+                        <Link href="/footprintlog">
+                          <Button variant="outline" className="w-full">
+                            View All Activities
+                            <ArrowRight className="h-4 w-4 ml-2" />
+                          </Button>
+                        </Link>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -341,25 +424,22 @@ const Dashboard = () => {
                 {achievements.map((achievement, index) => {
                   const Icon = achievement.icon;
                   return (
-                    <div 
-                      key={index} 
-                      className={`flex items-center gap-3 sm:gap-4 md:gap-5 p-3 sm:p-4 md:p-6 rounded-xl border-2 transition-all duration-500 hover-lift ${
-                        achievement.earned 
-                          ? 'border-success/40 bg-gradient-to-r from-success/10 to-success/5 shadow-lg' 
+                    <div
+                      key={index}
+                      className={`flex items-center gap-3 sm:gap-4 md:gap-5 p-3 sm:p-4 md:p-6 rounded-xl border-2 transition-all duration-500 hover-lift ${achievement.earned
+                          ? 'border-success/40 bg-gradient-to-r from-success/10 to-success/5 shadow-lg'
                           : 'border-border/30 bg-muted/10 hover:border-primary/20'
-                      }`}
+                        }`}
                     >
-                      <div className={`p-2 sm:p-3 md:p-4 rounded-xl transition-all duration-300 ${
-                        achievement.earned 
-                          ? 'bg-success/20 text-success animate-pulse-eco' 
+                      <div className={`p-2 sm:p-3 md:p-4 rounded-xl transition-all duration-300 ${achievement.earned
+                          ? 'bg-success/20 text-success animate-pulse-eco'
                           : 'bg-muted text-muted-foreground'
-                      }`}>
+                        }`}>
                         <Icon className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7" />
                       </div>
                       <div className="flex-1">
-                        <div className={`font-semibold text-base sm:text-lg md:text-xl ${
-                          achievement.earned ? 'text-foreground' : 'text-muted-foreground'
-                        }`}>
+                        <div className={`font-semibold text-base sm:text-lg md:text-xl ${achievement.earned ? 'text-foreground' : 'text-muted-foreground'
+                          }`}>
                           {achievement.title}
                         </div>
                         <div className="text-xs sm:text-sm md:text-base text-muted-foreground">
@@ -453,7 +533,7 @@ const Dashboard = () => {
               </CardHeader>
               <CardContent className="p-4 md:p-6">
                 <p className="text-base md:text-lg text-muted-foreground leading-relaxed">
-                  Try meal prepping with seasonal, local ingredients this week. It can reduce your food-related emissions by up to 
+                  Try meal prepping with seasonal, local ingredients this week. It can reduce your food-related emissions by up to
                   <span className="font-bold text-success"> 20%</span> while saving time and money!
                 </p>
               </CardContent>
@@ -461,9 +541,9 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
-      
 
-      
+
+
       {/* Bottom Spacing for Mobile */}
       <div className="h-8 sm:h-12 md:h-16"></div>
 
