@@ -86,9 +86,12 @@ const Dashboard = () => {
   const units = unitLabels[preferences.units] || unitLabels.metric;
   const [date, setDate] = useState(new Date());
 
-  // Footprint log integration
+  // Footprint log integration - Real API data replacing mock data
   const {
     totalEmissions,
+    weeklyEmissions,
+    monthlyEmissions,
+    recentActivities,
     logs,
     breakdownData,
     getWeeklyTotal,
@@ -96,29 +99,36 @@ const Dashboard = () => {
     loading: footprintLoading
   } = useFootprintLog();
 
+  // Helper function to format emissions display
+  const formatEmissions = (value, unit = 'kg') => {
+    if (value === 0) return '0';
+    if (value < 0.1) return '<0.1';
+    return value.toFixed(1);
+  };
+
   // Handle client-side tasks
   useEffect(() => {
     // Set the correct greeting when component mounts
     setGreetingKey(getGreetingKey());
   }, []);
 
-  if (isLoading) {
+  if (isLoading || footprintLoading) {
     return <DashboardSkeleton />;
   }
 
   const isAuthenticated = !!user;
   const name = (user?.name && typeof user.name === 'string') ? user.name : 'Guest';
-  const goalProgress = isAuthenticated ? 75 : 0;
-
-  // Calculate footprint stats
-  const weeklyEmissions = getWeeklyTotal();
-  const monthlyEmissions = getMonthlyTotal();
+  
+  // Calculate real-time metrics from API data
+  const currentFootprint = monthlyEmissions / 1000; // Convert kg to tons  
+  const targetFootprint = 20.0; // User's target (could come from user settings)
+  const goalProgress = isAuthenticated && targetFootprint > 0 ? Math.min((currentFootprint / targetFootprint) * 100, 100) : 0;
   const averageDailyEmissions = weeklyEmissions / 7;
 
-
-  // Mock data - in a real app, this would come from an API
-  const currentFootprint = 2.4; // tons CO2 per month
-  const targetFootprint = 20.0;
+  // Calculate trends (mock calculation for now - could be enhanced with historical data)
+  const isAboveTarget = currentFootprint > (targetFootprint * 0.8); // 80% of target
+  const weeklyTrend = weeklyEmissions > (monthlyEmissions / 4) ? 'up' : 'down';
+  const trendPercentage = Math.abs(((weeklyEmissions - (monthlyEmissions / 4)) / (monthlyEmissions / 4)) * 100) || 0;
 
   // Use real footprint breakdown data from API
   const footprintBreakdown = breakdownData.byActivityType.map(item => {
@@ -158,8 +168,8 @@ const Dashboard = () => {
 
   const displayBreakdown = footprintBreakdown.length > 0 ? footprintBreakdown : fallbackBreakdown;
 
-  // Format recent activities from API data
-  const recentActivities = logs.slice(0, 3).map(log => ({
+  // Format recent activities from API data - use recentActivities from hook or fallback to logs
+  const formattedActivities = (recentActivities.length > 0 ? recentActivities : logs.slice(0, 3)).map(log => ({
     type: log.category || log.activityType,
     description: log.activity || `${log.activityType} activity`,
     co2: log.emission || 0,
@@ -171,7 +181,7 @@ const Dashboard = () => {
     { type: 'Transportation', description: 'Start logging your activities!', co2: 0, date: 'Today' },
   ];
 
-  const displayActivities = recentActivities.length > 0 ? recentActivities : fallbackActivities;
+  const displayActivities = formattedActivities.length > 0 ? formattedActivities : fallbackActivities;
 
   const achievements = [
     { title: 'Week Streak', description: '7 days of logging', icon: Award, earned: true },
@@ -200,7 +210,7 @@ const Dashboard = () => {
         {/* Monthly Footprint */}
         <div className="animate-slide-up" style={{ animationDelay: '0.1s' }}>
           <Card className="card-premium hover-glow group cursor-pointer">
-            <CardHeader className="pb-3 md:pb-4">
+            <CardHeader className="pb-0.5 md:pb-1">
               <CardTitle className="text-sm md:text-base font-semibold text-muted-foreground flex items-center gap-2 group-hover:text-primary transition-colors">
                 <BarChart3 className="h-5 w-5 md:h-6 md:w-6" />
                 Monthly Footprint
@@ -213,8 +223,18 @@ const Dashboard = () => {
                   <span className="text-sm sm:text-base md:text-lg font-normal text-muted-foreground ml-1">tons CO₂</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <TrendingDown className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-success animate-bounce" />
-                  <span className="text-xs sm:text-sm md:text-base text-success font-semibold">12% below target</span>
+                  {isAboveTarget ? (
+                    <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-warning animate-bounce" />
+                  ) : (
+                    <TrendingDown className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-success animate-bounce" />
+                  )}
+                  <span className={`text-xs sm:text-sm md:text-base font-semibold ${isAboveTarget ? 'text-warning' : 'text-success'}`}>
+                    {targetFootprint > 0 ? (
+                      `${Math.abs(((currentFootprint - targetFootprint) / targetFootprint) * 100).toFixed(1)}% ${isAboveTarget ? 'above' : 'below'} target`
+                    ) : (
+                      'No target set'
+                    )}
+                  </span>
                 </div>
                 <ProfessionalProgress value={80} className="mt-2 sm:mt-3 md:mt-4" />
               </div>
@@ -225,7 +245,7 @@ const Dashboard = () => {
         {/* Weekly Total */}
         <div className="animate-slide-up" style={{ animationDelay: '0.2s' }}>
           <Card className="card-floating hover-lift group">
-            <CardHeader className="pb-3 md:pb-4">
+            <CardHeader className="pb-0.5 md:pb-1">
               <CardTitle className="text-sm md:text-base font-semibold text-muted-foreground flex items-center gap-2 group-hover:text-primary transition-colors">
                 <Calendar className="h-5 w-5 md:h-6 md:w-6" />
                 This Week
@@ -238,8 +258,14 @@ const Dashboard = () => {
                   <span className="text-sm sm:text-base md:text-lg font-normal text-muted-foreground ml-1">kg CO₂</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-warning animate-bounce" />
-                  <span className="text-xs sm:text-sm md:text-base text-warning font-semibold">5% above last week</span>
+                  {weeklyTrend === 'up' ? (
+                    <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-warning animate-bounce" />
+                  ) : (
+                    <TrendingDown className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-success animate-bounce" />
+                  )}
+                  <span className={`text-xs sm:text-sm md:text-base font-semibold ${weeklyTrend === 'up' ? 'text-warning' : 'text-success'}`}>
+                    {trendPercentage.toFixed(1)}% {weeklyTrend === 'up' ? 'above' : 'below'} monthly average
+                  </span>
                 </div>
               </div>
             </CardContent>
@@ -249,7 +275,7 @@ const Dashboard = () => {
         {/* Goal Progress */}
         <div className="animate-slide-up" style={{ animationDelay: '0.3s' }}>
           <Card className="card-floating hover-lift group">
-            <CardHeader className="pb-3 md:pb-4">
+            <CardHeader className="pb-1 md:pb-1">
               <CardTitle className="text-sm md:text-base font-semibold text-muted-foreground flex items-center gap-2 group-hover:text-primary transition-colors">
                 <Target className="h-5 w-5 md:h-6 md:w-6" />
                 Goal Progress
@@ -261,7 +287,7 @@ const Dashboard = () => {
                   <AnimatedCounter end={goalProgress} />%
                 </div>
                 <div className="text-xs sm:text-sm md:text-base text-muted-foreground">
-                  Target: {targetFootprint} Kg/month
+                  Target: {targetFootprint} tons/month
                 </div>
                 <ProfessionalProgress value={goalProgress} />
               </div>
@@ -278,7 +304,7 @@ const Dashboard = () => {
                 Offset Credits
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-4 md:p-6">
+            <CardContent className="p-2 md:p-3">
               <div className="space-y-2 sm:space-y-3 md:space-y-4">
                 <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground">
                   <AnimatedCounter end={1.2} decimals={1} />
@@ -299,7 +325,7 @@ const Dashboard = () => {
           {/* Enhanced Footprint Breakdown */}
           <div className="animate-slide-up" style={{ animationDelay: '0.5s' }}>
             <Card className="card-premium hover-lift">
-              <CardHeader className="p-4 md:p-6">
+              <CardHeader className="p-2 md:p-4">
                 <CardTitle className="flex items-center gap-2 text-xl md:text-2xl">{t('emissions')}</CardTitle>
                 <CardDescription className="text-sm md:text-base">Your emissions by category this month</CardDescription>
               </CardHeader>

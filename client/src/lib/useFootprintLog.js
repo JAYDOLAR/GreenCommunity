@@ -6,12 +6,15 @@ import { toast } from 'react-hot-toast';
 export const useFootprintLog = () => {
     const [logs, setLogs] = useState([]);
     const [totalEmissions, setTotalEmissions] = useState(0);
+    const [weeklyEmissions, setWeeklyEmissions] = useState(0);
+    const [monthlyEmissions, setMonthlyEmissions] = useState(0);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [breakdownData, setBreakdownData] = useState({
         byActivityType: [],
         byCategory: []
     });
+    const [recentActivities, setRecentActivities] = useState([]);
 
     // Fetch user's footprint logs
     const fetchLogs = useCallback(async (filters = {}) => {
@@ -53,6 +56,23 @@ export const useFootprintLog = () => {
             });
         } catch (err) {
             console.error('Failed to fetch breakdown data:', err);
+        }
+    }, []);
+
+    // Fetch dashboard metrics
+    const fetchDashboardMetrics = useCallback(async () => {
+        try {
+            const [weeklyData, monthlyData, recentLogs] = await Promise.all([
+                footprintLogAPI.getWeeklyEmissions(),
+                footprintLogAPI.getMonthlyEmissions(),
+                footprintLogAPI.getRecentActivities(5)
+            ]);
+
+            setWeeklyEmissions(weeklyData?.total || 0);
+            setMonthlyEmissions(monthlyData?.total || 0);
+            setRecentActivities(recentLogs || []);
+        } catch (err) {
+            console.error('Failed to fetch dashboard metrics:', err);
         }
     }, []);
 
@@ -221,12 +241,16 @@ export const useFootprintLog = () => {
         fetchLogs();
         fetchTotalEmissions();
         fetchBreakdownData();
-    }, [fetchLogs, fetchTotalEmissions, fetchBreakdownData]);
+        fetchDashboardMetrics();
+    }, [fetchLogs, fetchTotalEmissions, fetchBreakdownData, fetchDashboardMetrics]);
 
     return {
         // State
         logs,
         totalEmissions,
+        weeklyEmissions,
+        monthlyEmissions,
+        recentActivities,
         loading,
         error,
         breakdownData,
@@ -235,6 +259,7 @@ export const useFootprintLog = () => {
         fetchLogs,
         fetchTotalEmissions,
         fetchBreakdownData,
+        fetchDashboardMetrics,
         createLog,
         updateLog,
         deleteLog,
@@ -252,6 +277,7 @@ export const useFootprintLog = () => {
             fetchLogs();
             fetchTotalEmissions();
             fetchBreakdownData();
+            fetchDashboardMetrics();
         }
     };
 };

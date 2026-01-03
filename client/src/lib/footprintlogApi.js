@@ -77,6 +77,45 @@ export const footprintLogAPI = {
         return apiRequest('/api/footprintlog/breakdown/category');
     },
 
+    // Get emissions for a specific time period
+    getEmissionsForPeriod: async (startDate, endDate) => {
+        const queryParams = new URLSearchParams();
+        if (startDate) queryParams.append('startDate', startDate);
+        if (endDate) queryParams.append('endDate', endDate);
+        
+        return apiRequest(`/api/footprintlog/total?${queryParams.toString()}`);
+    },
+
+    // Get weekly emissions (last 7 days)
+    getWeeklyEmissions: async () => {
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - 7);
+        
+        return footprintLogAPI.getEmissionsForPeriod(
+            startDate.toISOString(),
+            endDate.toISOString()
+        );
+    },
+
+    // Get monthly emissions (current month)
+    getMonthlyEmissions: async () => {
+        const now = new Date();
+        const startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        
+        return footprintLogAPI.getEmissionsForPeriod(
+            startDate.toISOString(),
+            endDate.toISOString()
+        );
+    },
+
+    // Get recent activities (last N logs)
+    getRecentActivities: async (limit = 5) => {
+        const logs = await footprintLogAPI.getUserLogs();
+        return logs.slice(0, limit);
+    },
+
     // Calculate emissions preview without saving (using backend calculation)
     calculateEmissionsPreview: async (activityData) => {
         // Format the data for backend calculation
