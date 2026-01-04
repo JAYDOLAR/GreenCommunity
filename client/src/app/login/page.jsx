@@ -17,15 +17,15 @@ const decodeJWT = (token) => {
       console.error('Invalid token provided to decodeJWT:', token);
       return null;
     }
-    
+
     const base64Url = token.split('.')[1];
     if (!base64Url) {
       console.error('Invalid JWT format - missing payload');
       return null;
     }
-    
+
     const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+    const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function (c) {
       return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
     }).join(''));
     return JSON.parse(jsonPayload);
@@ -46,18 +46,18 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [errorType, setErrorType] = useState(''); // 'auth', 'network', 'validation', 'server', 'email'
   const [showError, setShowError] = useState(false);
-  
+
   // 2FA states
   const [requires2FA, setRequires2FA] = useState(false);
   const [tempToken, setTempToken] = useState('');
   const [twoFactorCode, setTwoFactorCode] = useState('');
   const [showSuccessNotification, setShowSuccessNotification] = useState(false);
-  
+
   // Remember device states
   const [rememberDevice, setRememberDevice] = useState(false);
   const [rememberDays, setRememberDays] = useState(30);
   const [customDeviceName, setCustomDeviceName] = useState('');
-  
+
   // Client-side validation states
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
@@ -68,15 +68,15 @@ export default function LoginPage() {
     const params = new URLSearchParams(window.location.search);
     const requires2FAFromUrl = params.get('requires2FA') === 'true';
     const tempTokenFromUrl = params.get('tempToken');
-    
+
     if (requires2FAFromUrl && tempTokenFromUrl) {
       setRequires2FA(true);
       setTempToken(tempTokenFromUrl);
-      
+
       // Remove query params from URL
       window.history.replaceState({}, document.title, window.location.pathname);
     }
-    
+
     // Clear errors when user starts typing
     if (email && emailError) setEmailError('');
     if (password && passwordError) setPasswordError('');
@@ -97,7 +97,7 @@ export default function LoginPage() {
   // Client-side validation
   const validateForm = () => {
     let isValid = true;
-    
+
     // Email validation
     if (!email) {
       setEmailError('Email is required');
@@ -109,7 +109,7 @@ export default function LoginPage() {
       setEmailError('Please enter a complete email address');
       isValid = false;
     }
-    
+
     // Password validation
     if (!password) {
       setPasswordError('Password is required');
@@ -118,29 +118,29 @@ export default function LoginPage() {
       setPasswordError('Password must be at least 6 characters');
       isValid = false;
     }
-    
+
     return isValid;
   };
-  
+
   const handleContinue = async (e) => {
     e.preventDefault();
-    
+
     // Clear previous errors
     setError('');
     setEmailError('');
     setPasswordError('');
-    
+
     // Client-side validation
     if (!validateForm()) {
       return;
     }
-    
+
     setIsSubmitting(true);
     setIsSuccess(false);
 
     try {
       const data = await authAPI.login({ email, password });
-      
+
       // Check if 2FA is required (normal flow)
       if (data.requires2FA && data.tempToken) {
         setRequires2FA(true);
@@ -148,22 +148,22 @@ export default function LoginPage() {
         setIsSubmitting(false);
         return;
       }
-      
+
       // For successful login without 2FA, use loginAndSetUser to get full profile
       await loginAndSetUser(() => Promise.resolve(data));
-      
+
       setIsSuccess(true);
-      
+
       // Small delay to ensure user state is updated before redirect
       setTimeout(() => {
         router.push('/dashboard');
       }, 100);
-      
+
     } catch (error) {
       // Handle different types of errors with user-friendly messages
       let errorMessage = 'Something went wrong. Please try again.';
       let type = 'auth';
-      
+
       if (error.message) {
         // Check for email-specific errors first
         if (error.message.includes('User not found') || error.message.includes('Email not found') || error.message.includes('No user found')) {
@@ -189,28 +189,28 @@ export default function LoginPage() {
           type = 'auth';
         }
       }
-      
+
       setError(errorMessage);
       setErrorType(type);
       setIsSubmitting(false);
     }
   };
-      
+
   const handle2FAVerification = async (e) => {
     e.preventDefault();
-    
+
     if (!twoFactorCode || twoFactorCode.length !== 6) {
       setError('Please enter a valid 6-digit 2FA code');
       setErrorType('auth');
       return;
     }
-    
+
     setIsSubmitting(true);
     setError('');
-    
+
     try {
       console.log('Attempting 2FA verification:', { tempToken: tempToken?.substring(0, 20) + '...', code: twoFactorCode });
-      
+
       // Prepare request data with remember device options
       const deviceInfo = getDeviceInfo();
       const requestData = {
@@ -221,30 +221,30 @@ export default function LoginPage() {
         deviceName: rememberDevice && customDeviceName ? customDeviceName : (rememberDevice ? deviceInfo.deviceName : undefined),
         clientTimestamp: rememberDevice ? deviceInfo.timestamp : undefined // Send client device time
       };
-      
+
       // Normal 2FA verification flow - use loginAndSetUser to get full profile
       const data = await authAPI.verify2FALogin(requestData.tempToken, requestData.token, requestData);
       console.log('2FA verification successful:', data);
-      
+
       // Use loginAndSetUser to store token and get full profile
       await loginAndSetUser(() => Promise.resolve(data));
-      
+
       setIsSuccess(true);
-      
+
       // Show success notification
       setShowSuccessNotification(true);
-      
+
       // Auto-hide success notification and redirect after 2 seconds
       setTimeout(() => {
         setShowSuccessNotification(false);
         router.push('/dashboard');
       }, 2000);
-      
+
     } catch (error) {
       // Handle 2FA verification errors gracefully with user-friendly messages
       let errorMessage = 'Invalid authentication code. Please try again.';
       let errorType = 'auth';
-      
+
       // Check for specific 2FA error messages and provide better context
       if (error.message) {
         if (error.message.includes('Invalid 2FA') || error.message.includes('Invalid authentication') || error.message.includes('Invalid token')) {
@@ -258,26 +258,21 @@ export default function LoginPage() {
           errorMessage = 'Authentication failed. Please verify the code and try again.';
         }
       }
-      
+
       setError(errorMessage);
       setErrorType(errorType);
       setIsSubmitting(false);
     }
   };
-  
+
   // Handle Enter key press for 2FA input
   const handle2FAKeyPress = (e) => {
     if (e.key === 'Enter' && twoFactorCode.length === 6 && !isSubmitting) {
       handle2FAVerification(e);
     }
   };
-  
+
   const handleGoogleLogin = () => {
-    try {
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('oauthIntent', 'login');
-      }
-    } catch {}
     authAPI.googleLogin();
   };
 
@@ -349,9 +344,8 @@ export default function LoginPage() {
     <main className="min-h-screen flex items-center justify-center bg-background px-4 relative">
       {/* Toast Error Message - Right Side */}
       {error && (
-        <div className={`fixed top-4 right-4 z-50 transition-all duration-500 ease-in-out ${
-          showError ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-full'
-        }`}>
+        <div className={`fixed top-4 right-4 z-50 transition-all duration-500 ease-in-out ${showError ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-full'
+          }`}>
           <div className={`${getErrorStyle(errorType).bg} ${getErrorStyle(errorType).border} rounded-lg p-4 shadow-lg max-w-sm`}>
             <div className="flex items-start gap-3">
               <AlertCircle className={`h-5 w-5 ${getErrorStyle(errorType).icon} mt-0.5 flex-shrink-0`} />
@@ -405,14 +399,14 @@ export default function LoginPage() {
               className="mx-auto h-15 w-80 mb-5"
             />
           </div>
-          
+
           <div className="text-center mb-4">
             <h2 className="text-xl font-semibold text-foreground">Two-Factor Authentication</h2>
             <p className="text-sm text-muted-foreground mt-1">
               Please enter the 6-digit code from your authenticator app
             </p>
           </div>
-          
+
           <div>
             <label htmlFor="twoFactorCode" className="block text-sm font-medium mb-1 text-foreground">
               Authentication Code
@@ -445,7 +439,7 @@ export default function LoginPage() {
                 Remember this device
               </label>
             </div>
-            
+
             {rememberDevice && (
               <div className="space-y-3 pl-6 border-l-2 border-border">
                 <div>
@@ -465,7 +459,7 @@ export default function LoginPage() {
                     <option value={90}>90 days</option>
                   </select>
                 </div>
-                
+
                 <div>
                   <label htmlFor="customDeviceName" className="block text-xs font-medium mb-1 text-muted-foreground">
                     Device name (optional)
@@ -480,23 +474,22 @@ export default function LoginPage() {
                     maxLength={50}
                   />
                 </div>
-                
+
                 <p className="text-xs text-muted-foreground">
                   You won&apos;t need to enter 2FA codes on this device for the selected period.
                 </p>
               </div>
             )}
           </div>
-          
+
           <button
             type="submit"
-            className={`w-full flex items-center justify-center py-2 rounded-md font-semibold text-white transition-all ${
-              isSubmitting
-                ? 'bg-primary/70 cursor-not-allowed'
-                : isSuccess
+            className={`w-full flex items-center justify-center py-2 rounded-md font-semibold text-white transition-all ${isSubmitting
+              ? 'bg-primary/70 cursor-not-allowed'
+              : isSuccess
                 ? 'bg-primary/90'
                 : 'bg-primary hover:bg-primary/90'
-            }`}
+              }`}
             disabled={isSubmitting || isSuccess}
           >
             {isSubmitting ? (
@@ -512,7 +505,7 @@ export default function LoginPage() {
               'Verify Code'
             )}
           </button>
-          
+
           <button
             type="button"
             onClick={() => {
@@ -536,109 +529,106 @@ export default function LoginPage() {
             />
           </div>
 
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium mb-1 text-foreground">
-            Email address
-          </label>
-          <input
-            id="email"
-            type="email"
-            required
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary bg-card text-foreground placeholder:text-muted-foreground transition-colors ${
-              emailError ? 'border-red-500 focus:ring-red-500' : 'border-border'
-            }`}
-          />
-          {emailError && (
-            <div className="flex items-center gap-1 mt-1 text-red-500 text-xs">
-              <AlertCircle size={12} />
-              <span>{emailError}</span>
-            </div>
-          )}
-        </div>
-
-        <div>
-          <label htmlFor="password" className="block text-sm font-medium mb-1 text-foreground">
-            Password
-          </label>
-          <div className="relative">
-          <input
-            id="password"
-              type={showPassword ? "text" : "password"}
-            required
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-              className={`leaf-cursor w-full px-3 py-2 pr-10 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary bg-card text-foreground placeholder:text-muted-foreground transition-colors ${
-                passwordError ? 'border-red-500 focus:ring-red-500' : 'border-border'
-              }`}
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium mb-1 text-foreground">
+              Email address
+            </label>
+            <input
+              id="email"
+              type="email"
+              required
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary bg-card text-foreground placeholder:text-muted-foreground transition-colors ${emailError ? 'border-red-500 focus:ring-red-500' : 'border-border'
+                }`}
             />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
-            >
-              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-            </button>
+            {emailError && (
+              <div className="flex items-center gap-1 mt-1 text-red-500 text-xs">
+                <AlertCircle size={12} />
+                <span>{emailError}</span>
+              </div>
+            )}
           </div>
-          {passwordError && (
-            <div className="flex items-center gap-1 mt-1 text-red-500 text-xs">
-              <AlertCircle size={12} />
-              <span>{passwordError}</span>
-            </div>
-          )}
-          <div className="text-right mt-1">
-            <Link href="/forgot-password" className="text-xs text-primary hover:underline">
-              Forgot Password?
-            </Link>
-          </div>
-        </div>
 
-        <button
-          type="submit"
-          className={`w-full flex items-center justify-center py-2 rounded-md font-semibold text-white transition-all ${
-            isSubmitting
+          <div>
+            <label htmlFor="password" className="block text-sm font-medium mb-1 text-foreground">
+              Password
+            </label>
+            <div className="relative">
+              <input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                required
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className={`leaf-cursor w-full px-3 py-2 pr-10 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary bg-card text-foreground placeholder:text-muted-foreground transition-colors ${passwordError ? 'border-red-500 focus:ring-red-500' : 'border-border'
+                  }`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+            {passwordError && (
+              <div className="flex items-center gap-1 mt-1 text-red-500 text-xs">
+                <AlertCircle size={12} />
+                <span>{passwordError}</span>
+              </div>
+            )}
+            <div className="text-right mt-1">
+              <Link href="/forgot-password" className="text-xs text-primary hover:underline">
+                Forgot Password?
+              </Link>
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            className={`w-full flex items-center justify-center py-2 rounded-md font-semibold text-white transition-all ${isSubmitting
               ? 'bg-primary/70 cursor-not-allowed'
               : isSuccess
-              ? 'bg-primary/90'
-              : 'bg-primary hover:bg-primary/90'
-          }`}
-          disabled={isSubmitting || isSuccess}
-        >
-          {isSubmitting ? (
-            <div className="flex items-center gap-2">
-              <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              <span>Signing in...</span>
-            </div>
-          ) : isSuccess ? (
-            <div className="flex items-center gap-2">
-              <span>Success</span>
-            </div>
-          ) : (
-            'Continue'
-          )}
-        </button>
+                ? 'bg-primary/90'
+                : 'bg-primary hover:bg-primary/90'
+              }`}
+            disabled={isSubmitting || isSuccess}
+          >
+            {isSubmitting ? (
+              <div className="flex items-center gap-2">
+                <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <span>Signing in...</span>
+              </div>
+            ) : isSuccess ? (
+              <div className="flex items-center gap-2">
+                <span>Success</span>
+              </div>
+            ) : (
+              'Continue'
+            )}
+          </button>
 
-        <div className="my-3 text-center text-muted-foreground text-sm">or</div>
+          <div className="my-3 text-center text-muted-foreground text-sm">or</div>
 
-        <button
-          type="button"
-          onClick={handleGoogleLogin}
-          className="w-full flex items-center justify-center gap-2 border border-border py-2 rounded bg-background hover:bg-accent transition"
-        >
-          <FcGoogle size={20} />
-          <span>Login with Google</span>
-        </button>
+          <button
+            type="button"
+            onClick={handleGoogleLogin}
+            className="w-full flex items-center justify-center gap-2 border border-border py-2 rounded bg-background hover:bg-accent transition"
+          >
+            <FcGoogle size={20} />
+            <span>Login with Google</span>
+          </button>
 
-        <p className="text-sm text-center text-muted-foreground mt-6">
-          Don't have an account?{' '}
-          <Link href="/Signup" className="text-primary hover:underline">
-            Get started
-          </Link>
-        </p>
-      </form>
+          <p className="text-sm text-center text-muted-foreground mt-6">
+            Don't have an account?{' '}
+            <Link href="/Signup" className="text-primary hover:underline">
+              Get started
+            </Link>
+          </p>
+        </form>
       )}
     </main>
   );

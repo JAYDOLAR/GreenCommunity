@@ -11,11 +11,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { 
-  User, 
-  Bell, 
-  Settings as SettingsIcon, 
-  Download, 
+import {
+  User,
+  Bell,
+  Settings as SettingsIcon,
+  Download,
   Camera,
   MapPin,
   Mail,
@@ -44,7 +44,7 @@ const Settings = () => {
   const [activeTab, setActiveTab] = useState('profile');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  
+
   const [profileData, setProfileData] = useState({
     name: '',
     email: '',
@@ -54,7 +54,7 @@ const Settings = () => {
     joinDate: '',
     preferredUnits: 'metric'
   });
-  
+
   const [isGoogleAuth, setIsGoogleAuth] = useState(false);
 
   const [notifications, setNotifications] = useState({
@@ -86,7 +86,7 @@ const Settings = () => {
       // Always try to load settings directly
       await loadUserSettings();
     };
-    
+
     initializeSettings();
   }, []);
 
@@ -95,20 +95,20 @@ const Settings = () => {
       setIsLoading(true);
       const response = await authAPI.getUserSettings();
       const userData = response.user;
-      
+
       // Check if user is authenticated via Google
       setIsGoogleAuth(userData.isGoogleAuth || false);
-      
+
       // Update profile data - use userInfo from backend response
       setProfileData({
         name: userData.name || '',
         email: userData.email || '',
         phone: userData.userInfo?.phone || userData.profile?.phone || '',
-        location: userData.userInfo?.location ? 
+        location: userData.userInfo?.location ?
           [userData.userInfo.location.city, userData.userInfo.location.state, userData.userInfo.location.country]
             .filter(part => part && part.trim())
-            .join(', ') : 
-          (userData.profile?.location ? 
+            .join(', ') :
+          (userData.profile?.location ?
             [userData.profile.location.city, userData.profile.location.state, userData.profile.location.country]
               .filter(part => part && part.trim())
               .join(', ') : ''),
@@ -157,16 +157,16 @@ const Settings = () => {
   const saveProfileSettings = async () => {
     try {
       setIsSaving(true);
-      
+
       // Parse location string into components
       const parseLocation = (locationString) => {
         if (!locationString || !locationString.trim()) {
           return { city: '', state: '', country: '', raw: '' };
         }
-        
+
         const parts = locationString.split(',').map(part => part.trim());
         let city = '', state = '', country = '';
-        
+
         if (parts.length === 1) {
           city = parts[0];
         } else if (parts.length === 2) {
@@ -177,12 +177,12 @@ const Settings = () => {
           state = parts[1];
           country = parts[2];
         }
-        
+
         return { city, state, country, raw: locationString };
       };
-      
+
       const locationData = parseLocation(profileData.location);
-      
+
       const response = await authAPI.updateProfile({
         name: profileData.name,
         email: isGoogleAuth ? undefined : profileData.email, // Don't send email for Google users
@@ -191,16 +191,16 @@ const Settings = () => {
         preferredUnits: profileData.preferredUnits,
         location: profileData.location
       });
-      
+
       // Update user context with fresh data from server
       updateUser(response.user);
       toast.success('Profile updated successfully!');
-      
+
       // Refresh user data to ensure we have the latest information including formatted location
       await refreshUser();
     } catch (error) {
       console.error('Error updating profile:', error);
-      
+
       // Handle specific Google auth email error
       if (error.response?.data?.code === 'GOOGLE_EMAIL_READONLY') {
         toast.error('Email cannot be changed for Google-authenticated accounts');
@@ -241,7 +241,7 @@ const Settings = () => {
   const submitPasswordChange = async (e) => {
     e.preventDefault();
     setPasswordMessage('');
-    
+
     if (!passwordForm.current || !passwordForm.new || !passwordForm.confirm) {
       setPasswordMessage('All fields are required.');
       return;
@@ -250,14 +250,14 @@ const Settings = () => {
       setPasswordMessage('New passwords do not match.');
       return;
     }
-    
+
     try {
       setIsChangingPassword(true);
       await authAPI.changePassword({
         currentPassword: passwordForm.current,
         newPassword: passwordForm.new
       });
-      
+
       setPasswordMessage('Password changed successfully!');
       setPasswordForm({ current: '', new: '', confirm: '' });
       setShowChangePassword(false);
@@ -323,7 +323,7 @@ const Settings = () => {
     try {
       const response = await authAPI.disable2FA();
       toast.success(response.message || '2FA disabled successfully');
-      
+
       // Manually update the user context after successful disable
       if (user) {
         const updatedUser = { ...user, twoFactorEnabled: false };
@@ -389,9 +389,9 @@ const Settings = () => {
                         id="avatar-upload"
                         disabled={isSaving}
                       />
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => document.getElementById('avatar-upload')?.click()}
                         disabled={isSaving}
                       >
@@ -465,8 +465,8 @@ const Settings = () => {
                   </div>
                   <div>
                     <Label>{t('Preferred units')}</Label>
-                    <Select 
-                      value={profileData.preferredUnits} 
+                    <Select
+                      value={profileData.preferredUnits}
                       onValueChange={(value) => handleProfileUpdate('preferredUnits', value)}
                     >
                       <SelectTrigger className="mt-1">
@@ -478,7 +478,7 @@ const Settings = () => {
                       </SelectContent>
                     </Select>
                   </div>
-                  <Button 
+                  <Button
                     className="btn-hero"
                     onClick={saveProfileSettings}
                     disabled={isSaving}
@@ -606,7 +606,7 @@ const Settings = () => {
                   ))}
                 </div>
               </div>
-              <Button 
+              <Button
                 className="btn-hero"
                 onClick={saveNotificationSettings}
                 disabled={isSaving}
@@ -756,7 +756,7 @@ const Settings = () => {
                 <p className="text-sm text-muted-foreground">
                   {t('This Action cannot be undone')}
                 </p>
-                <Button onClick={deleteAccount} variant="destructive" className="w-full">
+                <Button onClick={deleteAccount} variant="destructive" className="w-full text-white">
                   <Trash2 className="h-4 w-4 mr-2" />
                   {t('Delete Account')}
                 </Button>
@@ -773,8 +773,8 @@ const Settings = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className={`justify-start ${isGoogleAuth ? 'opacity-60 cursor-not-allowed' : ''}`}
                   onClick={() => !isGoogleAuth && setShowChangePassword((v) => !v)}
                   disabled={isGoogleAuth}
@@ -835,7 +835,7 @@ const Settings = () => {
                   {passwordMessage && <div className="text-sm text-primary mt-2">{passwordMessage}</div>}
                 </form>
               )}
-              
+
               {/* Trusted Devices Management - Only show if 2FA is enabled */}
               {user?.twoFactorEnabled && (
                 <div className="mt-6">
