@@ -14,11 +14,6 @@ const nextConfig = {
     
     if (process.env.NODE_ENV === 'development') {
       return [
-        // Ensure Next handles its own AI routes locally (Gemini) in dev
-        {
-          source: '/api/ai/:path*',
-          destination: '/api/ai/:path*',
-        },
         {
           source: '/api/:path*',
           destination: `${apiUrl}/api/:path*`,

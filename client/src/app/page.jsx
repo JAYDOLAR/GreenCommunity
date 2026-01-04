@@ -108,6 +108,21 @@ const LandingPage = () => {
     }
   }, [router]);
 
+  const handleMarketplaceRoute = useCallback((e) => {
+    e.preventDefault();
+    // Check if user is logged in by checking for token in localStorage
+    const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+    
+    if (token) {
+      // User is logged in, navigate to marketplace
+      router.push('/marketplace');
+    } else {
+      // User is not logged in, navigate to login page
+      toast.error('Please log in to access the marketplace.');
+      setTimeout(() => router.push('/login'), 800);
+    }
+  }, [router]);
+
   // Animation variants for staggered containers and fading in items
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -514,7 +529,7 @@ const LandingPage = () => {
                 Start My Assessment
               </button>
             </Link>
-            <Link href="/marketplace" className="flex-1">
+            <Link href="/marketplace" onClick={handleMarketplaceRoute} className="flex-1">
               <button
                 className="w-full bg-transparent border-2 border-white text-white font-semibold px-6 md:px-8 py-3 md:py-4 rounded-lg shadow-lg hover:bg-white hover:text-green-700 hover:border-white hover:shadow-xl transition-all duration-300 transform hover:scale-105 active:scale-95 flex items-center justify-center gap-2 group cursor-pointer text-sm sm:text-base md:text-lg"
               >
@@ -601,9 +616,12 @@ const LandingPage = () => {
                       </a>
                     </li>
                     <li>
-                      <a href="#" className="hover:text-green-600 transition-all duration-300 block py-1 hover:translate-x-1">
-                        Offset Marketplace
-                      </a>
+                      <Link href="/marketplace"
+                        onClick={handleMarketplaceRoute}
+                        className="hover:text-green-600 transition-all duration-300 block py-1 hover:translate-x-1"
+                        >
+                          Offset Marketplace
+                      </Link>
                     </li>
                     <li>
                       <a href="#" className="hover:text-green-600 transition-all duration-300 block py-1 hover:translate-x-1">
@@ -680,7 +698,7 @@ const LandingPage = () => {
             <div className="flex flex-col md:flex-row items-center justify-between gap-6">
               <div className="flex items-center gap-6">
                 <div className="text-sm text-gray-500" style={{ fontFamily: "'Inter', sans-serif" }}>
-                  &copy; 2024 GreenCommunity. All rights reserved.
+                  &copy; 2025 GreenCommunity. All rights reserved.
                 </div>
                 <div className="hidden md:flex items-center gap-4 text-xs text-gray-400">
                   <a href="#" className="hover:text-green-600 transition-colors duration-300">Terms</a>
@@ -692,7 +710,7 @@ const LandingPage = () => {
               </div>
 
               <div className="flex items-center gap-1">
-                <div className="text-xs text-gray-400 mr-3">Follow us</div>
+                <div className="text-xs text-gray-400 mr-3"></div>
                 <a href="#" aria-label="Twitter" className="p-2 rounded-full bg-gray-100 hover:bg-blue-50 transition-all duration-300 transform hover:scale-110 hover:shadow-md group">
                   <FaTwitter className="w-4 h-4 text-gray-400 group-hover:text-[#1DA1F2] transition-colors duration-300" />
                 </a>
