@@ -213,131 +213,144 @@ const Dashboard = () => {
   const streakDays = Array.from({ length: 13 }, (_, i) => new Date(today.getFullYear(), today.getMonth(), i + 1));
 
   return (
-    <div className="p-4 sm:p-8 md:p-10 pb-8 sm:pb-12 md:pb-16 space-y-6 sm:space-y-8 md:space-y-10 bg-gradient-to-br from-background via-accent/5 to-primary/5 min-h-screen relative">
+    <div className="px-4 sm:px-8 md:px-10 pt-2 sm:pt-4 md:pt-6 pb-8 sm:pb-12 md:pb-16 space-y-4 sm:space-y-5 md:space-y-4 bg-gradient-to-br from-background via-accent/5 to-primary/5 min-h-screen relative">
       {/* Enhanced Header */}
-      <div className="space-y-3 sm:space-y-4 md:space-y-5 animate-fade-in">
+      <div className="space-y-1 sm:space-y-2 md:space-y-2 animate-fade-in">
         <div>
-          <h1 className="text-2xl sm:text-4xl md:text-4xl font-bold text-gradient mb-1">{t(greetingKey)}, {name}!</h1>
+          <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-3xl xl:text-4xl font-bold text-gradient mb-1">{t(greetingKey)}, {name}!</h1>
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-2">
-            <p className="text-base sm:text-lg md:text-xl text-muted-foreground">Here's your environmental impact overview</p>
+            <p className="text-sm sm:text-base md:text-lg lg:text-lg xl:text-xl text-muted-foreground">Here's your environmental impact overview</p>
           </div>
         </div>
-
       </div>
 
       {/* Key Metrics Cards with Staggered Animation */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 md:gap-8">
         {/* Monthly Footprint */}
-        <div className="animate-slide-up" style={{ animationDelay: '0.1s' }}>
-          <Card className="card-premium hover-glow group cursor-pointer">
-            <CardHeader className="pb-0.5 md:pb-1">
-              <CardTitle className="text-sm md:text-base font-semibold text-muted-foreground flex items-center gap-2 group-hover:text-primary transition-colors">
-                <BarChart3 className="h-5 w-5 md:h-6 md:w-6" />
+        <div className="animate-slide-up h-full" style={{ animationDelay: '0.1s' }}>
+          <Card className="card-premium hover-glow group cursor-pointer h-full flex flex-col">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xs sm:text-sm md:text-sm lg:text-base font-semibold text-muted-foreground flex items-center gap-2 group-hover:text-primary transition-colors">
+                <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 md:h-5 md:w-5 lg:h-6 lg:w-6" />
                 Monthly Footprint
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-4 md:p-6">
-              <div className="space-y-2 sm:space-y-3 md:space-y-4">
-                <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground">
+            <CardContent className="p-4 md:p-6 flex-1 flex flex-col justify-between">
+              <div className="space-y-3">
+                <div className="text-xl sm:text-2xl md:text-2xl lg:text-3xl xl:text-3xl font-bold text-foreground">
                   <AnimatedCounter end={currentFootprint} decimals={1} />
-                  <span className="text-sm sm:text-base md:text-lg font-normal text-muted-foreground ml-1">tons CO₂</span>
+                  <span className="text-xs sm:text-sm md:text-sm lg:text-base font-normal text-muted-foreground ml-1">tons CO₂</span>
                 </div>
-                <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-2 flex-wrap min-h-[1.5rem]">
                   {isAboveTarget ? (
-                    <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-warning animate-bounce" />
+                    <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 md:h-4 md:w-4 lg:h-5 lg:w-5" />
                   ) : (
-                    <TrendingDown className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-success animate-bounce" />
+                    <TrendingDown className="h-3 w-3 sm:h-4 sm:w-4 md:h-4 md:w-4 lg:h-5 lg:w-5" />
                   )}
-                  <span className={`text-xs sm:text-sm md:text-base font-semibold ${isAboveTarget ? 'text-warning' : 'text-success'}`}>
+                  <span className={`text-xs sm:text-xs md:text-sm lg:text-sm font-semibold ${isAboveTarget ? 'text-warning' : 'text-success'}`}>
                     {targetFootprint > 0 ? (
                       `${Math.abs(((currentFootprint - targetFootprint) / targetFootprint) * 100).toFixed(1)}% ${isAboveTarget ? 'above' : 'below'} target`
                     ) : (
                       'No target set'
                     )}
                   </span>
-                  {equivalents ? (
-                    <span className="text-xs sm:text-sm md:text-base text-muted-foreground ml-2">
-                      ≈ {Math.round(equivalents.kwh)} kWh • {equivalents.trees?.toFixed?.(1)} trees • {equivalents.cars?.toFixed?.(3)} cars
-                    </span>
-                  ) : null}
                 </div>
-                <ProfessionalProgress value={80} className="mt-2 sm:mt-3 md:mt-4" />
+                {equivalents && (
+                  <div className="text-xs sm:text-xs md:text-sm lg:text-sm text-muted-foreground">
+                    ≈ {Math.round(equivalents.kwh)} kWh • {equivalents.trees?.toFixed?.(1)} trees • {equivalents.cars?.toFixed?.(3)} cars
+                  </div>
+                )}
               </div>
+              <ProfessionalProgress value={80} className="mt-4" />
             </CardContent>
           </Card>
         </div>
 
         {/* Weekly Total */}
-        <div className="animate-slide-up" style={{ animationDelay: '0.2s' }}>
-          <Card className="card-floating hover-lift group">
-            <CardHeader className="pb-0.5 md:pb-1">
-              <CardTitle className="text-sm md:text-base font-semibold text-muted-foreground flex items-center gap-2 group-hover:text-primary transition-colors">
-                <Calendar className="h-5 w-5 md:h-6 md:w-6" />
+        <div className="animate-slide-up h-full" style={{ animationDelay: '0.2s' }}>
+          <Card className="card-floating hover-lift group h-full flex flex-col">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xs sm:text-sm md:text-sm lg:text-base font-semibold text-muted-foreground flex items-center gap-2 group-hover:text-primary transition-colors">
+                <Calendar className="h-4 w-4 sm:h-5 sm:w-5 md:h-5 md:w-5 lg:h-6 lg:w-6" />
                 This Week
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-4 md:p-6">
-              <div className="space-y-2 sm:space-y-3 md:space-y-4">
-                <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground">
+            <CardContent className="p-4 md:p-6 flex-1 flex flex-col justify-between">
+              <div className="space-y-3">
+                <div className="text-xl sm:text-2xl md:text-2xl lg:text-3xl xl:text-3xl font-bold text-foreground">
                   <AnimatedCounter end={weeklyEmissions} decimals={1} />
-                  <span className="text-sm sm:text-base md:text-lg font-normal text-muted-foreground ml-1">kg CO₂</span>
+                  <span className="text-xs sm:text-sm md:text-sm lg:text-base font-normal text-muted-foreground ml-1">kg CO₂</span>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 min-h-[1.5rem]">
                   {weeklyTrend === 'up' ? (
-                    <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-warning animate-bounce" />
+                    <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 md:h-4 md:w-4 lg:h-5 lg:w-5 text-warning animate-bounce" />
                   ) : (
-                    <TrendingDown className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-success animate-bounce" />
+                    <TrendingDown className="h-3 w-3 sm:h-4 sm:w-4 md:h-4 md:w-4 lg:h-5 lg:w-5 text-success animate-bounce" />
                   )}
-                  <span className={`text-xs sm:text-sm md:text-base font-semibold ${weeklyTrend === 'up' ? 'text-warning' : 'text-success'}`}>
+                  <span className={`text-xs sm:text-xs md:text-sm lg:text-sm font-semibold ${weeklyTrend === 'up' ? 'text-warning' : 'text-success'}`}>
                     {trendPercentage.toFixed(1)}% {weeklyTrend === 'up' ? 'above' : 'below'} monthly average
                   </span>
                 </div>
+                <div className="text-xs sm:text-xs md:text-sm lg:text-sm text-muted-foreground min-h-[1.5rem]">
+                  Daily average: {(weeklyEmissions / 7).toFixed(1)} kg CO₂
+                </div>
+              </div>
+              <div className="mt-4">
+                <ProfessionalProgress value={Math.min((weeklyEmissions / (monthlyEmissions / 4)) * 100, 100)} />
               </div>
             </CardContent>
           </Card>
         </div>
 
         {/* Goal Progress */}
-        <div className="animate-slide-up" style={{ animationDelay: '0.3s' }}>
-          <Card className="card-floating hover-lift group">
-            <CardHeader className="pb-1 md:pb-1">
-              <CardTitle className="text-sm md:text-base font-semibold text-muted-foreground flex items-center gap-2 group-hover:text-primary transition-colors">
-                <Target className="h-5 w-5 md:h-6 md:w-6" />
+        <div className="animate-slide-up h-full" style={{ animationDelay: '0.3s' }}>
+          <Card className="card-floating hover-lift group h-full flex flex-col">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xs sm:text-sm md:text-sm lg:text-base font-semibold text-muted-foreground flex items-center gap-2 group-hover:text-primary transition-colors">
+                <Target className="h-4 w-4 sm:h-5 sm:w-5 md:h-5 md:w-5 lg:h-6 lg:w-6" />
                 Goal Progress
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-4 md:p-6">
-              <div className="space-y-2 sm:space-y-3 md:space-y-4">
-                <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground">
+            <CardContent className="p-4 md:p-6 flex-1 flex flex-col justify-between">
+              <div className="space-y-3">
+                <div className="text-xl sm:text-2xl md:text-2xl lg:text-3xl xl:text-3xl font-bold text-foreground">
                   <AnimatedCounter end={goalProgress} />%
                 </div>
-                <div className="text-xs sm:text-sm md:text-base text-muted-foreground">
+                <div className="text-xs sm:text-xs md:text-sm lg:text-sm text-muted-foreground min-h-[1.5rem]">
                   Target: {targetFootprint} tons/month
                 </div>
-                <ProfessionalProgress value={goalProgress} />
+                <div className="text-xs sm:text-xs md:text-sm lg:text-sm text-muted-foreground min-h-[1.5rem]">
+                  Current: {currentFootprint.toFixed(1)} tons
+                </div>
               </div>
+              <ProfessionalProgress value={goalProgress} className="mt-4" />
             </CardContent>
           </Card>
         </div>
 
         {/* Offset Credits */}
-        <div className="animate-slide-up" style={{ animationDelay: '0.4s' }}>
-          <Card className="card-premium hover-glow group cursor-pointer">
-            <CardHeader className="pb-3 md:pb-4">
-              <CardTitle className="text-sm md:text-base font-semibold text-muted-foreground flex items-center gap-2 group-hover:text-success transition-colors">
-                <Leaf className="h-5 w-5 md:h-6 md:w-6" />
+        <div className="animate-slide-up h-full" style={{ animationDelay: '0.4s' }}>
+          <Card className="card-premium hover-glow group cursor-pointer h-full flex flex-col">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xs sm:text-sm md:text-sm lg:text-base font-semibold text-muted-foreground flex items-center gap-2 group-hover:text-success transition-colors">
+                <Leaf className="h-4 w-4 sm:h-5 sm:w-5 md:h-5 md:w-5 lg:h-6 lg:w-6" />
                 Offset Credits
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-2 md:p-3">
-              <div className="space-y-2 sm:space-y-3 md:space-y-4">
-                <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground">
+            <CardContent className="p-4 md:p-6 flex-1 flex flex-col justify-between">
+              <div className="space-y-3">
+                <div className="text-xl sm:text-2xl md:text-2xl lg:text-3xl xl:text-3xl font-bold text-foreground">
                   <AnimatedCounter end={1.2} decimals={1} />
-                  <span className="text-sm sm:text-base md:text-lg font-normal text-muted-foreground ml-1">tons</span>
+                  <span className="text-xs sm:text-sm md:text-sm lg:text-base font-normal text-muted-foreground ml-1">tons</span>
                 </div>
-                <Badge variant="secondary" className="bg-success/15 text-success border-success/30 font-semibold animate-pulse-eco text-xs sm:text-sm md:text-base">
-                  50% offset this month
-                </Badge>
+                <div className="text-xs sm:text-xs md:text-sm lg:text-sm text-muted-foreground min-h-[1.5rem]">
+                  Carbon offset purchased
+                </div>
+                <div className="min-h-[1.5rem]">
+                  <Badge variant="secondary" className="bg-success/15 text-success border-success/30 font-semibold animate-pulse-eco text-xs sm:text-xs md:text-sm">
+                    50% offset this month
+                  </Badge>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -351,8 +364,8 @@ const Dashboard = () => {
           <div className="animate-slide-up" style={{ animationDelay: '0.5s' }}>
             <Card className="card-premium hover-lift">
               <CardHeader className="p-2 md:p-4">
-                <CardTitle className="flex items-center gap-2 text-xl md:text-2xl">{t('emissions')}</CardTitle>
-                <CardDescription className="text-sm md:text-base">Your emissions by category this month</CardDescription>
+                <CardTitle className="flex items-center gap-2 text-lg sm:text-xl md:text-xl lg:text-2xl">{t('emissions')}</CardTitle>
+                <CardDescription className="text-xs sm:text-sm md:text-sm lg:text-base">Your emissions by category this month</CardDescription>
               </CardHeader>
               <CardContent className="p-4 md:p-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 md:gap-4">
@@ -369,8 +382,8 @@ const Dashboard = () => {
                             <Icon className="h-5 w-5 sm:h-6 sm:w-6 md:h-6 md:w-6" />
                           </div>
                           <div>
-                            <div className="font-semibold text-foreground text-base sm:text-lg md:text-lg">{item.category}</div>
-                            <div className="text-xs sm:text-sm md:text-sm text-muted-foreground">
+                            <div className="font-semibold text-foreground text-sm sm:text-base md:text-base lg:text-lg">{item.category}</div>
+                            <div className="text-xs sm:text-xs md:text-sm lg:text-sm text-muted-foreground">
                               <AnimatedCounter end={item.amount} decimals={1} /> tons CO₂
                             </div>
                           </div>
@@ -401,11 +414,11 @@ const Dashboard = () => {
           <div className="animate-slide-up" style={{ animationDelay: '0.6s' }}>
             <Card className="card-floating hover-lift">
               <CardHeader className="p-4 md:p-6">
-                <CardTitle className="flex items-center gap-2 text-xl md:text-2xl">
-                  <Calendar className="h-6 w-6 md:h-7 md:w-7 text-primary" />
+                <CardTitle className="flex items-center gap-2 text-lg sm:text-xl md:text-xl lg:text-2xl">
+                  <Calendar className="h-5 w-5 sm:h-6 sm:w-6 md:h-6 md:w-6 lg:h-7 lg:w-7 text-primary" />
                   Recent Activities
                 </CardTitle>
-                <CardDescription className="text-sm md:text-base">Your latest carbon footprint entries</CardDescription>
+                <CardDescription className="text-xs sm:text-sm md:text-sm lg:text-base">Your latest carbon footprint entries</CardDescription>
               </CardHeader>
               <CardContent className="p-4 md:p-6">
                 {footprintLoading ? (
@@ -433,18 +446,18 @@ const Dashboard = () => {
                         style={{ animationDelay: `${0.7 + (index * 0.1)}s` }}
                       >
                         <div className="flex-1">
-                          <div className="font-semibold text-foreground text-base sm:text-lg md:text-xl group-hover:text-primary transition-colors">
+                          <div className="font-semibold text-foreground text-sm sm:text-base md:text-base lg:text-lg group-hover:text-primary transition-colors">
                             {activity.description}
                           </div>
-                          <div className="text-xs sm:text-sm md:text-base text-muted-foreground mt-1">
+                          <div className="text-xs sm:text-xs md:text-sm lg:text-sm text-muted-foreground mt-1">
                             {activity.type} • {activity.date}
                           </div>
                         </div>
                         <div className="text-right">
-                          <div className="text-lg sm:text-xl md:text-2xl font-bold text-foreground group-hover:text-primary transition-colors">
+                          <div className="text-base sm:text-lg md:text-lg lg:text-xl font-bold text-foreground group-hover:text-primary transition-colors">
                             +<AnimatedCounter end={activity.co2} decimals={1} /> kg
                           </div>
-                          <div className="text-xs md:text-sm text-muted-foreground">CO₂</div>
+                          <div className="text-xs sm:text-xs md:text-sm lg:text-sm text-muted-foreground">CO₂</div>
                         </div>
                       </div>
                     ))}
