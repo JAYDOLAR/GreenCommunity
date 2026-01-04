@@ -11,7 +11,7 @@ export const getDeviceInfo = () => {
 
   const userAgent = navigator.userAgent;
   const platform = navigator.platform;
-  
+
   let deviceName = 'Unknown Device';
   let deviceType = 'desktop';
   let os = 'unknown';
@@ -94,7 +94,7 @@ export const getTimezoneInfo = () => {
 export const formatTimeWithTimezone = (dateString) => {
   const date = new Date(dateString);
   const timezone = getTimezoneInfo().timezone;
-  
+
   return date.toLocaleString('en-US', {
     timeZone: timezone,
     year: 'numeric',
@@ -106,8 +106,10 @@ export const formatTimeWithTimezone = (dateString) => {
   });
 };
 
-export default {
+const deviceUtils = {
   getDeviceInfo,
   getTimezoneInfo,
   formatTimeWithTimezone
 };
+
+export default deviceUtils;

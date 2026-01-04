@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { FcGoogle } from 'react-icons/fc';
-import { Eye, EyeOff, AlertCircle, X } from 'lucide-react';
+import { Eye, EyeOff, AlertCircle, X, CheckCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { authAPI } from '../../lib/api';
 import { useUser } from '@/context/UserContext';
@@ -25,11 +25,11 @@ export default function SignUpPage() {
   const [isVerified, setIsVerified] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [resendMessage, setResendMessage] = useState('');
-  
+
   // Password validation states
   const [passwordErrors, setPasswordErrors] = useState([]);
   const [confirmPasswordError, setConfirmPasswordError] = useState('');
-  
+
   // Password visibility states
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -40,27 +40,27 @@ export default function SignUpPage() {
   // Password validation function
   const validatePassword = (password) => {
     const errors = [];
-    
+
     if (password.length < 8) {
       errors.push('Password must be at least 8 characters long');
     }
-    
+
     if (!/[A-Z]/.test(password)) {
       errors.push('Password must contain at least one uppercase letter');
     }
-    
+
     if (!/[a-z]/.test(password)) {
       errors.push('Password must contain at least one lowercase letter');
     }
-    
+
     if (!/\d/.test(password)) {
       errors.push('Password must contain at least one number');
     }
-    
+
     if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
       errors.push('Password must contain at least one special character');
     }
-    
+
     return errors;
   };
 
@@ -118,28 +118,28 @@ export default function SignUpPage() {
 
     try {
       const data = await authAPI.register({ name, email, password });
-      
+
       // Store token in localStorage
       if (data.token) {
         localStorage.setItem('token', data.token);
       }
-      
+
       // Update user context with user data
       if (data.user) {
         updateUser(data.user);
       }
-      
+
       setIsSuccess(true);
       setIsSubmitting(false);
-      
+
       // Redirect to email verification page
       router.push(`/verify-email?email=${encodeURIComponent(email)}`);
-      
+
     } catch (err) {
       // Handle different types of errors with user-friendly messages
       let errorMessage = 'Registration failed. Please try again.';
       let type = 'server';
-      
+
       if (err.message) {
         // Check for email-specific errors first
         if (err.message.includes('Email already exists') || err.message.includes('Email already in use') || err.message.includes('User already exists')) {
@@ -160,7 +160,7 @@ export default function SignUpPage() {
         } else if (err.message.includes('Validation failed') || err.message.includes('validation')) {
           errorMessage = 'Please check your information and try again.';
           type = 'validation';
-      } else {
+        } else {
           errorMessage = err.message;
           type = 'server';
         }
@@ -168,7 +168,7 @@ export default function SignUpPage() {
         errorMessage = err.errors.map(e => e.msg).join('. ');
         type = 'validation';
       }
-      
+
       setError(errorMessage);
       setErrorType(type);
       setIsSubmitting(false);
@@ -179,7 +179,7 @@ export default function SignUpPage() {
     e.preventDefault();
     setVerificationError('');
     setIsVerifying(true);
-    
+
     try {
       await authAPI.verifyEmailCode(email, verificationCode);
       setIsVerified(true);
@@ -196,7 +196,7 @@ export default function SignUpPage() {
     setIsResending(true);
     setResendMessage('');
     setVerificationError('');
-    
+
     try {
       await authAPI.resendVerificationCode(email);
       setResendMessage('Verification code sent successfully!');
@@ -211,7 +211,7 @@ export default function SignUpPage() {
       if (typeof window !== 'undefined') {
         localStorage.setItem('oauthIntent', 'signup');
       }
-    } catch {}
+    } catch { }
     authAPI.googleLogin();
   };
 
@@ -329,9 +329,8 @@ export default function SignUpPage() {
     <div className="min-h-screen flex items-center justify-center bg-background px-4 relative">
       {/* Toast Error Message - Right Side */}
       {error && (
-        <div className={`fixed top-4 right-4 z-50 transition-all duration-500 ease-in-out ${
-          showError ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-full'
-        }`}>
+        <div className={`fixed top-4 right-4 z-50 transition-all duration-500 ease-in-out ${showError ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-full'
+          }`}>
           <div className={`${getErrorStyle(errorType).bg} ${getErrorStyle(errorType).border} rounded-lg p-4 shadow-lg max-w-sm`}>
             <div className="flex items-start gap-3">
               <AlertCircle className={`h-5 w-5 ${getErrorStyle(errorType).icon} mt-0.5 flex-shrink-0`} />
@@ -363,7 +362,7 @@ export default function SignUpPage() {
             className="mx-auto h-15 w-80 mb-5"
           />
         </div>
-        
+
         <div>
           <label htmlFor="name" className="block text-sm font-medium mb-1 text-foreground">
             Full Name
@@ -397,16 +396,15 @@ export default function SignUpPage() {
             Password
           </label>
           <div className="relative">
-          <input
-            id="password"
+            <input
+              id="password"
               type={showPassword ? "text" : "password"}
-            required
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-              className={`leaf-cursor w-full px-3 py-2 pr-10 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary bg-card text-foreground placeholder:text-muted-foreground ${
-                passwordErrors.length > 0 ? 'border-red-500' : 'border-border'
-              }`}
+              required
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className={`leaf-cursor w-full px-3 py-2 pr-10 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary bg-card text-foreground placeholder:text-muted-foreground ${passwordErrors.length > 0 ? 'border-red-500' : 'border-border'
+                }`}
             />
             <button
               type="button"
@@ -422,7 +420,7 @@ export default function SignUpPage() {
               <div className="space-y-1">
                 {passwordErrors.map((error, index) => (
                   <div key={index} className="flex items-center gap-2 text-red-600 text-xs">
-                    <span className="text-red-500">✕</span>
+                    <X className="h-3 w-3 text-red-500" />
                     <span>{error}</span>
                   </div>
                 ))}
@@ -431,7 +429,7 @@ export default function SignUpPage() {
           ) : password && (
             <div className="bg-green-50 border border-green-200 rounded-md p-3 mt-2">
               <div className="flex items-center gap-2 text-green-700 text-sm">
-                <span className="text-green-500">✓</span>
+                <CheckCircle className="h-4 w-4 text-green-500" />
                 <span className="font-medium">Password meets all requirements!</span>
               </div>
             </div>
@@ -442,16 +440,15 @@ export default function SignUpPage() {
             Confirm Password
           </label>
           <div className="relative">
-          <input
-            id="confirmPassword"
+            <input
+              id="confirmPassword"
               type={showConfirmPassword ? "text" : "password"}
-            required
-            placeholder="Confirm Password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-              className={`leaf-cursor w-full px-3 py-2 pr-10 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary bg-card text-foreground placeholder:text-muted-foreground ${
-                confirmPasswordError ? 'border-red-500' : 'border-border'
-              }`}
+              required
+              placeholder="Confirm Password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className={`leaf-cursor w-full px-3 py-2 pr-10 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary bg-card text-foreground placeholder:text-muted-foreground ${confirmPasswordError ? 'border-red-500' : 'border-border'
+                }`}
             />
             <button
               type="button"
@@ -464,14 +461,14 @@ export default function SignUpPage() {
           {confirmPasswordError ? (
             <div className="bg-red-50 border border-red-200 rounded-md p-2 mt-2">
               <div className="flex items-center gap-2 text-red-600 text-xs">
-                <span className="text-red-500">✕</span>
+                <X className="h-3 w-3 text-red-500" />
                 <span>{confirmPasswordError}</span>
               </div>
             </div>
           ) : confirmPassword && password === confirmPassword && (
             <div className="bg-green-50 border border-green-200 rounded-md p-2 mt-2">
               <div className="flex items-center gap-2 text-green-700 text-xs">
-                <span className="text-green-500">✓</span>
+                <CheckCircle className="h-3 w-3 text-green-500" />
                 <span>Passwords match!</span>
               </div>
             </div>
@@ -479,13 +476,12 @@ export default function SignUpPage() {
         </div>
         <button
           type="submit"
-          className={`w-full flex items-center justify-center py-2 rounded-md font-semibold text-white transition-all ${
-            isSubmitting
+          className={`w-full flex items-center justify-center py-2 rounded-md font-semibold text-white transition-all ${isSubmitting
               ? 'bg-primary/70 cursor-not-allowed'
               : isSuccess
-              ? 'bg-primary/90'
-              : 'bg-primary hover:bg-primary/90'
-          }`}
+                ? 'bg-primary/90'
+                : 'bg-primary hover:bg-primary/90'
+            }`}
           disabled={isSubmitting || isSuccess}
         >
           {isSubmitting ? (

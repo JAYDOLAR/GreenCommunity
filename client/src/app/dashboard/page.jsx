@@ -3,6 +3,11 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import {
+  FALLBACK_EMISSIONS_BREAKDOWN,
+  ACHIEVEMENT_TYPES,
+  formatRecentActivities
+} from '@/config/dashboardConfig';
 
 import {
   TrendingUp,
@@ -19,7 +24,9 @@ import {
   Award,
   Leaf,
   BarChart3,
-  ArrowRight
+  ArrowRight,
+  Lightbulb,
+  CheckCircle
 } from 'lucide-react';
 import AnimatedCounter from '@/components/AnimatedCounter';
 import ProfessionalProgress from '@/components/ProfessionalProgress';
@@ -76,7 +83,9 @@ const getGreetingKey = () => {
 };
 
 import ProtectedLayout from '@/components/ProtectedLayout';
+import AuthGuard from '@/components/AuthGuard';
 import ChatBot from '@/components/ChatBot';
+import Layout from '@/components/Layout';
 
 const Dashboard = () => {
   const { user, isLoading } = useUser();
@@ -113,7 +122,7 @@ const Dashboard = () => {
         });
         const data = await res.json();
         if (Array.isArray(data?.tips)) setTips(data.tips);
-      } catch {}
+      } catch { }
     })();
   }, []);
 
@@ -134,9 +143,14 @@ const Dashboard = () => {
     return <DashboardSkeleton />;
   }
 
+  // Ensure user is authenticated before rendering dashboard content
+  if (!user) {
+    return null; // AuthGuard will handle the redirect
+  }
+
   const isAuthenticated = !!user;
   const name = (user?.name && typeof user.name === 'string') ? user.name : 'Guest';
-  
+
   // Calculate real-time metrics from API data
   const currentFootprint = monthlyEmissions / 1000; // Convert kg to tons  
   const targetFootprint = 20.0; // User's target (could come from user settings)
@@ -177,36 +191,13 @@ const Dashboard = () => {
     };
   });
 
-  // Fallback breakdown if no data
-  const fallbackBreakdown = [
-    { category: 'Transportation', amount: 0, percentage: 0, icon: Car, color: 'text-blue-500' },
-    { category: 'Energy', amount: 0, percentage: 0, icon: Home, color: 'text-yellow-500' },
-    { category: 'Food', amount: 0, percentage: 0, icon: Utensils, color: 'text-green-500' },
-  ];
-
-  const displayBreakdown = footprintBreakdown.length > 0 ? footprintBreakdown : fallbackBreakdown;
-
+  // Use configuration for fallback data
+  const displayBreakdown = footprintBreakdown.length > 0 ? footprintBreakdown : FALLBACK_EMISSIONS_BREAKDOWN;
 
   // Format recent activities from API data - use recentActivities from hook or fallback to logs
-  const formattedActivities = (recentActivities.length > 0 ? recentActivities : logs.slice(0, 3)).map(log => ({
-    type: log.category || log.activityType,
-    description: log.activity || `${log.activityType} activity`,
-    co2: log.emission || 0,
-    date: log.createdAt ? new Date(log.createdAt).toLocaleDateString() : 'Today'
-  }));
+  const displayActivities = formatRecentActivities(recentActivities, logs);
 
-  // Fallback data if no logs available
-  const fallbackActivities = [
-    { type: 'Transportation', description: 'Start logging your activities!', co2: 0, date: 'Today' },
-  ];
-
-  const displayActivities = formattedActivities.length > 0 ? formattedActivities : fallbackActivities;
-
-  const achievements = [
-    { title: 'Week Streak', description: '7 days of logging', icon: Award, earned: true },
-    { title: 'Green Commuter', description: 'Used public transport 5x', icon: Car, earned: true },
-    { title: 'Plant-Based', description: 'Ate vegetarian for 3 days', icon: Leaf, earned: false },
-  ];
+  const achievements = ACHIEVEMENT_TYPES;
 
   // Generate streak days from 1st to 13th of the current month
   const today = new Date();
@@ -491,13 +482,13 @@ const Dashboard = () => {
                     <div
                       key={index}
                       className={`flex items-center gap-3 sm:gap-4 md:gap-5 p-3 sm:p-4 md:p-6 rounded-xl border-2 transition-all duration-500 hover-lift ${achievement.earned
-                          ? 'border-success/40 bg-gradient-to-r from-success/10 to-success/5 shadow-lg'
-                          : 'border-border/30 bg-muted/10 hover:border-primary/20'
+                        ? 'border-success/40 bg-gradient-to-r from-success/10 to-success/5 shadow-lg'
+                        : 'border-border/30 bg-muted/10 hover:border-primary/20'
                         }`}
                     >
                       <div className={`p-2 sm:p-3 md:p-4 rounded-xl transition-all duration-300 ${achievement.earned
-                          ? 'bg-success/20 text-success animate-pulse-eco'
-                          : 'bg-muted text-muted-foreground'
+                        ? 'bg-success/20 text-success animate-pulse-eco'
+                        : 'bg-muted text-muted-foreground'
                         }`}>
                         <Icon className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7" />
                       </div>
@@ -511,8 +502,9 @@ const Dashboard = () => {
                         </div>
                       </div>
                       {achievement.earned && (
-                        <Badge className="bg-success/20 text-success border-success/30 font-bold animate-pulse-eco text-xs md:text-sm">
-                          ✓ Earned
+                        <Badge className="bg-success/20 text-success border-success/30 font-bold animate-pulse-eco text-xs md:text-sm flex items-center gap-1">
+                          <CheckCircle className="h-3 w-3" />
+                          Earned
                         </Badge>
                       )}
                     </div>
@@ -591,7 +583,7 @@ const Dashboard = () => {
               <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-primary opacity-10 rounded-full -translate-y-10 translate-x-10" />
               <CardHeader className="p-4 md:p-6">
                 <CardTitle className="text-xl md:text-2xl flex items-center gap-2">
-                  <span className="text-2xl md:text-3xl animate-pulse">💡</span>
+                  <Lightbulb className="h-6 w-6 md:h-8 md:w-8 animate-pulse text-yellow-500" />
                   Eco Tip of the Day
                 </CardTitle>
               </CardHeader>
@@ -626,8 +618,10 @@ const Dashboard = () => {
 
 export default function DashboardPage() {
   return (
-    <ProtectedLayout>
-      <Dashboard />
-    </ProtectedLayout>
+    <AuthGuard intent="dashboard">
+      <Layout>
+        <Dashboard />
+      </Layout>
+    </AuthGuard>
   );
 }

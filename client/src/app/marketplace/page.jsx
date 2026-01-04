@@ -6,26 +6,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { 
-  Search, 
-  Star, 
+import {
+  Search,
+  Star,
   Leaf
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import ChatBot from '@/components/ChatBot';
-
-const USD_TO_INR = 83;
+import AuthGuard from '@/components/AuthGuard';
+import Layout from '@/components/Layout';
+import { MARKETPLACE_CATEGORIES, USD_TO_INR } from '@/config/marketplaceConfig';
 
 // Shared data and logic
-const categories = [
-  { value: 'all', label: 'All Products' },
-  { value: 'lifestyle', label: 'Lifestyle' },
-  { value: 'technology', label: 'Technology' },
-  { value: 'fashion', label: 'Fashion' },
-  { value: 'home', label: 'Home & Garden' },
-  { value: 'sports', label: 'Sports & Outdoors' },
-  { value: 'books', label: 'Books & Media' },
-];
+const categories = MARKETPLACE_CATEGORIES;
 
 function MobileMarketplaceView() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -223,68 +216,68 @@ function TabletMarketplaceView() {
           </div>
         ) : filteredProducts.length > 0 ? (
           filteredProducts.map(product => (
-          <Card
-            key={product.id}
-            className={`card-gradient hover-lift cursor-pointer ${viewMode === 'list' ? 'flex-row' : ''}`}
-            onClick={() => handleProductClick(product.id)}
-          >
+            <Card
+              key={product.id}
+              className={`card-gradient hover-lift cursor-pointer ${viewMode === 'list' ? 'flex-row' : ''}`}
+              onClick={() => handleProductClick(product.id)}
+            >
 
-            <div className={viewMode === 'list' ? 'w-32 shrink-0' : ''}>
-              <div className="relative aspect-square overflow-hidden rounded-t-lg">
-                <img
-                  src={product.image}
-                  alt={product.name}
-                  className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                />
-                {!product.inStock && (
-                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                    <Badge variant="secondary">Out of Stock</Badge>
-                  </div>
-                )}
-              </div>
-            </div>
-            <CardContent className={`p-3 ${viewMode === 'list' ? 'flex-1' : ''}`}>
-              <div className="space-y-2">
-                <div>
-                  <div className="flex items-start justify-between gap-2">
-                    <h3 className="font-semibold text-foreground leading-tight text-sm sm:text-base">{product.name}</h3>
-                    <div className="text-right shrink-0">
-                      <div className="font-bold text-foreground text-sm sm:text-base">₹{product.price}</div>
+              <div className={viewMode === 'list' ? 'w-32 shrink-0' : ''}>
+                <div className="relative aspect-square overflow-hidden rounded-t-lg">
+                  <img
+                    src={product.image}
+                    alt={product.name}
+                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                  />
+                  {!product.inStock && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                      <Badge variant="secondary">Out of Stock</Badge>
                     </div>
-                  </div>
-                  <p className="text-xs sm:text-sm text-muted-foreground mt-1">{product.description}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-1">
-                    <Star className="h-3 w-3 sm:h-4 sm:w-4 fill-yellow-400 text-yellow-400" />
-                    <span className="text-xs sm:text-sm font-medium">{product.rating}</span>
-                  </div>
-                  <span className="text-xs sm:text-sm text-muted-foreground">({product.reviews})</span>
-                  <Badge variant="outline" className="ml-auto text-xs">
-                    {product.vendorType}
-                  </Badge>
-                </div>
-                <div className="flex flex-wrap gap-1">
-                  {product.tags.slice(0, 2).map(tag => (
-                    <Badge key={tag} variant="secondary" className="text-[10px] sm:text-xs">
-                      {tag}
-                    </Badge>
-                  ))}
-                  {product.tags.length > 2 && (
-                    <Badge variant="secondary" className="text-[10px] sm:text-xs">
-                      +{product.tags.length - 2}
-                    </Badge>
                   )}
                 </div>
-                <div className="flex items-center justify-between gap-2 mt-2">
-                  <div className="flex items-center gap-1 text-success">
-                    <Leaf className="h-4 w-4" />
-                    <span className="text-sm font-medium">-{product.co2Saved}kg CO₂</span>
+              </div>
+              <CardContent className={`p-3 ${viewMode === 'list' ? 'flex-1' : ''}`}>
+                <div className="space-y-2">
+                  <div>
+                    <div className="flex items-start justify-between gap-2">
+                      <h3 className="font-semibold text-foreground leading-tight text-sm sm:text-base">{product.name}</h3>
+                      <div className="text-right shrink-0">
+                        <div className="font-bold text-foreground text-sm sm:text-base">₹{product.price}</div>
+                      </div>
+                    </div>
+                    <p className="text-xs sm:text-sm text-muted-foreground mt-1">{product.description}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
+                      <Star className="h-3 w-3 sm:h-4 sm:w-4 fill-yellow-400 text-yellow-400" />
+                      <span className="text-xs sm:text-sm font-medium">{product.rating}</span>
+                    </div>
+                    <span className="text-xs sm:text-sm text-muted-foreground">({product.reviews})</span>
+                    <Badge variant="outline" className="ml-auto text-xs">
+                      {product.vendorType}
+                    </Badge>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {product.tags.slice(0, 2).map(tag => (
+                      <Badge key={tag} variant="secondary" className="text-[10px] sm:text-xs">
+                        {tag}
+                      </Badge>
+                    ))}
+                    {product.tags.length > 2 && (
+                      <Badge variant="secondary" className="text-[10px] sm:text-xs">
+                        +{product.tags.length - 2}
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="flex items-center justify-between gap-2 mt-2">
+                    <div className="flex items-center gap-1 text-success">
+                      <Leaf className="h-4 w-4" />
+                      <span className="text-sm font-medium">-{product.co2Saved}kg CO₂</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
           ))
         ) : (
           <div className="text-center py-8">
@@ -375,70 +368,70 @@ function DesktopMarketplaceView() {
           </div>
         ) : filteredProducts.length > 0 ? (
           filteredProducts.map(product => (
-          <Card
-            key={product.id}
-            className={`card-gradient hover-lift cursor-pointer ${viewMode === 'list' ? 'flex-row' : ''}`}
-            onClick={() => handleProductClick(product.id)}
-          >
-            {product.featured && (
-              <Badge className="absolute top-3 left-3 z-10 bg-success text-white">Featured</Badge>
-            )}
-            <div className={viewMode === 'list' ? 'w-48 shrink-0' : ''}>
-              <div className="relative aspect-square overflow-hidden rounded-t-lg">
-                <img
-                  src={product.image}
-                  alt={product.name}
-                  className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                />
-                {!product.inStock && (
-                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                    <Badge variant="secondary">Out of Stock</Badge>
-                  </div>
-                )}
-              </div>
-            </div>
-            <CardContent className={`p-4 ${viewMode === 'list' ? 'flex-1' : ''}`}>
-              <div className="space-y-3">
-                <div>
-                  <div className="flex items-start justify-between gap-2">
-                    <h3 className="font-semibold text-foreground leading-tight">{product.name}</h3>
-                    <div className="text-right shrink-0">
-                      <div className="font-bold text-foreground">₹{product.price}</div>
+            <Card
+              key={product.id}
+              className={`card-gradient hover-lift cursor-pointer ${viewMode === 'list' ? 'flex-row' : ''}`}
+              onClick={() => handleProductClick(product.id)}
+            >
+              {product.featured && (
+                <Badge className="absolute top-3 left-3 z-10 bg-success text-white">Featured</Badge>
+              )}
+              <div className={viewMode === 'list' ? 'w-48 shrink-0' : ''}>
+                <div className="relative aspect-square overflow-hidden rounded-t-lg">
+                  <img
+                    src={product.image}
+                    alt={product.name}
+                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                  />
+                  {!product.inStock && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                      <Badge variant="secondary">Out of Stock</Badge>
                     </div>
-                  </div>
-                  <p className="text-sm text-muted-foreground mt-1">{product.description}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-1">
-                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                    <span className="text-sm font-medium">{product.rating}</span>
-                  </div>
-                  <span className="text-sm text-muted-foreground">({product.reviews})</span>
-                  <Badge variant="outline" className="ml-auto">
-                    {product.vendorType}
-                  </Badge>
-                </div>
-                <div className="flex flex-wrap gap-1">
-                  {product.tags.slice(0, 2).map(tag => (
-                    <Badge key={tag} variant="secondary" className="text-xs">
-                      {tag}
-                    </Badge>
-                  ))}
-                  {product.tags.length > 2 && (
-                    <Badge variant="secondary" className="text-xs">
-                      +{product.tags.length - 2}
-                    </Badge>
                   )}
                 </div>
-                <div className="flex items-center justify-between gap-2 mt-2">
-                  <div className="flex items-center gap-1 text-success">
-                    <Leaf className="h-4 w-4" />
-                    <span className="text-sm font-medium">-{product.co2Saved}kg CO₂</span>
+              </div>
+              <CardContent className={`p-4 ${viewMode === 'list' ? 'flex-1' : ''}`}>
+                <div className="space-y-3">
+                  <div>
+                    <div className="flex items-start justify-between gap-2">
+                      <h3 className="font-semibold text-foreground leading-tight">{product.name}</h3>
+                      <div className="text-right shrink-0">
+                        <div className="font-bold text-foreground">₹{product.price}</div>
+                      </div>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1">{product.description}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
+                      <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                      <span className="text-sm font-medium">{product.rating}</span>
+                    </div>
+                    <span className="text-sm text-muted-foreground">({product.reviews})</span>
+                    <Badge variant="outline" className="ml-auto">
+                      {product.vendorType}
+                    </Badge>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {product.tags.slice(0, 2).map(tag => (
+                      <Badge key={tag} variant="secondary" className="text-xs">
+                        {tag}
+                      </Badge>
+                    ))}
+                    {product.tags.length > 2 && (
+                      <Badge variant="secondary" className="text-xs">
+                        +{product.tags.length - 2}
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="flex items-center justify-between gap-2 mt-2">
+                    <div className="flex items-center gap-1 text-success">
+                      <Leaf className="h-4 w-4" />
+                      <span className="text-sm font-medium">-{product.co2Saved}kg CO₂</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
           ))
         ) : (
           <div className="text-center py-12">
@@ -468,4 +461,15 @@ const Marketplace = () => {
     </div>
   );
 };
-export default Marketplace;
+
+const MarketplacePage = () => {
+  return (
+    <AuthGuard intent="marketplace">
+      <Layout>
+        <Marketplace />
+      </Layout>
+    </AuthGuard>
+  );
+};
+
+export default MarketplacePage;

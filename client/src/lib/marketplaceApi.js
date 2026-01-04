@@ -1,42 +1,21 @@
 import { apiRequest } from './api';
-
-// Category mapping from backend to client format
-const CATEGORY_MAPPING = {
-  'solar': 'tech',
-  'reusable': 'personal-care',
-  'zero_waste': 'home-garden',
-  'local': 'food-drink',
-  'organic': 'food-drink',
-  'eco_fashion': 'clothing',
-  'green_tech': 'tech'
-};
-
-// Reverse mapping for filtering
-const CLIENT_TO_BACKEND_CATEGORIES = {
-  'personal-care': ['reusable'],
-  'home-garden': ['zero_waste'],
-  'clothing': ['eco_fashion'],
-  'food-drink': ['local', 'organic'],
-  'tech': ['solar', 'green_tech'],
-  'travel': [] // This category doesn't exist in backend yet
-};
+import {
+  CATEGORY_MAPPING,
+  CLIENT_TO_BACKEND_CATEGORIES,
+  DEFAULT_PRODUCT_IMAGE,
+  getVendorType,
+  calculateCO2Savings
+} from '@/config/marketplaceConfig';
 
 // Transform backend product to client format
 const transformProduct = (backendProduct) => {
   const seller = backendProduct.seller_id;
-  
+
   // Calculate CO2 saved from carbon footprint (if available)
-  const co2Saved = backendProduct.sustainability?.carbon_footprint 
-    ? Math.max(0, 5 - backendProduct.sustainability.carbon_footprint) // Estimate savings
-    : Math.random() * 5; // Fallback to random for demo
+  const co2Saved = calculateCO2Savings(backendProduct.sustainability?.carbon_footprint);
 
   // Determine vendor type based on certifications
-  let vendorType = 'Local';
-  if (backendProduct.sustainability?.certifications?.length > 2) {
-    vendorType = 'Certified';
-  } else if (backendProduct.sustainability?.certifications?.includes('B Corp')) {
-    vendorType = 'Nonprofit';
-  }
+  const vendorType = getVendorType(backendProduct.sustainability?.certifications);
 
   return {
     id: backendProduct._id,
@@ -45,12 +24,12 @@ const transformProduct = (backendProduct) => {
     originalPrice: backendProduct.pricing.discount_price ? backendProduct.pricing.base_price : null,
     rating: backendProduct.reviews?.average_rating || 4.5,
     reviews: backendProduct.reviews?.total_reviews || Math.floor(Math.random() * 300) + 50,
-    image: backendProduct.images?.[0] || '/marketplace/default.jpeg',
+    image: backendProduct.images?.[0] || DEFAULT_PRODUCT_IMAGE,
     category: CATEGORY_MAPPING[backendProduct.category] || 'tech',
     vendor: seller?.name || 'EcoStore',
     vendorType,
-    tags: backendProduct.tags?.map(tag => tag.charAt(0).toUpperCase() + tag.slice(1)) || 
-          backendProduct.sustainability?.certifications || ['Eco-Friendly'],
+    tags: backendProduct.tags?.map(tag => tag.charAt(0).toUpperCase() + tag.slice(1)) ||
+      backendProduct.sustainability?.certifications || ['Eco-Friendly'],
     co2Saved: parseFloat(co2Saved.toFixed(1)),
     description: backendProduct.description,
     inStock: backendProduct.is_available !== false && backendProduct.inventory?.stock_quantity > 0,
@@ -66,7 +45,7 @@ export const marketplaceApi = {
   async getProducts(filters = {}) {
     try {
       const params = new URLSearchParams();
-      
+
       // Transform client filters to backend format
       if (filters.category && filters.category !== 'all') {
         const backendCategories = CLIENT_TO_BACKEND_CATEGORIES[filters.category];
@@ -75,39 +54,39 @@ export const marketplaceApi = {
           params.append('category', backendCategories[0]);
         }
       }
-      
+
       if (filters.search) {
         params.append('search', filters.search);
       }
-      
+
       if (filters.minPrice) {
         params.append('minPrice', filters.minPrice);
       }
-      
+
       if (filters.maxPrice) {
         params.append('maxPrice', filters.maxPrice);
       }
-      
+
       if (filters.minRating) {
         params.append('minRating', filters.minRating);
       }
-      
+
       if (filters.featured) {
         params.append('featured', 'true');
       }
-      
+
       if (filters.inStock !== false) {
         params.append('inStock', 'true');
       }
-      
+
       // Set defaults
       params.append('page', filters.page || 1);
       params.append('limit', filters.limit || 20);
       params.append('sortBy', filters.sortBy || 'created_at');
       params.append('sortOrder', filters.sortOrder || 'desc');
-      
+
       const response = await apiRequest(`/marketplace/products?${params.toString()}`);
-      
+
       return {
         ...response,
         data: {
@@ -153,15 +132,15 @@ export const marketplaceApi = {
   async getCategories() {
     try {
       const response = await apiRequest('/marketplace/categories');
-      
+
       // Transform backend categories to client format
       const clientCategories = [
         { value: 'all', label: 'All Products', count: 0 }
       ];
-      
+
       let totalCount = 0;
       const categoryMap = {};
-      
+
       // Group backend categories by client categories
       response.data.forEach(backendCat => {
         const clientCategory = CATEGORY_MAPPING[backendCat._id];
@@ -174,7 +153,7 @@ export const marketplaceApi = {
           totalCount += backendCat.count;
         }
       });
-      
+
       // Convert to client format
       const categoryLabels = {
         'personal-care': 'Personal Care',
@@ -184,7 +163,7 @@ export const marketplaceApi = {
         'tech': 'Eco Tech',
         'travel': 'Travel Essentials'
       };
-      
+
       Object.entries(categoryMap).forEach(([key, data]) => {
         clientCategories.push({
           value: key,
@@ -192,9 +171,9 @@ export const marketplaceApi = {
           count: data.count
         });
       });
-      
+
       clientCategories[0].count = totalCount;
-      
+
       return {
         ...response,
         data: clientCategories
@@ -212,7 +191,7 @@ export const marketplaceApi = {
         method: 'POST',
         body: JSON.stringify(searchOptions)
       });
-      
+
       return {
         ...response,
         data: response.data.map(transformProduct)
@@ -227,15 +206,15 @@ export const marketplaceApi = {
   async getSustainableProducts(criteria = {}) {
     try {
       const params = new URLSearchParams();
-      
+
       Object.entries(criteria).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
           params.append(key, value);
         }
       });
-      
+
       const response = await apiRequest(`/marketplace/sustainable?${params.toString()}`);
-      
+
       return {
         ...response,
         data: response.data.map(transformProduct)

@@ -12,21 +12,17 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { useMediaQuery } from 'react-responsive';
+import { useOptimizedNavigation } from '@/lib/useOptimizedNavigation';
+import { SIDEBAR_ITEMS } from '@/config/navigationConfig';
 
-const sidebarItems = [
-  { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-  { name: 'Footprint Log', path: '/footprintlog', icon: FileText },
-  { name: 'Marketplace', path: '/marketplace', icon: ShoppingCart },
-  { name: 'Projects', path: '/projects', icon: TreePine },
-  { name: 'Community', path: '/community', icon: Users },
-  { name: 'Settings', path: '/settings', icon: Settings },
-];
+const sidebarItems = SIDEBAR_ITEMS;
 
 export default function Layout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const { user, clearUser } = useUser();
   const router = useRouter();
+  const { navigate } = useOptimizedNavigation();
   const isAuthenticated = !!user;
   const name = user?.name || 'Guest';
   const city = (user?.userInfo?.location?.city || '').trim();
@@ -38,7 +34,7 @@ export default function Layout({ children }) {
   const pathname = usePathname();
   const isMobile = useMediaQuery({ maxWidth: 767 });
   const isTablet = useMediaQuery({ minWidth: 768, maxWidth: 1024 });
-  
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
     try {
@@ -50,9 +46,9 @@ export default function Layout({ children }) {
         const composed = [stateName, countryName].filter(Boolean).join(', ');
         if (composed) setFallbackLocation(composed);
       }
-    } catch {}
+    } catch { }
   }, []);
-  
+
   // Don't render the layout if logging out to prevent flash
   if (isLoggingOut) {
     return (
@@ -64,43 +60,45 @@ export default function Layout({ children }) {
       </div>
     );
   }
-  
+
   // Logo click handler
   const handleLogoClick = () => {
     if (isAuthenticated) {
-      router.push('/dashboard');
+      navigate('/dashboard');
     } else {
-      router.push('/');
+      navigate('/');
     }
   };
 
   // Navigation click handler
   const handleNavigationClick = (path) => {
     if (isAuthenticated) {
-      router.push(path);
+      navigate(path);
     } else {
-      router.push('/login');
+      navigate('/login');
     }
+    // Close mobile sidebar after navigation
+    setSidebarOpen(false);
   };
 
   // Logout functionality
   const handleLogout = async () => {
     try {
       setIsLoggingOut(true);
-      
+
       // Call server logout endpoint to clear cookies
       await authAPI.logout();
-      
+
       // Clear user data and localStorage token
       clearUser();
-      
-      // Redirect to home page immediately
-      router.replace('/');
-      
+
+      // Navigate to home page
+      navigate('/', { replace: true, delay: 100 });
+
       console.log('✅ Logged out successfully');
     } catch (error) {
       console.error('❌ Logout error:', error);
-      
+
       // Even if server logout fails, clear local data
       clearUser();
       router.replace('/login');
@@ -162,9 +160,9 @@ export default function Layout({ children }) {
                       <Link href="/settings">
                         <Button variant="outline" className="w-full text-xs sm:text-sm h-8 sm:h-9">Settings</Button>
                       </Link>
-                      <Button 
-                        variant="destructive" 
-                        className="w-full flex items-center gap-2 text-xs sm:text-sm h-8 sm:h-9 bg-red-600 hover:bg-red-700 text-white" 
+                      <Button
+                        variant="destructive"
+                        className="w-full flex items-center gap-2 text-xs sm:text-sm h-8 sm:h-9 bg-red-600 hover:bg-red-700 text-white"
                         onClick={handleLogout}
                         disabled={isLoggingOut}
                       >
@@ -194,29 +192,29 @@ export default function Layout({ children }) {
               />
             </div>
           )}
-                     {/* Navigation Buttons (desktop only) */}
-           {!isMobile && !isTablet && (
-             <nav className="hidden lg:flex gap-0.5 md:gap-1 lg:gap-2 ml-2 md:ml-4 lg:ml-6">
-               {sidebarItems.map((item) => {
-                 const Icon = item.icon;
-                 return (
-                   <button
-                     key={item.path}
-                     onClick={() => handleNavigationClick(item.path)}
-                     className={`px-1.5 md:px-2 lg:px-2 py-1.5 md:py-2 lg:py-2 rounded-full font-medium transition-colors duration-200 text-xs md:text-sm lg:text-sm whitespace-nowrap flex items-center gap-1.5 md:gap-2
+          {/* Navigation Buttons (desktop only) */}
+          {!isMobile && !isTablet && (
+            <nav className="hidden lg:flex gap-0.5 md:gap-1 lg:gap-2 ml-2 md:ml-4 lg:ml-6">
+              {sidebarItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <button
+                    key={item.path}
+                    onClick={() => handleNavigationClick(item.path)}
+                    className={`px-1.5 md:px-2 lg:px-2 py-1.5 md:py-2 lg:py-2 rounded-full font-medium transition-colors duration-200 text-xs md:text-sm lg:text-sm whitespace-nowrap flex items-center gap-1.5 md:gap-2
                        ${(item.path === '/' && (pathname === '/' || pathname.startsWith('/dashboard'))) || (item.path !== '/' && (pathname === item.path || pathname.startsWith(item.path + '/')))
-                         ? 'bg-primary/90 text-white shadow-sm'
-                         : 'text-foreground hover:bg-primary/10 hover:text-primary'}
+                        ? 'bg-primary/90 text-white shadow-sm'
+                        : 'text-foreground hover:bg-primary/10 hover:text-primary'}
                      `}
-                     style={{ fontWeight: 500, letterSpacing: '0.01em' }}
-                   >
-                     <Icon className="h-3 w-3 md:h-4 md:w-4 lg:h-4 lg:w-4" />
-                     {item.name}
-                   </button>
-                 );
-               })}
-             </nav>
-           )}
+                    style={{ fontWeight: 500, letterSpacing: '0.01em' }}
+                  >
+                    <Icon className="h-3 w-3 md:h-4 md:w-4 lg:h-4 lg:w-4" />
+                    {item.name}
+                  </button>
+                );
+              })}
+            </nav>
+          )}
           {/* User Info and Profile (desktop only) */}
           {!isMobile && !isTablet && (
             <div className="flex items-center gap-1 md:gap-2 lg:gap-2">
@@ -229,8 +227,8 @@ export default function Layout({ children }) {
               </div>
               {/* Enhanced Goal Progress */}
               <div className="hidden xl:flex flex-col gap-2 min-w-24 md:min-w-32">
-                <ProfessionalProgress 
-                  value={monthlyGoal} 
+                <ProfessionalProgress
+                  value={monthlyGoal}
                   label="Monthly Goal"
                   className="animate-fade-in"
                 />
@@ -264,9 +262,9 @@ export default function Layout({ children }) {
                     <Link href="/settings">
                       <Button variant="outline" className="w-full text-xs md:text-sm lg:text-sm h-8 md:h-9 lg:h-10">Settings</Button>
                     </Link>
-                    <Button 
-                      variant="destructive" 
-                      className="w-full flex items-center gap-2 text-xs md:text-sm lg:text-sm h-8 md:h-9 lg:h-10 bg-red-600 hover:bg-red-700 text-white" 
+                    <Button
+                      variant="destructive"
+                      className="w-full flex items-center gap-2 text-xs md:text-sm lg:text-sm h-8 md:h-9 lg:h-10 bg-red-600 hover:bg-red-700 text-white"
                       onClick={handleLogout}
                       disabled={isLoggingOut}
                     >
@@ -297,10 +295,10 @@ export default function Layout({ children }) {
                 )}
                 <div className={`fixed top-0 left-0 z-50 h-full w-64 md:w-80 bg-white shadow-lg transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 flex flex-col`}>
                   <div className="flex items-center justify-between p-4 md:p-6 border-b">
-                    <img 
-                      src="/logo.png" 
-                      alt="GreenCommunity Logo" 
-                      className="h-10 w-auto sm:h-12 sm:w-auto max-w-[140px] sm:max-w-[160px] object-contain cursor-pointer hover:opacity-80 transition-opacity" 
+                    <img
+                      src="/logo.png"
+                      alt="GreenCommunity Logo"
+                      className="h-10 w-auto sm:h-12 sm:w-auto max-w-[140px] sm:max-w-[160px] object-contain cursor-pointer hover:opacity-80 transition-opacity"
                       onClick={() => {
                         handleLogoClick();
                         setSidebarOpen(false);
@@ -310,29 +308,29 @@ export default function Layout({ children }) {
                       <X className="h-5 w-5 sm:h-6 sm:w-6" />
                     </Button>
                   </div>
-                                     <nav className="flex-1 flex flex-col gap-2 md:gap-3 p-4 md:p-6">
-                     {sidebarItems.map((item) => {
-                       const Icon = item.icon;
-                       return (
-                         <button
-                           key={item.path}
-                           onClick={() => {
-                             handleNavigationClick(item.path);
-                             setSidebarOpen(false);
-                           }}
-                           className={`flex items-center gap-3 px-4 md:px-6 py-2 md:py-3 rounded-full font-medium transition-colors duration-200 text-sm md:text-base text-left ${(item.path === '/' && (pathname === '/' || pathname.startsWith('/dashboard'))) || (item.path !== '/' && (pathname === item.path || pathname.startsWith(item.path + '/'))) ? 'bg-primary/90 text-white shadow-sm' : 'text-foreground hover:bg-primary/10 hover:text-primary'}`}
-                           style={{ fontWeight: 500, letterSpacing: '0.01em' }}
-                         >
-                           <Icon className="h-4 w-4 md:h-5 md:w-5" />
-                           {item.name}
-                         </button>
-                       );
-                     })}
-                   </nav>
+                  <nav className="flex-1 flex flex-col gap-2 md:gap-3 p-4 md:p-6">
+                    {sidebarItems.map((item) => {
+                      const Icon = item.icon;
+                      return (
+                        <button
+                          key={item.path}
+                          onClick={() => {
+                            handleNavigationClick(item.path);
+                            setSidebarOpen(false);
+                          }}
+                          className={`flex items-center gap-3 px-4 md:px-6 py-2 md:py-3 rounded-full font-medium transition-colors duration-200 text-sm md:text-base text-left ${(item.path === '/' && (pathname === '/' || pathname.startsWith('/dashboard'))) || (item.path !== '/' && (pathname === item.path || pathname.startsWith(item.path + '/'))) ? 'bg-primary/90 text-white shadow-sm' : 'text-foreground hover:bg-primary/10 hover:text-primary'}`}
+                          style={{ fontWeight: 500, letterSpacing: '0.01em' }}
+                        >
+                          <Icon className="h-4 w-4 md:h-5 md:w-5" />
+                          {item.name}
+                        </button>
+                      );
+                    })}
+                  </nav>
                   <div className="mt-auto p-4 md:p-6 border-t">
-                    <Button 
-                      variant="destructive" 
-                      className="w-full flex items-center gap-2 text-sm md:text-base bg-red-600 hover:bg-red-700 text-white" 
+                    <Button
+                      variant="destructive"
+                      className="w-full flex items-center gap-2 text-sm md:text-base bg-red-600 hover:bg-red-700 text-white"
                       onClick={handleLogout}
                       disabled={isLoggingOut}
                     >

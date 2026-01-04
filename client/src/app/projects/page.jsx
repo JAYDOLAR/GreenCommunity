@@ -11,13 +11,13 @@ import { Slider } from '@/components/ui/slider';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
-import { 
-  Trees, 
-  Wind, 
-  Sun, 
-  Droplets, 
-  MapPin, 
-  Award, 
+import {
+  Trees,
+  Wind,
+  Sun,
+  Droplets,
+  MapPin,
+  Award,
   Users,
   Calendar,
   Target,
@@ -33,21 +33,23 @@ import {
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import ChatBot from '@/components/ChatBot';
+import AuthGuard from '@/components/AuthGuard';
+import Layout from '@/components/Layout';
 
 // Dynamically import Leaflet components to avoid SSR issues
-const MapContainer = dynamic(() => import('react-leaflet').then(mod => mod.MapContainer), { 
+const MapContainer = dynamic(() => import('react-leaflet').then(mod => mod.MapContainer), {
   ssr: false,
   loading: () => <div className="h-full w-full bg-gray-100 animate-pulse rounded-lg" />
 });
-const TileLayer = dynamic(() => import('react-leaflet').then(mod => mod.TileLayer), { 
+const TileLayer = dynamic(() => import('react-leaflet').then(mod => mod.TileLayer), {
   ssr: false,
   loading: () => null
 });
-const Marker = dynamic(() => import('react-leaflet').then(mod => mod.Marker), { 
+const Marker = dynamic(() => import('react-leaflet').then(mod => mod.Marker), {
   ssr: false,
   loading: () => null
 });
-const Popup = dynamic(() => import('react-leaflet').then(mod => mod.Popup), { 
+const Popup = dynamic(() => import('react-leaflet').then(mod => mod.Popup), {
   ssr: false,
   loading: () => null
 });
@@ -270,12 +272,12 @@ const Projects = () => {
       ]
     }
   ];
-  
+
   const filteredProjects = projects.filter(project => {
     if (!project || !project.name) return false;
-    
+
     const matchesSearch = project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         (project.description && project.description.toLowerCase().includes(searchQuery.toLowerCase()));
+      (project.description && project.description.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchesRegion = selectedRegion === 'all' || project.region === selectedRegion;
     const matchesType = selectedType === 'all' || project.type === selectedType;
     return matchesSearch && matchesRegion && matchesType;
@@ -334,14 +336,14 @@ const Projects = () => {
     const [mapError, setMapError] = useState(false);
     const [mapLoaded, setMapLoaded] = useState(false);
     const [hoveredProject, setHoveredProject] = useState(null);
-    
+
     // Custom marker icon
     const createCustomIcon = (type) => {
       if (typeof window === 'undefined') return null;
-      
+
       try {
         const L = require('leaflet');
-        
+
         const getMarkerColor = (type) => {
           switch (type) {
             case 'forestry': return '#10B981';
@@ -393,16 +395,16 @@ const Projects = () => {
           <div className="absolute inset-0 opacity-30">
             <div className="w-full h-full bg-gradient-to-br from-amber-200 via-orange-100 to-yellow-200"></div>
           </div>
-          
+
           {/* Project markers */}
           {filteredMapProjects.map((project, index) => {
             const [lng, lat] = project.coordinates;
             const left = ((lng + 180) / 360) * 100;
             const top = ((90 - lat) / 180) * 100;
-            
+
             const getPinStyle = (type) => {
               switch (type) {
-                case 'forestry': 
+                case 'forestry':
                   return 'text-green-500 text-2xl';
                 case 'renewable':
                   return 'text-blue-500 text-2xl';
@@ -414,7 +416,7 @@ const Projects = () => {
                   return 'text-green-500 text-2xl';
               }
             };
-            
+
             return (
               <motion.div
                 key={project.id}
@@ -426,17 +428,17 @@ const Projects = () => {
                 onClick={() => handleProjectClick(project.id)}
               >
                 <div className={`${getPinStyle(project.type)} group-hover:scale-125 transition-transform duration-200 drop-shadow-lg`}>
-                  📍
+                  <MapPin className="h-5 w-5" />
                 </div>
               </motion.div>
             );
           })}
-          
+
           {/* Map controls */}
           <div className="absolute top-4 right-4 z-20">
             {/* Removed List View button */}
           </div>
-          
+
           {/* Map title */}
           <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-sm rounded-lg p-4 border-2 border-gray-200 shadow-xl z-20">
             <div className="flex items-center gap-3">
@@ -475,11 +477,11 @@ const Projects = () => {
             url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
             attribution=""
           />
-          
+
           {filteredMapProjects.map((project, index) => {
             const [lng, lat] = project.coordinates;
             const customIcon = createCustomIcon(project.type);
-            
+
             return (
               <Marker
                 key={project.id}
@@ -626,7 +628,7 @@ const Projects = () => {
             {filteredProjects.map((project, index) => {
               const IconComponent = getProjectIcon(project.type);
               const fundingPercentage = (project.currentFunding / project.totalFunding) * 100;
-              
+
               return (
                 <motion.div
                   key={project.id}
@@ -723,7 +725,7 @@ const Projects = () => {
                             <div className="flex justify-between text-sm">
                               <span className="text-xs sm:text-sm text-muted-foreground">Funding Progress</span>
                               <span className="font-medium text-xs sm:text-sm">
-                                ₹{(project.currentFunding/10000000).toFixed(1)}Cr / ₹{(project.totalFunding/10000000).toFixed(1)}Cr
+                                ₹{(project.currentFunding / 10000000).toFixed(1)}Cr / ₹{(project.totalFunding / 10000000).toFixed(1)}Cr
                               </span>
                             </div>
                             <Progress value={fundingPercentage} className="h-2 sm:h-3 progress-eco" />
@@ -736,7 +738,7 @@ const Projects = () => {
                           <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-2">
                             <Dialog>
                               <DialogTrigger asChild>
-                                <Button 
+                                <Button
                                   className="btn-hero text-xs sm:text-base px-3 sm:px-5 py-2 sm:py-3"
                                   onClick={(e) => {
                                     e.stopPropagation(); // Prevent navigation
@@ -778,8 +780,8 @@ const Projects = () => {
                                   </div>
                                 </div>
                                 <DialogFooter className="flex flex-col sm:flex-row gap-2">
-                                  <Button 
-                                    className="w-full btn-hero text-xs sm:text-base px-3 sm:px-5 py-2 sm:py-3" 
+                                  <Button
+                                    className="w-full btn-hero text-xs sm:text-base px-3 sm:px-5 py-2 sm:py-3"
                                     onClick={() => {
                                       setIsLoading(true);
                                       try {
@@ -858,4 +860,14 @@ const Projects = () => {
   }
 };
 
-export default Projects;
+const ProjectsPage = () => {
+  return (
+    <AuthGuard intent="projects">
+      <Layout>
+        <Projects />
+      </Layout>
+    </AuthGuard>
+  );
+};
+
+export default ProjectsPage;

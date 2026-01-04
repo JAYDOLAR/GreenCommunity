@@ -1,11 +1,11 @@
 import jwt from 'jsonwebtoken';
-import User from '../models/User.model.js';
+import { getUserModel } from '../models/User.model.js';
 
 export const authenticate = async (req, res, next) => {
   try {
     // Check for token in cookies first, then in Authorization header
     let token = req.cookies?.authToken;
-    
+
     if (!token) {
       const authHeader = req.headers.authorization;
       if (authHeader && authHeader.startsWith('Bearer ')) {
@@ -18,13 +18,14 @@ export const authenticate = async (req, res, next) => {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    
+
     if (!decoded || !decoded.id) {
       return res.status(401).json({ message: 'Invalid token payload.' });
     }
 
+    const User = await getUserModel();
     const user = await User.findById(decoded.id).select('-password');
-    
+
     if (!user) {
       return res.status(401).json({ message: 'Invalid token. User not found.' });
     }
@@ -42,7 +43,7 @@ export const authenticate = async (req, res, next) => {
     } else if (error.name === 'JsonWebTokenError') {
       return res.status(401).json({ message: 'Invalid token.' });
     }
-    
+
     // Don't log token details in production
     if (process.env.NODE_ENV === 'development') {
       console.error('Authentication error:', error);
@@ -55,7 +56,7 @@ export const optionalAuth = async (req, res, next) => {
   try {
     // Check for token in cookies first, then in Authorization header
     let token = req.cookies?.authToken;
-    
+
     if (!token) {
       const authHeader = req.headers.authorization;
       if (authHeader && authHeader.startsWith('Bearer ')) {
@@ -69,11 +70,11 @@ export const optionalAuth = async (req, res, next) => {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findById(decoded.id).select('-password');
-    
+
     if (user) {
       req.user = user;
     }
-    
+
     next();
   } catch (error) {
     // For optional auth, we don't return errors, just continue without user

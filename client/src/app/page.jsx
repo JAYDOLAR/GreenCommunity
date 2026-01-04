@@ -25,14 +25,16 @@ import { useRouter } from 'next/navigation';
 import toast, { Toaster } from 'react-hot-toast';
 // Import motion from framer-motion
 import { motion } from 'framer-motion';
+import { useOptimizedNavigation } from '@/lib/useOptimizedNavigation';
+import { RedirectLoader, PageLoader } from '@/components/LoadingComponents';
 
 const LandingPage = () => {
   const [mounted, setMounted] = useState(false);
-  
+
   useEffect(() => {
     setMounted(true);
   }, []);
-  
+
   const features = [
     {
       icon: Calculator,
@@ -111,8 +113,8 @@ const LandingPage = () => {
   const handleMarketplaceRoute = useCallback((e) => {
     e.preventDefault();
     // Check if user is logged in by checking for token in localStorage
-    const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
-    
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+
     if (token) {
       // User is logged in, navigate to marketplace
       router.push('/marketplace');
@@ -619,8 +621,8 @@ const LandingPage = () => {
                       <Link href="/marketplace"
                         onClick={handleMarketplaceRoute}
                         className="hover:text-green-600 transition-all duration-300 block py-1 hover:translate-x-1"
-                        >
-                          Offset Marketplace
+                      >
+                        Offset Marketplace
                       </Link>
                     </li>
                     <li>
@@ -750,21 +752,24 @@ const LandingPage = () => {
 };
 
 const MainPage = () => {
-  const router = useRouter();
   const { user, isLoading } = useUser();
-  const [hasRedirected, setHasRedirected] = useState(false);
+  const { navigate, isRedirecting } = useOptimizedNavigation();
+  const [shouldRedirect, setShouldRedirect] = useState(false);
 
   useEffect(() => {
-    // If user is authenticated and we haven't redirected yet, redirect to dashboard
-    if (!isLoading && user && !hasRedirected) {
-      setHasRedirected(true);
-      router.replace('/dashboard');
+    // If user is authenticated and we haven't initiated redirect yet
+    if (!isLoading && user && !shouldRedirect && !isRedirecting()) {
+      setShouldRedirect(true);
+      navigate('/dashboard', { replace: true, delay: 100 });
     }
-  }, [user, isLoading, router, hasRedirected]);
+  }, [user, isLoading, shouldRedirect, navigate, isRedirecting]);
 
-  // Show loading skeleton while checking authentication or redirecting
-  if (isLoading || (user && hasRedirected)) {
-    return <LandingPage />;
+  // Show loading state while checking authentication or redirecting authenticated users
+  if (isLoading || shouldRedirect || isRedirecting()) {
+    if (shouldRedirect || isRedirecting()) {
+      return <RedirectLoader message="Redirecting" destination="dashboard" />;
+    }
+    return <PageLoader message="Loading..." />;
   }
 
   // Show landing page for non-authenticated users

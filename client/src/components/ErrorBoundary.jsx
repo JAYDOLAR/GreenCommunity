@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 // Wrapper component to use hooks
 function ErrorBoundaryWithRouter({ children }) {
   const router = useRouter();
-  
+
   return (
     <ErrorBoundary router={router}>
       {children}
@@ -29,11 +29,24 @@ class ErrorBoundary extends React.Component {
     if (process.env.NODE_ENV === 'development') {
       console.error('Error caught by boundary:', error, errorInfo);
     }
-    
+
     this.setState({
       error: error,
       errorInfo: errorInfo
     });
+
+    // If it's a maximum update depth error, try clearing user state
+    if (error.message?.includes('Maximum update depth exceeded')) {
+      try {
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('token');
+          localStorage.removeItem('userData');
+          localStorage.removeItem('oauthIntent');
+        }
+      } catch (e) {
+        console.warn('Could not clear localStorage:', e);
+      }
+    }
 
     // You can also log the error to an error reporting service here
     // logErrorToService(error, errorInfo);
@@ -57,7 +70,7 @@ class ErrorBoundary extends React.Component {
                   </svg>
                 </div>
               </div>
-              
+
               <div className="space-y-2">
                 <h2 className="text-2xl font-bold text-foreground">
                   Something went wrong
@@ -75,7 +88,7 @@ class ErrorBoundary extends React.Component {
               >
                 Try Again
               </button>
-              
+
               <button
                 onClick={() => this.props.router.push('/')}
                 className="w-full bg-background border border-border text-foreground font-medium py-3 px-6 rounded-md hover:bg-accent transition-colors"

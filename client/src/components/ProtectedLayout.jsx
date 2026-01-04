@@ -1,23 +1,25 @@
 
 'use client';
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { useUser } from '@/context/UserContext';
 import { FullScreenLoader } from '@/components/FullScreenLoader';
+import { useProtectedRoute } from '@/lib/useOptimizedNavigation';
 
 const ProtectedLayout = ({ children }) => {
   const { user, isLoading } = useUser();
-  const router = useRouter();
+  const { redirectToLogin } = useProtectedRoute();
+  const [shouldRedirect, setShouldRedirect] = useState(false);
 
   useEffect(() => {
     // If loading is finished and there's no user, redirect to login
-    if (!isLoading && !user) {
-      router.replace('/login');
+    if (!isLoading && !user && !shouldRedirect) {
+      setShouldRedirect(true);
+      redirectToLogin('protected');
     }
-  }, [user, isLoading, router]);
+  }, [user, isLoading, shouldRedirect, redirectToLogin]);
 
-  // If data is still loading, show a full-screen loader
-  if (isLoading) {
+  // If data is still loading or redirecting, show a full-screen loader
+  if (isLoading || shouldRedirect) {
     return <FullScreenLoader />;
   }
 

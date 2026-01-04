@@ -1,5 +1,5 @@
 import asyncHandler from '../utils/asyncHandler.js';
-import User from '../models/User.model.js';
+import { getUserModel } from '../models/User.model.js';
 import { UserInfo, initializeUserInfoModel } from '../models/UserInfo.model.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
@@ -20,7 +20,7 @@ const generateToken = (userId, userRole = 'user') => {
     iat: Math.floor(Date.now() / 1000),
     jti: generateJwtId() // JWT ID for token tracking
   };
-  
+
   return jwt.sign(payload, process.env.JWT_SECRET, {
     expiresIn: '1d',
     algorithm: 'HS256',
@@ -38,6 +38,8 @@ export const registerUser = asyncHandler(async (req, res) => {
 
   const { name, email, password } = req.body;
 
+  const User = await getUserModel();
+
   // Check if user exists - handle both verified and unverified accounts
   const existingUser = await User.findOne({ email });
   if (existingUser) {
@@ -52,9 +54,9 @@ export const registerUser = asyncHandler(async (req, res) => {
 
   let user;
   try {
-    user = await User.create({ 
-      name, 
-      email, 
+    user = await User.create({
+      name,
+      email,
       password, // Will be hashed by pre-save middleware
       ipAddress: req.ip,
       userAgent: req.get('User-Agent')
@@ -85,9 +87,9 @@ export const registerUser = asyncHandler(async (req, res) => {
     res.status(201).json({
       message: 'User registered successfully. Please check your email for verification.',
       token: token,
-      user: { 
-        id: user._id, 
-        name: user.name, 
+      user: {
+        id: user._id,
+        name: user.name,
         email: user.email,
         isEmailVerified: user.isEmailVerified
       }
@@ -111,9 +113,10 @@ export const loginUser = asyncHandler(async (req, res) => {
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
   }
- 
+
   const { email, password } = req.body;
 
+  const User = await getUserModel();
   const user = await User.findOne({ email });
   if (!user) return res.status(401).json({ message: 'Invalid credentials' });
 
@@ -132,23 +135,23 @@ export const loginUser = asyncHandler(async (req, res) => {
 
   // Reset login attempts on successful login
   await user.resetLoginAttempts();
-  
+
   // Get accurate IP address (handle proxies/load balancers)
   const getClientIP = (req) => {
     return req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
-           req.headers['x-real-ip'] ||
-           req.connection?.remoteAddress ||
-           req.socket?.remoteAddress ||
-           req.ip ||
-           'unknown';
+      req.headers['x-real-ip'] ||
+      req.connection?.remoteAddress ||
+      req.socket?.remoteAddress ||
+      req.ip ||
+      'unknown';
   };
-  
+
   // Check if 2FA is enabled for this user
   if (user.twoFactorEnabled) {
     // Check if this device is trusted
     const userAgent = req.get('User-Agent');
     const ipAddress = getClientIP(req);
-    
+
     if (user.isDeviceTrusted(userAgent, ipAddress)) {
       // Device is trusted, skip 2FA
       // Update last login info
@@ -170,9 +173,9 @@ export const loginUser = asyncHandler(async (req, res) => {
       return res.status(200).json({
         message: 'Login successful',
         token: token,
-        user: { 
-          id: user._id, 
-          name: user.name, 
+        user: {
+          id: user._id,
+          name: user.name,
           email: user.email,
           isEmailVerified: user.isEmailVerified,
           role: user.role,
@@ -180,17 +183,17 @@ export const loginUser = asyncHandler(async (req, res) => {
         }
       });
     }
-    
+
     // Device not trusted - require 2FA verification
     const tempToken = generateToken(user._id, 'temp-2fa');
-    
+
     return res.status(200).json({
       requires2FA: true,
       tempToken: tempToken,
       message: 'Please enter your 2FA code'
     });
   }
-  
+
   // Update last login info
   user.lastLogin = new Date();
   user.ipAddress = req.ip;
@@ -210,9 +213,9 @@ export const loginUser = asyncHandler(async (req, res) => {
   res.status(200).json({
     message: 'Login successful',
     token: token,
-    user: { 
-      id: user._id, 
-      name: user.name, 
+    user: {
+      id: user._id,
+      name: user.name,
       email: user.email,
       isEmailVerified: user.isEmailVerified,
       role: user.role,
@@ -226,7 +229,8 @@ export const verifyEmail = asyncHandler(async (req, res) => {
   const { token } = req.body;
 
   const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
-  
+
+  const User = await getUserModel();
   const user = await User.findOne({
     emailVerificationToken: hashedToken,
     emailVerificationExpires: { $gt: Date.now() }
@@ -252,6 +256,7 @@ export const verifyEmailCode = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: 'Email and verification code are required' });
   }
 
+  const User = await getUserModel();
   const user = await User.findOne({ email });
   if (!user) {
     return res.status(400).json({ message: 'Invalid verification code' });
@@ -277,6 +282,7 @@ export const resendVerificationCode = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: 'Email is required' });
   }
 
+  const User = await getUserModel();
   const user = await User.findOne({ email });
   if (!user) {
     return res.status(400).json({ message: 'User not found' });
@@ -309,6 +315,7 @@ export const requestPasswordReset = asyncHandler(async (req, res) => {
 
   const { email } = req.body;
 
+  const User = await getUserModel();
   const user = await User.findOne({ email });
   if (!user) {
     // Don't reveal if email exists
@@ -340,6 +347,7 @@ export const verifyResetCode = asyncHandler(async (req, res) => {
 
   const { email, code } = req.body;
 
+  const User = await getUserModel();
   const user = await User.findOne({ email });
   if (!user) {
     return res.status(400).json({ message: 'Invalid verification code' });
@@ -350,7 +358,7 @@ export const verifyResetCode = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: 'Invalid or expired verification code' });
   }
 
-  res.status(200).json({ 
+  res.status(200).json({
     message: 'Verification code is valid',
     canResetPassword: true
   });
@@ -365,6 +373,7 @@ export const updatePasswordWithCode = asyncHandler(async (req, res) => {
 
   const { email, code, newPassword } = req.body;
 
+  const User = await getUserModel();
   const user = await User.findOne({ email });
   if (!user) {
     return res.status(400).json({ message: 'Invalid verification code' });
@@ -392,7 +401,8 @@ export const resetPassword = asyncHandler(async (req, res) => {
   const { token, password } = req.body;
 
   const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
-  
+
+  const User = await getUserModel();
   const user = await User.findOne({
     passwordResetToken: hashedToken,
     passwordResetExpires: { $gt: Date.now() }
@@ -412,15 +422,16 @@ export const resetPassword = asyncHandler(async (req, res) => {
 
 // Get current user
 export const getCurrentUser = asyncHandler(async (req, res) => {
+  const User = await getUserModel();
   const user = await User.findById(req.user.id).select('-password');
-  
+
   if (!user) {
     return res.status(404).json({ message: 'User not found' });
   }
 
   // Fetch user info from separate database
   const userInfo = await UserInfo.findByUserId(req.user.id);
-  
+
   // Include Google authentication status and UserInfo data
   const userResponse = {
     ...user.toObject(),
@@ -440,7 +451,7 @@ export const getCurrentUser = asyncHandler(async (req, res) => {
       formattedLocation: userInfo.getFormattedLocation()
     } : null
   };
-  
+
   res.status(200).json({ user: userResponse });
 });
 
@@ -452,7 +463,7 @@ export const logout = asyncHandler(async (req, res) => {
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax'
   });
-  
+
   res.status(200).json({ message: 'Logged out successfully' });
 });
 
@@ -465,16 +476,17 @@ export const changePassword = asyncHandler(async (req, res) => {
 
   const { currentPassword, newPassword } = req.body;
 
+  const User = await getUserModel();
   const user = await User.findById(req.user.id);
-  
+
   // Check if user is authenticated via Google - prevent password changes
   if (user.googleId) {
-    return res.status(400).json({ 
+    return res.status(400).json({
       message: 'Password cannot be changed for Google-authenticated accounts',
       code: 'GOOGLE_PASSWORD_READONLY'
     });
   }
-  
+
   const isMatch = await user.comparePassword(currentPassword);
   if (!isMatch) {
     return res.status(401).json({ message: 'Current password is incorrect' });
@@ -495,8 +507,9 @@ export const updatePassword = asyncHandler(async (req, res) => {
 
   const { newPassword } = req.body;
 
+  const User = await getUserModel();
   const user = await User.findById(req.user.id);
-  
+
   user.password = newPassword; // Will be hashed by pre-save middleware
   await user.save();
 
@@ -525,15 +538,16 @@ export const updateProfile = asyncHandler(async (req, res) => {
   } = req.body;
 
   try {
+    const User = await getUserModel();
     const user = await User.findById(req.user.id);
-    
+
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
     // Check if user is authenticated via Google - prevent email updates
     if (email && email !== user.email && user.googleId) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         message: 'Email cannot be changed for Google-authenticated accounts',
         code: 'GOOGLE_EMAIL_READONLY'
       });
@@ -558,14 +572,14 @@ export const updateProfile = asyncHandler(async (req, res) => {
 
     // Prepare UserInfo update data
     const userInfoUpdate = {};
-    
+
     if (name) userInfoUpdate.name = name;
     if (phone) userInfoUpdate.phone = phone;
     if (bio) userInfoUpdate.bio = bio;
     if (profession) userInfoUpdate.profession = profession;
     if (dateOfBirth) userInfoUpdate.dateOfBirth = new Date(dateOfBirth);
     if (gender) userInfoUpdate.gender = gender.toLowerCase();
-    
+
     // Handle location update
     if (location) {
       const locationParts = location.split(',').map(part => part.trim()).filter(part => part.length > 0);
@@ -586,7 +600,7 @@ export const updateProfile = asyncHandler(async (req, res) => {
 
     // Get the updated user data for response
     const updatedUser = await User.findById(req.user.id).select('-password');
-    
+
     res.status(200).json({
       message: 'Profile updated successfully',
       user: {
@@ -630,7 +644,7 @@ export const updateNotificationPreferences = asyncHandler(async (req, res) => {
 
   try {
     const user = await User.findById(req.user.id);
-    
+
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
@@ -678,7 +692,7 @@ export const updateAppPreferences = asyncHandler(async (req, res) => {
 
   try {
     const user = await User.findById(req.user.id);
-    
+
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
@@ -716,7 +730,7 @@ export const updateAppPreferences = asyncHandler(async (req, res) => {
 export const getUserSettings = asyncHandler(async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select('-password');
-    
+
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
@@ -759,224 +773,224 @@ export const getUserSettings = asyncHandler(async (req, res) => {
 
 // Two-Factor Authentication Functions
 export const generate2FASecret = asyncHandler(async (req, res) => {
-    const user = await User.findById(req.user.id);
-    if (!user) {
-        return res.status(404).json({ message: 'User not found' });
+  const user = await User.findById(req.user.id);
+  if (!user) {
+    return res.status(404).json({ message: 'User not found' });
+  }
+
+  const secret = speakeasy.generateSecret({ name: `GreenCommunity:${user.email}` });
+  user.twoFactorSecret = secret.base32;
+  user.twoFactorEnabled = false; // It should be false until verified
+  await user.save();
+
+  // Generate QR code URL that Google Authenticator understands
+  const otpauthUrl = speakeasy.otpauthURL({
+    secret: secret.base32,
+    label: `GreenCommunity:${user.email}`,
+    issuer: 'GreenCommunity',
+    encoding: 'base32'
+  });
+
+  QRCode.toDataURL(otpauthUrl, (err, data_url) => {
+    if (err) {
+      console.error('QR Code Generation Error:', err);
+      return res.status(500).json({ message: 'Error generating QR code' });
     }
-
-    const secret = speakeasy.generateSecret({ name: `GreenCommunity:${user.email}` });
-    user.twoFactorSecret = secret.base32;
-    user.twoFactorEnabled = false; // It should be false until verified
-    await user.save();
-
-    // Generate QR code URL that Google Authenticator understands
-    const otpauthUrl = speakeasy.otpauthURL({
-      secret: secret.base32,
-      label: `GreenCommunity:${user.email}`,
-      issuer: 'GreenCommunity',
-      encoding: 'base32'
-    });
-
-    QRCode.toDataURL(otpauthUrl, (err, data_url) => {
-      if (err) {
-        console.error('QR Code Generation Error:', err);
-        return res.status(500).json({ message: 'Error generating QR code' });
-      }
-      res.json({ qrCodeUrl: data_url });
-    });
+    res.json({ qrCodeUrl: data_url });
+  });
 });
 
 export const verify2FAToken = asyncHandler(async (req, res) => {
-    const { token } = req.body;
-    const user = await User.findById(req.user.id);
+  const { token } = req.body;
+  const user = await User.findById(req.user.id);
 
-    if (!user) {
-        return res.status(404).json({ message: 'User not found' });
-    }
+  if (!user) {
+    return res.status(404).json({ message: 'User not found' });
+  }
 
-    const verified = speakeasy.totp.verify({
-        secret: user.twoFactorSecret,
-        encoding: 'base32',
-        token: token
-    });
+  const verified = speakeasy.totp.verify({
+    secret: user.twoFactorSecret,
+    encoding: 'base32',
+    token: token
+  });
 
-    if (verified) {
-        user.twoFactorEnabled = true;
-        await user.save();
-        res.json({ message: '2FA enabled successfully' });
-    } else {
-        res.status(400).json({ message: 'Invalid 2FA token' });
-    }
+  if (verified) {
+    user.twoFactorEnabled = true;
+    await user.save();
+    res.json({ message: '2FA enabled successfully' });
+  } else {
+    res.status(400).json({ message: 'Invalid 2FA token' });
+  }
 });
 
 export const disable2FA = asyncHandler(async (req, res) => {
-    const user = await User.findById(req.user.id);
-    if (!user) {
-        return res.status(404).json({ message: 'User not found' });
-    }
+  const user = await User.findById(req.user.id);
+  if (!user) {
+    return res.status(404).json({ message: 'User not found' });
+  }
 
-    user.twoFactorEnabled = false;
-    user.twoFactorSecret = undefined;
-    await user.save();
+  user.twoFactorEnabled = false;
+  user.twoFactorSecret = undefined;
+  await user.save();
 
-    res.json({ message: '2FA disabled successfully' });
+  res.json({ message: '2FA disabled successfully' });
 });
 
 // Verify 2FA during login
 export const verify2FALogin = asyncHandler(async (req, res) => {
-    const { tempToken, token, rememberDevice, rememberDays } = req.body;
-    
-    if (!tempToken || !token) {
-        return res.status(400).json({ message: 'Temporary token and 2FA code are required' });
+  const { tempToken, token, rememberDevice, rememberDays } = req.body;
+
+  if (!tempToken || !token) {
+    return res.status(400).json({ message: 'Temporary token and 2FA code are required' });
+  }
+
+  try {
+    // Verify the temporary token
+    const decoded = jwt.verify(tempToken, process.env.JWT_SECRET);
+
+    if (decoded.role !== 'temp-2fa') {
+      return res.status(401).json({ message: 'Invalid temporary token' });
     }
-    
-    try {
-        // Verify the temporary token
-        const decoded = jwt.verify(tempToken, process.env.JWT_SECRET);
-        
-        if (decoded.role !== 'temp-2fa') {
-            return res.status(401).json({ message: 'Invalid temporary token' });
-        }
-        
-        const user = await User.findById(decoded.id);
-        if (!user) {
-            return res.status(404).json({ message: 'User not found' });
-        }
-        
-        // Verify that user actually has 2FA enabled and has a secret
-        if (!user.twoFactorEnabled || !user.twoFactorSecret) {
-            return res.status(400).json({ message: 'Two-factor authentication is not enabled for this account' });
-        }
-        
-        // Verify the TOTP code
-        const verified = speakeasy.totp.verify({
-            secret: user.twoFactorSecret,
-            encoding: 'base32',
-            token: token,
-            window: 1 // Allow 1 time step tolerance for clock skew
-        });
-        
-        if (!verified) {
-            return res.status(400).json({ message: 'Invalid 2FA code' });
-        }
-        
-        // Handle remember device option
-        let deviceId = null;
-        if (rememberDevice) {
-            const days = parseInt(rememberDays) || 30; // Default to 30 days
-            
-            // Get accurate IP address (handle proxies/load balancers)
-            const getClientIP = (req) => {
-                return req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
-                       req.headers['x-real-ip'] ||
-                       req.connection?.remoteAddress ||
-                       req.socket?.remoteAddress ||
-                       req.ip ||
-                       'unknown';
-            };
-            
-            const deviceInfo = {
-                userAgent: req.get('User-Agent'),
-                ipAddress: getClientIP(req),
-                deviceName: req.body.deviceName, // Optional custom device name
-                clientTimestamp: req.body.clientTimestamp // Client device time
-            };
-            
-            deviceId = user.addTrustedDevice(deviceInfo, days);
-        }
-        
-        // Update last login info
-        user.lastLogin = new Date();
-        user.ipAddress = req.ip;
-        user.userAgent = req.get('User-Agent');
-        await user.save();
-        
-        // Generate final token
-        const finalToken = generateToken(user._id);
-        
-        // Set HTTP-only cookie for security
-        res.cookie('authToken', finalToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-            maxAge: 24 * 60 * 60 * 1000 // 24 hours
-        });
-        
-        res.status(200).json({
-            message: 'Login successful',
-            token: finalToken,
-            deviceId: deviceId, // Return device ID if device was remembered
-            user: { 
-                id: user._id, 
-                name: user.name, 
-                email: user.email,
-                isEmailVerified: user.isEmailVerified,
-                role: user.role,
-                twoFactorEnabled: user.twoFactorEnabled
-            }
-        });
-        
-    } catch (error) {
-        console.error('2FA verification error:', error);
-        return res.status(401).json({ message: 'Invalid or expired temporary token' });
+
+    const user = await User.findById(decoded.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
     }
+
+    // Verify that user actually has 2FA enabled and has a secret
+    if (!user.twoFactorEnabled || !user.twoFactorSecret) {
+      return res.status(400).json({ message: 'Two-factor authentication is not enabled for this account' });
+    }
+
+    // Verify the TOTP code
+    const verified = speakeasy.totp.verify({
+      secret: user.twoFactorSecret,
+      encoding: 'base32',
+      token: token,
+      window: 1 // Allow 1 time step tolerance for clock skew
+    });
+
+    if (!verified) {
+      return res.status(400).json({ message: 'Invalid 2FA code' });
+    }
+
+    // Handle remember device option
+    let deviceId = null;
+    if (rememberDevice) {
+      const days = parseInt(rememberDays) || 30; // Default to 30 days
+
+      // Get accurate IP address (handle proxies/load balancers)
+      const getClientIP = (req) => {
+        return req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
+          req.headers['x-real-ip'] ||
+          req.connection?.remoteAddress ||
+          req.socket?.remoteAddress ||
+          req.ip ||
+          'unknown';
+      };
+
+      const deviceInfo = {
+        userAgent: req.get('User-Agent'),
+        ipAddress: getClientIP(req),
+        deviceName: req.body.deviceName, // Optional custom device name
+        clientTimestamp: req.body.clientTimestamp // Client device time
+      };
+
+      deviceId = user.addTrustedDevice(deviceInfo, days);
+    }
+
+    // Update last login info
+    user.lastLogin = new Date();
+    user.ipAddress = req.ip;
+    user.userAgent = req.get('User-Agent');
+    await user.save();
+
+    // Generate final token
+    const finalToken = generateToken(user._id);
+
+    // Set HTTP-only cookie for security
+    res.cookie('authToken', finalToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    });
+
+    res.status(200).json({
+      message: 'Login successful',
+      token: finalToken,
+      deviceId: deviceId, // Return device ID if device was remembered
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        isEmailVerified: user.isEmailVerified,
+        role: user.role,
+        twoFactorEnabled: user.twoFactorEnabled
+      }
+    });
+
+  } catch (error) {
+    console.error('2FA verification error:', error);
+    return res.status(401).json({ message: 'Invalid or expired temporary token' });
+  }
 });
 
 // Get user's trusted devices
 export const getTrustedDevices = asyncHandler(async (req, res) => {
-    const user = await User.findById(req.user.id).select('trustedDevices');
-    
-    if (!user) {
-        return res.status(404).json({ message: 'User not found' });
-    }
-    
-    // Clean up expired devices
-    user.trustedDevices = user.trustedDevices.filter(device => device.expiresAt > new Date());
-    await user.save();
-    
-    // Return devices without sensitive info
-    const devices = user.trustedDevices.map(device => ({
-        deviceId: device.deviceId,
-        deviceName: device.deviceName,
-        createdAt: device.createdAt,
-        expiresAt: device.expiresAt
-    }));
-    
-    res.json({ trustedDevices: devices });
+  const user = await User.findById(req.user.id).select('trustedDevices');
+
+  if (!user) {
+    return res.status(404).json({ message: 'User not found' });
+  }
+
+  // Clean up expired devices
+  user.trustedDevices = user.trustedDevices.filter(device => device.expiresAt > new Date());
+  await user.save();
+
+  // Return devices without sensitive info
+  const devices = user.trustedDevices.map(device => ({
+    deviceId: device.deviceId,
+    deviceName: device.deviceName,
+    createdAt: device.createdAt,
+    expiresAt: device.expiresAt
+  }));
+
+  res.json({ trustedDevices: devices });
 });
 
 // Remove a trusted device
 export const removeTrustedDevice = asyncHandler(async (req, res) => {
-    const { deviceId } = req.params;
-    
-    const user = await User.findById(req.user.id);
-    
-    if (!user) {
-        return res.status(404).json({ message: 'User not found' });
-    }
-    
-    const initialCount = user.trustedDevices.length;
-    user.trustedDevices = user.trustedDevices.filter(device => device.deviceId !== deviceId);
-    
-    if (user.trustedDevices.length === initialCount) {
-        return res.status(404).json({ message: 'Trusted device not found' });
-    }
-    
-    await user.save();
-    
-    res.json({ message: 'Trusted device removed successfully' });
+  const { deviceId } = req.params;
+
+  const user = await User.findById(req.user.id);
+
+  if (!user) {
+    return res.status(404).json({ message: 'User not found' });
+  }
+
+  const initialCount = user.trustedDevices.length;
+  user.trustedDevices = user.trustedDevices.filter(device => device.deviceId !== deviceId);
+
+  if (user.trustedDevices.length === initialCount) {
+    return res.status(404).json({ message: 'Trusted device not found' });
+  }
+
+  await user.save();
+
+  res.json({ message: 'Trusted device removed successfully' });
 });
 
 // Clear all trusted devices
 export const clearAllTrustedDevices = asyncHandler(async (req, res) => {
-    const user = await User.findById(req.user.id);
-    
-    if (!user) {
-        return res.status(404).json({ message: 'User not found' });
-    }
-    
-    user.trustedDevices = [];
-    await user.save();
-    
-    res.json({ message: 'All trusted devices cleared successfully' });
+  const user = await User.findById(req.user.id);
+
+  if (!user) {
+    return res.status(404).json({ message: 'User not found' });
+  }
+
+  user.trustedDevices = [];
+  await user.save();
+
+  res.json({ message: 'All trusted devices cleared successfully' });
 });

@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { footprintLogAPI } from '../lib/footprintlogApi.js';
 import { toast } from 'react-hot-toast';
+import { Leaf } from 'lucide-react';
 
 export const useFootprintLog = () => {
     const [logs, setLogs] = useState([]);
@@ -84,25 +85,57 @@ export const useFootprintLog = () => {
         setError(null);
 
         try {
+            console.log('Creating log with data:', logData);
             const formattedData = footprintLogAPI.formatLogData(logData);
-            const newLog = await footprintLogAPI.createLog(formattedData);
+            console.log('Formatted data:', formattedData);
 
-            // Add to local state
-            setLogs(prevLogs => [newLog, ...prevLogs]);
+            const response = await footprintLogAPI.createLog(formattedData);
+            console.log('API response:', response);
 
-            // Update totals
-            setTotalEmissions(prev => prev + newLog.emission);
+            // Handle different response formats from backend
+            const newLog = response.log || response;
+            console.log('New log:', newLog);
 
-            toast.success('Activity logged successfully!');
-            return newLog;
+            // Ensure newLog has required properties
+            if (newLog && newLog._id) {
+                // Add to local state immediately
+                setLogs(prevLogs => {
+                    console.log('Adding to logs. Previous count:', prevLogs.length);
+                    const updated = [newLog, ...prevLogs];
+                    console.log('New logs count:', updated.length);
+                    return updated;
+                });
+
+                // Update totals
+                const emission = newLog.emission || response.emission || 0;
+                setTotalEmissions(prev => prev + emission);
+
+                // Refresh data to ensure consistency
+                setTimeout(() => {
+                    console.log('Refreshing data...');
+                    fetchLogs();
+                    fetchTotalEmissions();
+                }, 100);
+
+                toast.success(
+                    <div className="flex items-center gap-2">
+                        <Leaf className="h-4 w-4" />
+                        Activity logged successfully!
+                    </div>
+                );
+                return newLog;
+            } else {
+                throw new Error('Invalid response format from server');
+            }
         } catch (err) {
+            console.error('CreateLog error:', err);
             setError(err.message);
             toast.error('Failed to log activity');
             throw err;
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [fetchLogs, fetchTotalEmissions]);
 
     // Update an existing log
     const updateLog = useCallback(async (logId, updateData) => {

@@ -26,7 +26,10 @@ import {
   Save,
   Upload,
   Loader2,
-  QrCode
+  QrCode,
+  Trophy,
+  Leaf,
+  Recycle
 } from 'lucide-react';
 import { usePreferences } from "@/context/PreferencesContext";
 import { useTranslation } from "@/context/PreferencesContext";
@@ -35,7 +38,9 @@ import { useUser } from '@/context/UserContext';
 import toast from 'react-hot-toast';
 
 import ProtectedLayout from '@/components/ProtectedLayout';
+import AuthGuard from '@/components/AuthGuard';
 import ChatBot from '@/components/ChatBot';
+import Layout from '@/components/Layout';
 import TrustedDevicesManager from '@/components/TrustedDevicesManager';
 
 const Settings = () => {
@@ -532,15 +537,15 @@ const Settings = () => {
                 <CardContent>
                   <div className="grid grid-cols-3 gap-2">
                     <div className="text-center p-2">
-                      <div className="text-2xl mb-1">🏆</div>
+                      <Trophy className="h-8 w-8 mb-1 mx-auto text-yellow-500" />
                       <div className="text-xs text-muted-foreground">{t('Eco Warrior')}</div>
                     </div>
                     <div className="text-center p-2">
-                      <div className="text-2xl mb-1">🌱</div>
+                      <Leaf className="h-8 w-8 mb-1 mx-auto text-green-500" />
                       <div className="text-xs text-muted-foreground">{t('Plant Protector')}</div>
                     </div>
                     <div className="text-center p-2">
-                      <div className="text-2xl mb-1">♻️</div>
+                      <Recycle className="h-8 w-8 mb-1 mx-auto text-blue-500" />
                       <div className="text-xs text-muted-foreground">{t('Zero Waste')}</div>
                     </div>
                   </div>
@@ -874,8 +879,10 @@ const Settings = () => {
 
 export default function SettingsPage() {
   return (
-    <ProtectedLayout>
-      <Settings />
-    </ProtectedLayout>
+    <AuthGuard intent="settings">
+      <Layout>
+        <Settings />
+      </Layout>
+    </AuthGuard>
   );
 }

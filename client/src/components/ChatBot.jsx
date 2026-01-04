@@ -7,22 +7,16 @@ import ReactMarkdown from "react-markdown";
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-import { X, Send, MessageCircle, Sparkles, Bot, Home, HelpCircle, Search, ArrowRight, ChevronRight, PhoneCall, ChevronDown } from 'lucide-react';
+import { X, Send, MessageCircle, Sparkles, Bot, Home, HelpCircle, Search, ArrowRight, ChevronRight, PhoneCall, ChevronDown, Hand } from 'lucide-react';
+import { INITIAL_CHATBOT_MESSAGE, QUICK_REPLIES, CHATBOT_TABS, getCommonResponse } from '@/config/chatbotConfig';
 
 const ChatBot = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState([
-    { role: 'assistant', content: 'Hi! I\'m your eco-assistant. How can I help you today?' }
-  ]);
+  const [messages, setMessages] = useState([INITIAL_CHATBOT_MESSAGE]);
   const [input, setInput] = useState('');
   const [mounted, setMounted] = useState(false);
-  const [quickReplies] = useState([
-    'How do I calculate my footprint?',
-    'Show reduction tips',
-    'What is CSRD?',
-    'Contact support'
-  ]);
-  const [activeTab, setActiveTab] = useState('home'); // 'home' | 'messages' | 'help'
+  const [quickReplies] = useState(QUICK_REPLIES);
+  const [activeTab, setActiveTab] = useState(CHATBOT_TABS.HOME);
   const [helpQuery, setHelpQuery] = useState('');
   const buttonRef = useRef(null);
   const panelRef = useRef(null);
@@ -65,7 +59,7 @@ const ChatBot = () => {
     // Call streaming AI API (SSE)
     const userInput = input;
     setInput('');
-    ;(async () => {
+    ; (async () => {
       try {
         // Determine backend URL (prefer NEXT_PUBLIC_API_URL)
         const base = (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_API_URL) || '';
@@ -79,7 +73,7 @@ const ChatBot = () => {
             sid = Math.random().toString(36).slice(2) + Date.now().toString(36);
             localStorage.setItem('gc_session_id', sid);
           }
-        } catch {}
+        } catch { }
 
         // Insert a placeholder assistant message to stream into
         let assistantIndex = -1;
@@ -142,10 +136,10 @@ const ChatBot = () => {
               if (payload.done) {
                 // Scroll to bottom on completion
                 setTimeout(() => {
-                  try { messagesRef.current?.scrollTo({ top: messagesRef.current.scrollHeight, behavior: 'smooth' }); } catch {}
+                  try { messagesRef.current?.scrollTo({ top: messagesRef.current.scrollHeight, behavior: 'smooth' }); } catch { }
                 }, 50);
               }
-            } catch {}
+            } catch { }
           }
         };
 
@@ -226,8 +220,10 @@ const ChatBot = () => {
               {activeTab === 'home' && (
                 <div className="space-y-3 p-3">
                   {/* Gradient hero */}
-                  <div className="rounded-xl p-4 text-white" style={{background:'linear-gradient(180deg,#0f5132 0%, #0d3f27 70%)'}}>
-                    <div className="text-2xl font-bold leading-snug">Hi there 👋<br/>How can we help you today?</div>
+                  <div className="rounded-xl p-4 text-white" style={{ background: 'linear-gradient(180deg,#0f5132 0%, #0d3f27 70%)' }}>
+                    <div className="text-2xl font-bold leading-snug flex items-center gap-2">
+                      Hi there <Hand className="h-6 w-6" /><br />How can we help you today?
+                    </div>
                   </div>
                   {/* Contact card */}
                   <button className="w-full text-left rounded-xl border bg-white p-3 flex items-center justify-between shadow-sm">
@@ -236,7 +232,9 @@ const ChatBot = () => {
                   </button>
                   {/* CTA card */}
                   <div className="rounded-xl border bg-white p-3 shadow-sm">
-                    <div className="font-semibold text-foreground mb-1">Meet our team ✨</div>
+                    <div className="font-semibold text-foreground mb-1 flex items-center gap-2">
+                      Meet our team <Sparkles className="h-4 w-4" />
+                    </div>
                     <p className="text-sm text-muted-foreground mb-3">Talk to one of our experts & start your low‑carbon strategy tomorrow!</p>
                     <button onClick={() => setActiveTab('messages')} className="w-full rounded-lg bg-green-600 text-white py-2 font-semibold flex items-center justify-center gap-2 hover:bg-green-700">
                       <MessageCircle className="h-4 w-4" /> Start a chat
@@ -253,7 +251,9 @@ const ChatBot = () => {
                       <MessageCircle className="h-4 w-4" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium truncate">Hello 👋, welcome to our sustainability platform…</div>
+                      <div className="text-sm font-medium truncate flex items-center gap-1">
+                        Hello <Hand className="h-3 w-3" />, welcome to our sustainability platform…
+                      </div>
                       <div className="text-xs text-muted-foreground">Just now</div>
                     </div>
                     <span className="size-2 rounded-full bg-red-500" />
@@ -275,7 +275,7 @@ const ChatBot = () => {
                   ))}
 
                   {/* auto-scroll anchor */}
-                  <div ref={(el) => { if (el) try { el.scrollIntoView({ behavior: 'smooth' }); } catch {} }} />
+                  <div ref={(el) => { if (el) try { el.scrollIntoView({ behavior: 'smooth' }); } catch { } }} />
                 </div>
               )}
 
@@ -283,10 +283,10 @@ const ChatBot = () => {
                 <div className="p-3 space-y-3">
                   <div className="relative">
                     <Search className="h-4 w-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
-                    <Input value={helpQuery} onChange={(e)=>setHelpQuery(e.target.value)} placeholder="Search for help" className="pl-9" />
+                    <Input value={helpQuery} onChange={(e) => setHelpQuery(e.target.value)} placeholder="Search for help" className="pl-9" />
                   </div>
                   <div className="text-sm font-semibold text-foreground px-1">Collections</div>
-                  {[{title:'Creating Your Carbon Report',count:'63 articles'},{title:'Engage in Sustainable Procurement',count:'15 articles'},{title:"Supplier's Help Center",count:'5 articles'}].map((c)=> (
+                  {[{ title: 'Creating Your Carbon Report', count: '63 articles' }, { title: 'Engage in Sustainable Procurement', count: '15 articles' }, { title: "Supplier's Help Center", count: '5 articles' }].map((c) => (
                     <button key={c.title} className="w-full rounded-xl border bg-white p-3 flex items-center justify-between shadow-sm text-left">
                       <div>
                         <div className="font-medium text-foreground">{c.title}</div>
@@ -318,15 +318,15 @@ const ChatBot = () => {
               )}
               <nav className="p-2 border-t border-primary/10">
                 <div className="grid grid-cols-3 gap-1">
-                  <button className={`flex flex-col items-center justify-center py-2 rounded-lg ${activeTab==='home'?'text-green-700 bg-green-50':'text-muted-foreground hover:bg-accent'}`} onClick={()=>setActiveTab('home')}>
+                  <button className={`flex flex-col items-center justify-center py-2 rounded-lg ${activeTab === 'home' ? 'text-green-700 bg-green-50' : 'text-muted-foreground hover:bg-accent'}`} onClick={() => setActiveTab('home')}>
                     <Home className="h-4 w-4" />
                     <span className="text-xs">Home</span>
                   </button>
-                  <button className={`flex flex-col items-center justify-center py-2 rounded-lg ${activeTab==='messages'?'text-green-700 bg-green-50':'text-muted-foreground hover:bg-accent'}`} onClick={()=>setActiveTab('messages')}>
+                  <button className={`flex flex-col items-center justify-center py-2 rounded-lg ${activeTab === 'messages' ? 'text-green-700 bg-green-50' : 'text-muted-foreground hover:bg-accent'}`} onClick={() => setActiveTab('messages')}>
                     <MessageCircle className="h-4 w-4" />
                     <span className="text-xs">Messages</span>
                   </button>
-                  <button className={`flex flex-col items-center justify-center py-2 rounded-lg ${activeTab==='help'?'text-green-700 bg-green-50':'text-muted-foreground hover:bg-accent'}`} onClick={()=>setActiveTab('help')}>
+                  <button className={`flex flex-col items-center justify-center py-2 rounded-lg ${activeTab === 'help' ? 'text-green-700 bg-green-50' : 'text-muted-foreground hover:bg-accent'}`} onClick={() => setActiveTab('help')}>
                     <HelpCircle className="h-4 w-4" />
                     <span className="text-xs">Help</span>
                   </button>

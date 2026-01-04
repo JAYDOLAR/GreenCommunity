@@ -5,9 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { 
-  FileText, 
-  Download, 
+import {
+  FileText,
+  Download,
   Calendar,
   Users,
   DollarSign,
@@ -16,7 +16,11 @@ import {
   TrendingUp,
   Eye,
   Filter,
-  ChevronDown
+  ChevronDown,
+  CheckCircle,
+  BarChart3,
+  HardDrive,
+  X
 } from 'lucide-react';
 
 const ReportsPage = () => {
@@ -138,17 +142,17 @@ const ReportsPage = () => {
       `Format: ${reportFormat.toUpperCase()}\n\n` +
       `This will generate and download the report automatically.`
     );
-    
+
     if (!confirmed) {
       return;
     }
-    
+
     setIsGenerating(true);
-    
+
     try {
       // Simulate report generation
       await new Promise(resolve => setTimeout(resolve, 2000));
-      
+
       const newReport = {
         id: Date.now(),
         name: selectedTemplate.name,
@@ -159,23 +163,23 @@ const ReportsPage = () => {
         size: `${(Math.random() * 3 + 1).toFixed(1)} MB`,
         format: reportFormat.toUpperCase()
       };
-      
+
       setGeneratedReports(prev => [newReport, ...prev]);
-      
+
       // Automatically download the generated report
       downloadReport(newReport, reportFormat);
-      
+
       // Show success popup
-      alert(`✅ Report Generated Successfully!\n\n` +
-        `📄 Report: ${selectedTemplate.name}\n` +
-        `📅 Date: ${newReport.lastGenerated}\n` +
-        `📊 Format: ${reportFormat.toUpperCase()}\n` +
-        `💾 Size: ${newReport.size}\n\n` +
+      alert(`Report Generated Successfully!\n\n` +
+        `Report: ${selectedTemplate.name}\n` +
+        `Date: ${newReport.lastGenerated}\n` +
+        `Format: ${reportFormat.toUpperCase()}\n` +
+        `Size: ${newReport.size}\n\n` +
         `The report has been downloaded automatically.`
       );
     } catch (error) {
       console.error('Error generating report:', error);
-      alert('❌ Error generating report. Please try again.');
+      alert('Error generating report. Please try again.');
     } finally {
       setIsGenerating(false);
     }
@@ -444,7 +448,7 @@ const ReportsPage = () => {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-      
+
       // Show instructions for PDF conversion
       setTimeout(() => {
         alert('HTML file downloaded! To convert to PDF:\n\n1. Open the downloaded HTML file in your browser\n2. Press Ctrl+P (or Cmd+P on Mac)\n3. Select "Save as PDF" in the print dialog\n4. Click "Save"');
@@ -523,34 +527,34 @@ const ReportsPage = () => {
                 </Select>
               </div>
 
-                             <div>
-                 <label className="text-sm font-medium">Time Range</label>
-                 <Select value={timeRange} onValueChange={setTimeRange}>
-                   <SelectTrigger className="mt-1">
-                     <SelectValue />
-                   </SelectTrigger>
-                   <SelectContent>
-                     <SelectItem value="7d">Last 7 days</SelectItem>
-                     <SelectItem value="30d">Last 30 days</SelectItem>
-                     <SelectItem value="90d">Last 90 days</SelectItem>
-                     <SelectItem value="1y">Last year</SelectItem>
-                     <SelectItem value="custom">Custom range</SelectItem>
-                   </SelectContent>
-                 </Select>
-               </div>
+              <div>
+                <label className="text-sm font-medium">Time Range</label>
+                <Select value={timeRange} onValueChange={setTimeRange}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="7d">Last 7 days</SelectItem>
+                    <SelectItem value="30d">Last 30 days</SelectItem>
+                    <SelectItem value="90d">Last 90 days</SelectItem>
+                    <SelectItem value="1y">Last year</SelectItem>
+                    <SelectItem value="custom">Custom range</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-               <div>
-                 <label className="text-sm font-medium">Report Format</label>
-                 <Select value={reportFormat} onValueChange={setReportFormat}>
-                   <SelectTrigger className="mt-1">
-                     <SelectValue />
-                   </SelectTrigger>
-                   <SelectContent>
-                     <SelectItem value="pdf">PDF (Professional Report)</SelectItem>
-                     <SelectItem value="csv">CSV (Data Analysis)</SelectItem>
-                   </SelectContent>
-                 </Select>
-               </div>
+              <div>
+                <label className="text-sm font-medium">Report Format</label>
+                <Select value={reportFormat} onValueChange={setReportFormat}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pdf">PDF (Professional Report)</SelectItem>
+                    <SelectItem value="csv">CSV (Data Analysis)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
               {selectedTemplate && (
                 <div className="p-4 bg-accent/20 rounded-lg">
@@ -618,7 +622,7 @@ const ReportsPage = () => {
                     <div className="w-12 h-12 bg-accent rounded-lg flex items-center justify-center">
                       <FileText className="h-5 w-5 text-primary" />
                     </div>
-                    
+
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
                         <h3 className="font-medium">{report.name}</h3>
@@ -647,9 +651,9 @@ const ReportsPage = () => {
                         <Eye className="h-4 w-4" />
                       </Button>
                       <div className="relative">
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           onClick={() => setShowDownloadMenu(prev => ({ ...prev, [report.id]: !prev[report.id] }))}
                         >
                           <Download className="h-4 w-4" />
@@ -701,7 +705,7 @@ const ReportsPage = () => {
               <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
                 <Calendar className="h-5 w-5 text-green-600" />
               </div>
-              
+
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
                   <h3 className="font-medium">Weekly User Activity Report</h3>
@@ -732,7 +736,7 @@ const ReportsPage = () => {
               <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
                 <Calendar className="h-5 w-5 text-blue-600" />
               </div>
-              
+
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
                   <h3 className="font-medium">Monthly Revenue Report</h3>

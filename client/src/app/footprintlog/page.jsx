@@ -9,6 +9,18 @@ import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
+  ACTIVITY_TYPES,
+  FUEL_TYPES,
+  FLIGHT_CLASSES,
+  ENERGY_SOURCES,
+  FOOD_TYPES,
+  WASTE_TYPES,
+  WATER_TEMPERATURES,
+  CLOTHING_TYPES,
+  ELECTRONICS_TYPES,
+  FURNITURE_TYPES
+} from '@/config/footprintConfig';
+import {
   Car,
   Home,
   Utensils,
@@ -22,14 +34,18 @@ import {
   Clock,
   Trash2,
   Edit3,
-  RefreshCw
+  RefreshCw,
+  CheckCircle,
+  AlertTriangle
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { toast, Toaster } from 'react-hot-toast';
 
 import ProtectedLayout from '@/components/ProtectedLayout';
+import AuthGuard from '@/components/AuthGuard';
 import ChatBot from '@/components/ChatBot';
+import Layout from '@/components/Layout';
 import { useFootprintLog } from '@/lib/useFootprintLog';
 import Link from 'next/link';
 
@@ -71,420 +87,17 @@ const FootprintLog = () => {
   const [electronicsType, setElectronicsType] = useState('');
   const [furnitureType, setFurnitureType] = useState('');
 
-  const activityTypes = [
-    // Transportation
-    {
-      value: 'transport-car',
-      label: 'Car Travel',
-      icon: Car,
-      unit: 'miles',
-      factor: 0.4,
-      category: 'Transportation',
-      requiresFuelType: true,
-      requiresPassengers: true
-    },
-    {
-      value: 'transport-bus',
-      label: 'Bus Travel',
-      icon: Car,
-      unit: 'miles',
-      factor: 0.15,
-      category: 'Transportation',
-      requiresPassengers: true
-    },
-    {
-      value: 'transport-train',
-      label: 'Train Travel',
-      icon: Car,
-      unit: 'miles',
-      factor: 0.12,
-      category: 'Transportation',
-      requiresPassengers: true
-    },
-    {
-      value: 'transport-subway',
-      label: 'Subway/Metro',
-      icon: Car,
-      unit: 'miles',
-      factor: 0.08,
-      category: 'Transportation'
-    },
-    {
-      value: 'transport-taxi',
-      label: 'Taxi/Rideshare',
-      icon: Car,
-      unit: 'miles',
-      factor: 0.45,
-      category: 'Transportation',
-      requiresFuelType: true,
-      requiresPassengers: true
-    },
-    {
-      value: 'transport-motorcycle',
-      label: 'Motorcycle',
-      icon: Car,
-      unit: 'miles',
-      factor: 0.25,
-      category: 'Transportation',
-      requiresFuelType: true
-    },
-    {
-      value: 'transport-flight',
-      label: 'Flight',
-      icon: Plane,
-      unit: 'miles',
-      factor: 0.2,
-      category: 'Transportation',
-      requiresFlightClass: true,
-      requiresPassengers: true
-    },
-    {
-      value: 'transport-ferry',
-      label: 'Ferry',
-      icon: Plane,
-      unit: 'miles',
-      factor: 0.35,
-      category: 'Transportation',
-      requiresPassengers: true
-    },
-    {
-      value: 'transport-bicycle',
-      label: 'Bicycle',
-      icon: Car,
-      unit: 'miles',
-      factor: 0,
-      category: 'Transportation'
-    },
-    {
-      value: 'transport-walking',
-      label: 'Walking',
-      icon: Car,
-      unit: 'miles',
-      factor: 0,
-      category: 'Transportation'
-    },
-
-    // Energy & Utilities
-    {
-      value: 'energy-electricity',
-      label: 'Electricity Usage',
-      icon: Home,
-      unit: 'kWh',
-      factor: 0.5,
-      category: 'Energy',
-      requiresEnergySource: true
-    },
-    {
-      value: 'energy-gas',
-      label: 'Natural Gas',
-      icon: Home,
-      unit: 'therms',
-      factor: 5.3,
-      category: 'Energy'
-    },
-    {
-      value: 'energy-heating-oil',
-      label: 'Heating Oil',
-      icon: Home,
-      unit: 'gallons',
-      factor: 22.4,
-      category: 'Energy'
-    },
-    {
-      value: 'energy-propane',
-      label: 'Propane',
-      icon: Home,
-      unit: 'gallons',
-      factor: 12.7,
-      category: 'Energy'
-    },
-    {
-      value: 'energy-coal',
-      label: 'Coal',
-      icon: Home,
-      unit: 'lbs',
-      factor: 2.0,
-      category: 'Energy'
-    },
-    {
-      value: 'energy-wood',
-      label: 'Wood Burning',
-      icon: Home,
-      unit: 'cords',
-      factor: 4200,
-      category: 'Energy'
-    },
-
-    // Food & Diet
-    {
-      value: 'food-beef',
-      label: 'Beef',
-      icon: Utensils,
-      unit: 'lbs',
-      factor: 27.0,
-      category: 'Food',
-      requiresFoodType: true
-    },
-    {
-      value: 'food-pork',
-      label: 'Pork',
-      icon: Utensils,
-      unit: 'lbs',
-      factor: 12.1,
-      category: 'Food',
-      requiresFoodType: true
-    },
-    {
-      value: 'food-chicken',
-      label: 'Chicken',
-      icon: Utensils,
-      unit: 'lbs',
-      factor: 6.9,
-      category: 'Food',
-      requiresFoodType: true
-    },
-    {
-      value: 'food-fish',
-      label: 'Fish & Seafood',
-      icon: Utensils,
-      unit: 'lbs',
-      factor: 5.4,
-      category: 'Food',
-      requiresFoodType: true
-    },
-    {
-      value: 'food-dairy',
-      label: 'Dairy Products',
-      icon: Utensils,
-      unit: 'lbs',
-      factor: 3.2,
-      category: 'Food',
-      requiresFoodType: true
-    },
-    {
-      value: 'food-eggs',
-      label: 'Eggs',
-      icon: Utensils,
-      unit: 'dozen',
-      factor: 4.8,
-      category: 'Food'
-    },
-    {
-      value: 'food-rice',
-      label: 'Rice',
-      icon: Utensils,
-      unit: 'lbs',
-      factor: 2.7,
-      category: 'Food'
-    },
-    {
-      value: 'food-vegetables',
-      label: 'Vegetables',
-      icon: Utensils,
-      unit: 'lbs',
-      factor: 0.4,
-      category: 'Food'
-    },
-    {
-      value: 'food-fruits',
-      label: 'Fruits',
-      icon: Utensils,
-      unit: 'lbs',
-      factor: 0.3,
-      category: 'Food'
-    },
-
-    // Waste & Recycling
-    {
-      value: 'waste-general',
-      label: 'General Waste',
-      icon: Trash2,
-      unit: 'lbs',
-      factor: 0.94,
-      category: 'Waste',
-      requiresWasteType: true
-    },
-    {
-      value: 'waste-recycling',
-      label: 'Recycling',
-      icon: RefreshCw,
-      unit: 'lbs',
-      factor: -0.5,
-      category: 'Waste',
-      requiresWasteType: true
-    },
-    {
-      value: 'waste-compost',
-      label: 'Composting',
-      icon: RefreshCw,
-      unit: 'lbs',
-      factor: -0.2,
-      category: 'Waste'
-    },
-
-    // Water Usage
-    {
-      value: 'water-usage',
-      label: 'Water Usage',
-      icon: Home,
-      unit: 'gallons',
-      factor: 0.006,
-      category: 'Water'
-    },
-    {
-      value: 'water-shower',
-      label: 'Shower',
-      icon: Home,
-      unit: 'minutes',
-      factor: 0.125,
-      category: 'Water'
-    },
-    {
-      value: 'water-dishwasher',
-      label: 'Dishwasher Use',
-      icon: Home,
-      unit: 'loads',
-      factor: 1.8,
-      category: 'Water'
-    },
-    {
-      value: 'water-laundry',
-      label: 'Laundry',
-      icon: Home,
-      unit: 'loads',
-      factor: 2.3,
-      category: 'Water',
-      requiresWaterTemp: true
-    },
-
-    // Shopping & Consumer Goods
-    {
-      value: 'shopping-clothing',
-      label: 'Clothing Purchase',
-      icon: Home,
-      unit: 'items',
-      factor: 15.0,
-      category: 'Shopping',
-      requiresClothingType: true
-    },
-    {
-      value: 'shopping-electronics',
-      label: 'Electronics',
-      icon: Home,
-      unit: 'items',
-      factor: 300.0,
-      category: 'Shopping',
-      requiresElectronicsType: true
-    },
-    {
-      value: 'shopping-books',
-      label: 'Books/Media',
-      icon: Home,
-      unit: 'items',
-      factor: 2.5,
-      category: 'Shopping'
-    },
-    {
-      value: 'shopping-furniture',
-      label: 'Furniture',
-      icon: Home,
-      unit: 'items',
-      factor: 250.0,
-      category: 'Shopping',
-      requiresFurnitureType: true
-    },
-  ];
-
-  // Fuel type options
-  const fuelTypes = [
-    { value: 'petrol', label: 'Petrol/Gasoline', factor: 1.0 },
-    { value: 'diesel', label: 'Diesel', factor: 1.2 },
-    { value: 'cng', label: 'CNG', factor: 0.7 },
-    { value: 'electric', label: 'Electric', factor: 0.3 },
-    { value: 'hybrid', label: 'Hybrid', factor: 0.6 },
-  ];
-
-  // Flight class options
-  const flightClasses = [
-    { value: 'economy', label: 'Economy', factor: 1.0 },
-    { value: 'business', label: 'Business', factor: 2.5 },
-    { value: 'first', label: 'First Class', factor: 4.0 },
-  ];
-
-  // Energy source options
-  const energySources = [
-    { value: 'grid', label: 'Grid Electricity', factor: 1.0 },
-    { value: 'solar', label: 'Solar Power', factor: 0.1 },
-    { value: 'wind', label: 'Wind Power', factor: 0.1 },
-    { value: 'hydro', label: 'Hydroelectric', factor: 0.2 },
-  ];
-
-  // Food type options
-  const foodTypes = [
-    { value: 'beef', label: 'Beef', factor: 1.5 },
-    { value: 'pork', label: 'Pork', factor: 1.0 },
-    { value: 'chicken', label: 'Chicken', factor: 0.6 },
-    { value: 'fish', label: 'Fish', factor: 0.5 },
-    { value: 'milk', label: 'Milk', factor: 1.0 },
-    { value: 'cheese', label: 'Cheese', factor: 1.2 },
-    { value: 'yogurt', label: 'Yogurt', factor: 0.8 },
-    { value: 'grass-fed', label: 'Grass-Fed Beef', factor: 1.2 },
-    { value: 'organic', label: 'Organic', factor: 0.9 },
-    { value: 'local', label: 'Local/Seasonal', factor: 0.7 },
-  ];
-
-  // Waste type options
-  const wasteTypes = [
-    { value: 'general', label: 'General Waste', factor: 1.0 },
-    { value: 'plastic', label: 'Plastic', factor: 1.2 },
-    { value: 'paper', label: 'Paper', factor: 0.8 },
-    { value: 'glass', label: 'Glass', factor: 0.6 },
-    { value: 'metal', label: 'Metal', factor: 0.5 },
-    { value: 'organic', label: 'Organic Waste', factor: 1.1 },
-    { value: 'electronics', label: 'E-Waste', factor: 2.0 },
-  ];
-
-  // Water temperature options
-  const waterTemperatures = [
-    { value: 'cold', label: 'Cold Water', factor: 0.5 },
-    { value: 'warm', label: 'Warm Water', factor: 1.0 },
-    { value: 'hot', label: 'Hot Water', factor: 1.5 },
-  ];
-
-  // Clothing type options
-  const clothingTypes = [
-    { value: 't-shirt', label: 'T-Shirt', factor: 0.8 },
-    { value: 'jeans', label: 'Jeans', factor: 2.0 },
-    { value: 'dress', label: 'Dress', factor: 1.5 },
-    { value: 'jacket', label: 'Jacket/Coat', factor: 3.0 },
-    { value: 'shoes', label: 'Shoes', factor: 1.8 },
-    { value: 'underwear', label: 'Underwear', factor: 0.3 },
-    { value: 'synthetic', label: 'Synthetic Fabric', factor: 1.2 },
-    { value: 'cotton', label: 'Cotton', factor: 1.0 },
-    { value: 'wool', label: 'Wool', factor: 1.8 },
-  ];
-
-  // Electronics type options
-  const electronicsTypes = [
-    { value: 'smartphone', label: 'Smartphone', factor: 0.8 },
-    { value: 'laptop', label: 'Laptop', factor: 1.5 },
-    { value: 'tablet', label: 'Tablet', factor: 0.6 },
-    { value: 'tv', label: 'Television', factor: 2.0 },
-    { value: 'appliance', label: 'Home Appliance', factor: 3.0 },
-    { value: 'gaming', label: 'Gaming Console', factor: 1.2 },
-    { value: 'camera', label: 'Camera', factor: 0.9 },
-  ];
-
-  // Furniture type options
-  const furnitureTypes = [
-    { value: 'chair', label: 'Chair', factor: 0.8 },
-    { value: 'table', label: 'Table', factor: 1.2 },
-    { value: 'sofa', label: 'Sofa/Couch', factor: 2.0 },
-    { value: 'bed', label: 'Bed', factor: 1.8 },
-    { value: 'dresser', label: 'Dresser/Cabinet', factor: 1.5 },
-    { value: 'bookshelf', label: 'Bookshelf', factor: 1.0 },
-    { value: 'desk', label: 'Desk', factor: 1.1 },
-  ];
+  // Import activity types and options from configuration
+  const activityTypes = ACTIVITY_TYPES;
+  const fuelTypes = FUEL_TYPES;
+  const flightClasses = FLIGHT_CLASSES;
+  const energySources = ENERGY_SOURCES;
+  const foodTypes = FOOD_TYPES;
+  const wasteTypes = WASTE_TYPES;
+  const waterTemperatures = WATER_TEMPERATURES;
+  const clothingTypes = CLOTHING_TYPES;
+  const electronicsTypes = ELECTRONICS_TYPES;
+  const furnitureTypes = FURNITURE_TYPES;
 
   // Helper function to get dynamic field label based on activity type
   const getQuantityLabel = () => {
@@ -622,7 +235,12 @@ const FootprintLog = () => {
         setShowResult(true);
 
         // Show success message with calculation method
-        toast.success(`✅ Impact calculated successfully using ${result.calculation?.method || 'backend'} method`);
+        toast.success(
+          <div className="flex items-center gap-2">
+            <CheckCircle className="h-4 w-4" />
+            Impact calculated successfully using {result.calculation?.method || 'backend'} method
+          </div>
+        );
       } catch (error) {
         console.error('Failed to calculate emissions:', error);
         // Fallback to client-side calculation if API fails
@@ -645,7 +263,12 @@ const FootprintLog = () => {
         });
         setCalculatedEmissions(fallbackEmissions);
         setShowResult(true);
-        toast.error('⚠️ Backend calculation failed, using offline calculation method');
+        toast.error(
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4" />
+            Backend calculation failed, using offline calculation method
+          </div>
+        );
       } finally {
         setIsCalculating(false);
       }
@@ -660,46 +283,85 @@ const FootprintLog = () => {
   const handleAddToLog = async () => {
     const selectedActivity = activityTypes.find(type => type.value === activityType);
     if (!selectedActivity || !quantity) {
-      toast.error('⚠️ Please fill in all required fields to calculate impact');
+      toast.error(
+        <div className="flex items-center gap-2">
+          <AlertTriangle className="h-4 w-4" />
+          Please fill in all required fields to calculate impact
+        </div>
+      );
       return;
     }
 
     try {
       // Create detailed activity description
       let activityDescription = selectedActivity.label;
-      if (activityType === 'transport-car' && fuelType) {
-        const fuelLabel = fuelTypes.find(f => f.value === fuelType)?.label;
-        activityDescription = `${fuelLabel} Car Travel`;
-      } else if (activityType === 'transport-flight' && flightClass) {
-        const classLabel = flightClasses.find(f => f.value === flightClass)?.label;
-        activityDescription = `${classLabel} Flight`;
-      } else if (activityType === 'energy-electricity' && energySource) {
-        const sourceLabel = energySources.find(e => e.value === energySource)?.label;
-        activityDescription = `${sourceLabel} Usage`;
-      } else if ((activityType === 'food-meat' || activityType === 'food-dairy') && foodType) {
-        const foodLabel = foodTypes.find(f => f.value === foodType)?.label;
-        activityDescription = `${foodLabel} Consumption`;
+
+      // Enhanced activity descriptions based on specific fields
+      if (activityType.startsWith('transport-')) {
+        if (fuelType) {
+          const fuelLabel = fuelTypes.find(f => f.value === fuelType)?.label;
+          activityDescription = `${fuelLabel} ${selectedActivity.label}`;
+        }
+        if (flightClass) {
+          const classLabel = flightClasses.find(f => f.value === flightClass)?.label;
+          activityDescription = `${classLabel} ${selectedActivity.label}`;
+        }
+      } else if (activityType.startsWith('energy-')) {
+        if (energySource) {
+          const sourceLabel = energySources.find(e => e.value === energySource)?.label;
+          activityDescription = `${sourceLabel} Usage`;
+        }
+      } else if (activityType.startsWith('food-')) {
+        if (foodType) {
+          const foodLabel = foodTypes.find(f => f.value === foodType)?.label;
+          activityDescription = `${foodLabel} Consumption`;
+        }
+      } else if (activityType.startsWith('waste-')) {
+        if (wasteType) {
+          const wasteLabel = wasteTypes.find(w => w.value === wasteType)?.label;
+          activityDescription = `${wasteLabel} ${selectedActivity.label}`;
+        }
+      } else if (activityType.startsWith('shopping-')) {
+        if (clothingType) {
+          const clothingLabel = clothingTypes.find(c => c.value === clothingType)?.label;
+          activityDescription = `${clothingLabel} Purchase`;
+        } else if (electronicsType) {
+          const electronicsLabel = electronicsTypes.find(e => e.value === electronicsType)?.label;
+          activityDescription = `${electronicsLabel} Purchase`;
+        } else if (furnitureType) {
+          const furnitureLabel = furnitureTypes.find(f => f.value === furnitureType)?.label;
+          activityDescription = `${furnitureLabel} Purchase`;
+        }
       }
 
-      // Prepare log data for API
+      // Prepare comprehensive log data for API
       const logData = {
         activityType,
         quantity,
         selectedDate,
         activity: activityDescription,
+        emission: calculatedEmissions, // Include the calculated emission
         details: {
           fuelType,
           passengers,
           flightClass,
           energySource,
           foodType,
+          wasteType,
+          waterTemp,
+          clothingType,
+          electronicsType,
+          furnitureType,
           unit: selectedActivity.unit,
-          category: selectedActivity.label.split(' ')[0].toLowerCase(),
+          category: selectedActivity.category,
         }
       };
 
       // Submit to API
       await createLog(logData);
+
+      // Refresh the logs to show the new entry immediately
+      await refresh();
 
       // Reset form
       setShowResult(false);
@@ -718,6 +380,7 @@ const FootprintLog = () => {
       setSelectedDate(new Date());
     } catch (error) {
       console.error('Failed to add log:', error);
+      toast.error(`Failed to add activity: ${error.message}`);
     }
   };
 
@@ -743,12 +406,30 @@ const FootprintLog = () => {
       'other': Clock
     };
 
+    // Handle date formatting with validation
+    let formattedDate = 'Invalid Date';
+    try {
+      const dateValue = log.createdAt || log.date || log.selectedDate || new Date();
+      const dateObj = new Date(dateValue);
+
+      // Check if date is valid
+      if (!isNaN(dateObj.getTime())) {
+        formattedDate = format(dateObj, "yyyy-MM-dd");
+      } else {
+        // Fallback to current date if invalid
+        formattedDate = format(new Date(), "yyyy-MM-dd");
+      }
+    } catch (error) {
+      console.warn('Date formatting error:', error, 'for log:', log);
+      formattedDate = format(new Date(), "yyyy-MM-dd");
+    }
+
     return {
       id: log._id,
-      date: format(new Date(log.createdAt || log.date), "yyyy-MM-dd"),
+      date: formattedDate,
       activity: log.activity,
       type: log.category || log.activityType,
-      amount: log.details?.quantity || 0,
+      amount: log.details?.quantity || log.quantity || 0,
       unit: log.details?.unit || 'units',
       co2: log.emission || 0,
       icon: iconMap[log.activityType] || Clock,
@@ -757,7 +438,7 @@ const FootprintLog = () => {
   };
 
   // Get formatted logs for display
-  const displayLogs = logs.map(formatLogForDisplay);
+  const displayLogs = (logs || []).filter(log => log && log._id).map(formatLogForDisplay);
 
   // Calculate weekly and monthly totals
   const weeklyTotal = getWeeklyTotal();
@@ -767,6 +448,17 @@ const FootprintLog = () => {
   return (
     <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 bg-gradient-to-b from-background to-accent/5 min-h-screen">
       <Toaster position="top-right" />
+
+      {/* Error State */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
+          <p>Error loading footprint logs: {error}</p>
+          <Button onClick={refresh} className="mt-2">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Retry
+          </Button>
+        </div>
+      )}
 
       {/* Header */}
       <div className="flex justify-between items-start">
@@ -1281,8 +973,10 @@ const FootprintLog = () => {
 
 export default function FootprintLogPage() {
   return (
-    <ProtectedLayout>
-      <FootprintLog />
-    </ProtectedLayout>
+    <AuthGuard intent="footprintlog">
+      <Layout>
+        <FootprintLog />
+      </Layout>
+    </AuthGuard>
   );
 }

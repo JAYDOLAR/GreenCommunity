@@ -13,7 +13,26 @@ const FootprintLogSchema = new Schema(
     activity: { type: String, required: true },
     activityType: {
       type: String,
-      enum: ["transport", "energy", "food", "waste", "other"],
+      enum: [
+        // Transportation
+        "transport-car", "transport-bus", "transport-train", "transport-subway",
+        "transport-taxi", "transport-motorcycle", "transport-flight", "transport-ferry",
+        "transport-bicycle", "transport-walking",
+        // Energy
+        "energy-electricity", "energy-gas", "energy-heating-oil", "energy-propane",
+        "energy-coal", "energy-wood",
+        // Food
+        "food-beef", "food-pork", "food-chicken", "food-fish", "food-dairy",
+        "food-eggs", "food-rice", "food-vegetables", "food-fruits",
+        // Waste
+        "waste-general", "waste-recycling", "waste-compost",
+        // Water
+        "water-usage", "water-shower", "water-dishwasher", "water-laundry",
+        // Shopping
+        "shopping-clothing", "shopping-electronics", "shopping-books", "shopping-furniture",
+        // Legacy support
+        "transport", "energy", "food", "waste", "other"
+      ],
       default: "other",
       index: true,
     },
@@ -37,13 +56,16 @@ const FootprintLogSchema = new Schema(
     notes: { type: String },
     project: { type: Schema.Types.ObjectId, ref: "Project" },
     community: { type: Schema.Types.ObjectId, ref: "Community" },
+    selectedDate: { type: Date }, // User's selected date for the activity
+    quantity: { type: Number }, // Quantity of the activity
+    details: { type: Schema.Types.Mixed }, // Additional activity details
   },
   {
     timestamps: true,
   }
 );
 
-FootprintLogSchema.index({ user: 1, activityType: 1, date: -1 });
+FootprintLogSchema.index({ user: 1, activityType: 1, createdAt: -1 });
 
 // Get footprint log model with footprint database connection
 const getFootprintLogModel = async () => {

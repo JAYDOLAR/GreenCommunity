@@ -8,13 +8,13 @@ import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  Users, 
-  Trophy, 
-  Target, 
-  Calendar, 
-  MapPin, 
-  Plus, 
+import {
+  Users,
+  Trophy,
+  Target,
+  Calendar,
+  MapPin,
+  Plus,
   Search,
   TrendingUp,
   Award,
@@ -24,9 +24,19 @@ import {
   Star,
   MessageCircle,
   Share,
-  Heart
+  Heart,
+  Trash2,
+  Bike,
+  Zap,
+  Recycle,
+  Sun,
+  TreePine,
+  Globe,
+  User
 } from 'lucide-react';
 import ChatBot from '@/components/ChatBot';
+import AuthGuard from '@/components/AuthGuard';
+import Layout from '@/components/Layout';
 
 const Community = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -42,8 +52,8 @@ const Community = () => {
       try {
         setLoading((s) => ({ ...s, challenges: true, leaderboard: true, impact: true }));
         const [chData, lbData] = await Promise.all([
-          challengesAPI.list().catch((e)=>{ throw e; }),
-          challengesAPI.leaderboard().catch((e)=>{ throw e; })
+          challengesAPI.list().catch((e) => { throw e; }),
+          challengesAPI.leaderboard().catch((e) => { throw e; })
         ]);
         if (Array.isArray(chData)) setServerChallenges(chData);
         if (Array.isArray(lbData)) setLeaderboard(lbData);
@@ -73,7 +83,7 @@ const Community = () => {
       difficulty: 'Medium',
       reward: '50 eco-points',
       progress: 65,
-      image: '🗑️',
+      image: <Trash2 className="h-6 w-6" />,
       category: 'Waste Reduction',
       featured: true
     },
@@ -86,7 +96,7 @@ const Community = () => {
       difficulty: 'Hard',
       reward: '100 eco-points',
       progress: 40,
-      image: '🌱',
+      image: <Leaf className="h-6 w-6" />,
       category: 'Diet & Food',
       featured: true
     },
@@ -99,7 +109,7 @@ const Community = () => {
       difficulty: 'Easy',
       reward: '25 eco-points',
       progress: 80,
-      image: '🚲',
+      image: <Bike className="h-6 w-6" />,
       category: 'Transportation',
       featured: false
     },
@@ -112,7 +122,7 @@ const Community = () => {
       difficulty: 'Medium',
       reward: '75 eco-points',
       progress: 55,
-      image: '⚡',
+      image: <Zap className="h-6 w-6" />,
       category: 'Energy',
       featured: true
     }
@@ -126,7 +136,7 @@ const Community = () => {
       description: 'Community focused on reducing waste and promoting circular economy',
       category: 'Waste Reduction',
       location: 'Global',
-      avatar: '♻️',
+      avatar: <Recycle className="h-6 w-6" />,
       active: true,
       posts: 156
     },
@@ -137,7 +147,7 @@ const Community = () => {
       description: 'Share experiences and tips about solar energy adoption',
       category: 'Renewable Energy',
       location: 'North America',
-      avatar: '☀️',
+      avatar: <Sun className="h-6 w-6" />,
       active: true,
       posts: 89
     },
@@ -148,7 +158,7 @@ const Community = () => {
       description: 'Growing food sustainably in urban environments',
       category: 'Food & Agriculture',
       location: 'Global',
-      avatar: '🌿',
+      avatar: <TreePine className="h-6 w-6" />,
       active: false,
       posts: 245
     },
@@ -159,7 +169,7 @@ const Community = () => {
       description: 'Sustainable travel tips and carbon-neutral adventures',
       category: 'Travel',
       location: 'Global',
-      avatar: '🌍',
+      avatar: <Globe className="h-6 w-6" />,
       active: true,
       posts: 178
     }
@@ -203,13 +213,13 @@ const Community = () => {
 
   const displayLeaderboard = leaderboard.length > 0
     ? leaderboard.map((u, idx) => ({
-        rank: idx + 1,
-        name: (u.userId && (u.userId.name || u.userId.email)) || 'User',
-        points: u.totalPoints || 0,
-        avatar: (u.userId && (u.userId.profile?.avatar?.url)) ? (
-          <Avatar className="h-6 w-6"><AvatarImage src={u.userId.profile.avatar.url} /><AvatarFallback>🧑</AvatarFallback></Avatar>
-        ) : '🧑'
-      }))
+      rank: idx + 1,
+      name: (u.userId && (u.userId.name || u.userId.email)) || 'User',
+      points: u.totalPoints || 0,
+      avatar: (u.userId && (u.userId.profile?.avatar?.url)) ? (
+        <Avatar className="h-6 w-6"><AvatarImage src={u.userId.profile.avatar.url} /><AvatarFallback><User className="h-4 w-4" /></AvatarFallback></Avatar>
+      ) : <User className="h-6 w-6" />
+    }))
     : [];
 
   const getDifficultyColor = (difficulty) => {
@@ -262,7 +272,7 @@ const Community = () => {
               <Card key={challenge._id || challenge.id} className={`card-gradient hover-lift`}>
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between gap-2">
-                    <div className="text-2xl sm:text-3xl">{challenge.image || '🎯'}</div>
+                    <div className="text-2xl sm:text-3xl">{challenge.image || <Target className="h-6 w-6" />}</div>
                     <Badge className={getDifficultyColor(challenge.difficulty) + ' text-xs'}>
                       {challenge.difficulty}
                     </Badge>
@@ -270,7 +280,7 @@ const Community = () => {
                   <CardTitle className="text-base sm:text-lg">{challenge.title}</CardTitle>
                   <CardDescription className="text-xs sm:text-sm">{challenge.description}</CardDescription>
                 </CardHeader>
-                
+
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-2 gap-2 sm:gap-3 text-xs sm:text-sm">
                     <div className="flex items-center gap-1 sm:gap-2">
@@ -309,7 +319,7 @@ const Community = () => {
                           ]);
                           if (Array.isArray(chData)) setServerChallenges(chData);
                           if (Array.isArray(lbData)) setLeaderboard(lbData);
-                          try { const me = await challengesAPI.me(); setImpact({ totalPoints: me.totalPoints||0, history: me.history||[] }); } catch {}
+                          try { const me = await challengesAPI.me(); setImpact({ totalPoints: me.totalPoints || 0, history: me.history || [] }); } catch { }
                         } catch (e) {
                           if (e?.status === 401) {
                             alert('Please log in to join challenges.');
@@ -351,7 +361,7 @@ const Community = () => {
                     </div>
                   </div>
                 </CardHeader>
-                
+
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-3 gap-2 sm:gap-4 text-center">
                     <div>
@@ -365,7 +375,9 @@ const Community = () => {
                       <div className="text-[10px] sm:text-xs text-muted-foreground">Posts</div>
                     </div>
                     <div>
-                      <div className="text-base sm:text-lg font-bold text-foreground">4.8★</div>
+                      <div className="text-base sm:text-lg font-bold text-foreground flex items-center justify-center gap-1">
+                        4.8<Star className="h-4 w-4 text-yellow-500 fill-current" />
+                      </div>
                       <div className="text-[10px] sm:text-xs text-muted-foreground">Rating</div>
                     </div>
                   </div>
@@ -445,16 +457,15 @@ const Community = () => {
               <CardContent className="space-y-4">
                 {displayLeaderboard.map(user => (
                   <div key={user.rank} className="flex items-center gap-2 sm:gap-4 p-2 sm:p-3 rounded-lg border border-border/50">
-                    <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm ${
-                      user.rank === 1 ? 'bg-yellow-100 text-yellow-700' :
+                    <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm ${user.rank === 1 ? 'bg-yellow-100 text-yellow-700' :
                       user.rank === 2 ? 'bg-gray-100 text-gray-700' :
-                      user.rank === 3 ? 'bg-orange-100 text-orange-700' :
-                      'bg-muted text-muted-foreground'
-                    }`}>
+                        user.rank === 3 ? 'bg-orange-100 text-orange-700' :
+                          'bg-muted text-muted-foreground'
+                      }`}>
                       #{user.rank}
                     </div>
                     <div className="text-lg sm:text-2xl">{user.avatar}</div>
-                    
+
                     <div className="flex-1">
                       <div className="font-medium text-xs sm:text-base text-foreground">{user.name}</div>
                       <div className="text-[10px] sm:text-sm text-muted-foreground">
@@ -462,7 +473,7 @@ const Community = () => {
                         0 day streak • 0 badges
                       </div>
                     </div>
-                    
+
                     <div className="text-right">
                       <div className="font-bold text-xs sm:text-base text-foreground">{user.points.toLocaleString()}</div>
                       <div className="text-[10px] sm:text-xs text-muted-foreground">eco-points</div>
@@ -504,7 +515,7 @@ const Community = () => {
                   <h4 className="font-medium text-xs sm:text-base text-foreground">Recent Achievements</h4>
                   {/* History from backend (still basic; badges TBD) */}
                   <div className="space-y-1 sm:space-y-2">
-                    {impact.history && impact.history.length > 0 ? impact.history.slice(0,4).map((h, idx) => (
+                    {impact.history && impact.history.length > 0 ? impact.history.slice(0, 4).map((h, idx) => (
                       <div key={idx} className="flex items-center gap-2 sm:gap-3 p-2 bg-success/10 rounded-lg">
                         <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-success" />
                         <span className="text-xs sm:text-sm">Completed {h.title || 'a challenge'}</span>
@@ -524,4 +535,14 @@ const Community = () => {
   );
 };
 
-export default Community;
+const CommunityPage = () => {
+  return (
+    <AuthGuard intent="community">
+      <Layout>
+        <Community />
+      </Layout>
+    </AuthGuard>
+  );
+};
+
+export default CommunityPage;

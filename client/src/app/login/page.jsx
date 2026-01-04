@@ -154,9 +154,21 @@ export default function LoginPage() {
 
       setIsSuccess(true);
 
+      // Check for intended destination and redirect accordingly
+      const intendedDestination = localStorage.getItem('intendedDestination');
+      const loginIntent = localStorage.getItem('loginIntent');
+
+      // Clean up the stored values
+      localStorage.removeItem('intendedDestination');
+      localStorage.removeItem('loginIntent');
+
       // Small delay to ensure user state is updated before redirect
       setTimeout(() => {
-        router.push('/dashboard');
+        if (intendedDestination && intendedDestination !== '/login') {
+          router.push(intendedDestination);
+        } else {
+          router.push('/dashboard');
+        }
       }, 100);
 
     } catch (error) {
@@ -237,7 +249,20 @@ export default function LoginPage() {
       // Auto-hide success notification and redirect after 2 seconds
       setTimeout(() => {
         setShowSuccessNotification(false);
-        router.push('/dashboard');
+
+        // Check for intended destination and redirect accordingly
+        const intendedDestination = localStorage.getItem('intendedDestination');
+        const loginIntent = localStorage.getItem('loginIntent');
+
+        // Clean up the stored values
+        localStorage.removeItem('intendedDestination');
+        localStorage.removeItem('loginIntent');
+
+        if (intendedDestination && intendedDestination !== '/login') {
+          router.push(intendedDestination);
+        } else {
+          router.push('/dashboard');
+        }
       }, 2000);
 
     } catch (error) {

@@ -1,22 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { generateFloatingParticles } from '@/config/uiConfig';
 
 const FloatingParticles = () => {
   const [particles, setParticles] = useState([]);
 
   useEffect(() => {
-    const icons = ['🌱', '🌿', '♻️', '🌍', '🍃', '💚'];
-    const newParticles = [];
-    for (let i = 0; i < 3; i++) {
-      newParticles.push({
-        id: i,
-        left: 15 + Math.random() * 70, // Keep away from edges
-        top: 20 + Math.random() * 60, // Keep in middle areas
-        animationDelay: Math.random() * 12,
-        icon: icons[Math.floor(Math.random() * icons.length)]
-      });
-    }
+    const newParticles = generateFloatingParticles();
     setParticles(newParticles);
   }, []);
 

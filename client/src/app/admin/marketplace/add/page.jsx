@@ -8,8 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { 
-  ShoppingBag, 
+import {
+  ShoppingBag,
   ArrowLeft,
   Save,
   DollarSign,
@@ -93,7 +93,7 @@ const AddProductPage = () => {
     }
 
     setIsLoading(true);
-    
+
     try {
       // Prepare product data for API
       const productData = {
@@ -120,7 +120,7 @@ const AddProductPage = () => {
       if (response.ok) {
         const result = await response.json();
         console.log('Product saved successfully:', result.product);
-        
+
         // Navigate back to marketplace page
         router.push('/admin/marketplace');
       } else {
@@ -157,7 +157,7 @@ const AddProductPage = () => {
         </div>
       </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Form */}
         <div className="lg:col-span-2 space-y-6">
           {/* Basic Information */}
@@ -173,16 +173,16 @@ const AddProductPage = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-2">Product Name *</label>
-                  <Input 
-                    placeholder="Enter product name" 
+                  <Input
+                    placeholder="Enter product name"
                     value={product.name}
                     onChange={(e) => handleInputChange('name', e.target.value)}
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-2">Category *</label>
-                  <Select 
-                    value={product.category} 
+                  <Select
+                    value={product.category}
                     onValueChange={(value) => handleInputChange('category', value)}
                   >
                     <SelectTrigger>
@@ -203,8 +203,8 @@ const AddProductPage = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-2">Price (₹) *</label>
-                  <Input 
-                    placeholder="Enter price" 
+                  <Input
+                    placeholder="Enter price"
                     type="number"
                     value={product.price}
                     onChange={(e) => handleInputChange('price', e.target.value)}
@@ -212,8 +212,8 @@ const AddProductPage = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-2">Stock Quantity *</label>
-                  <Input 
-                    placeholder="Enter stock quantity" 
+                  <Input
+                    placeholder="Enter stock quantity"
                     type="number"
                     value={product.stock}
                     onChange={(e) => handleInputChange('stock', e.target.value)}
@@ -224,8 +224,8 @@ const AddProductPage = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-2">Status</label>
-                  <Select 
-                    value={product.status} 
+                  <Select
+                    value={product.status}
                     onValueChange={(value) => handleInputChange('status', value)}
                   >
                     <SelectTrigger>
@@ -240,8 +240,8 @@ const AddProductPage = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-2">Tags</label>
-                  <Input 
-                    placeholder="Enter tags (comma separated)" 
+                  <Input
+                    placeholder="Enter tags (comma separated)"
                     value={product.tags}
                     onChange={(e) => handleInputChange('tags', e.target.value)}
                   />
@@ -250,8 +250,8 @@ const AddProductPage = () => {
 
               <div>
                 <label className="block text-sm font-medium mb-2">Description</label>
-                <Textarea 
-                  placeholder="Enter detailed product description..." 
+                <Textarea
+                  placeholder="Enter detailed product description..."
                   value={product.description}
                   onChange={(e) => handleInputChange('description', e.target.value)}
                   rows={4}
@@ -273,8 +273,8 @@ const AddProductPage = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-2">Weight (kg)</label>
-                  <Input 
-                    placeholder="Product weight" 
+                  <Input
+                    placeholder="Product weight"
                     type="number"
                     step="0.1"
                     value={product.weight}
@@ -283,16 +283,16 @@ const AddProductPage = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-2">Dimensions</label>
-                  <Input 
-                    placeholder="L x W x H (cm)" 
+                  <Input
+                    placeholder="L x W x H (cm)"
                     value={product.dimensions}
                     onChange={(e) => handleInputChange('dimensions', e.target.value)}
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-2">Shipping Cost (₹)</label>
-                  <Input 
-                    placeholder="Shipping cost" 
+                  <Input
+                    placeholder="Shipping cost"
                     type="number"
                     value={product.shipping}
                     onChange={(e) => handleInputChange('shipping', e.target.value)}
@@ -315,8 +315,8 @@ const AddProductPage = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-2">Initial Rating</label>
-                  <Input 
-                    placeholder="0.0" 
+                  <Input
+                    placeholder="0.0"
                     type="number"
                     step="0.1"
                     min="0"
@@ -327,8 +327,8 @@ const AddProductPage = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-2">Review Count</label>
-                  <Input 
-                    placeholder="0" 
+                  <Input
+                    placeholder="0"
                     type="number"
                     min="0"
                     value={product.reviews}
@@ -337,8 +337,8 @@ const AddProductPage = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-2">Sold Count</label>
-                  <Input 
-                    placeholder="0" 
+                  <Input
+                    placeholder="0"
                     type="number"
                     min="0"
                     value={product.sold}
@@ -350,130 +350,130 @@ const AddProductPage = () => {
           </Card>
         </div>
 
-                 {/* Sidebar */}
-         <div className="space-y-6">
-           {/* Product Image */}
-           <Card>
-             <CardHeader>
-               <CardTitle className="flex items-center gap-2">
-                 <ImageIcon className="h-5 w-5" />
-                 Product Image
-               </CardTitle>
-             </CardHeader>
-             <CardContent className="space-y-4">
-               {/* Image Preview - Only show when image is uploaded */}
-               {uploadedImage && (
-                 <div className="w-full h-48 bg-gray-100 rounded-lg overflow-hidden relative">
-                   <img 
-                     src={uploadedImage.preview} 
-                     alt="Product preview" 
-                     className="w-full h-full object-cover"
-                   />
-                   <Button
-                     variant="destructive"
-                     size="sm"
-                     onClick={handleRemoveImage}
-                     className="absolute top-2 right-2 h-8 w-8 p-0"
-                   >
-                     <X className="h-4 w-4" />
-                   </Button>
-                 </div>
-               )}
+        {/* Sidebar */}
+        <div className="space-y-6">
+          {/* Product Image */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ImageIcon className="h-5 w-5" />
+                Product Image
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Image Preview - Only show when image is uploaded */}
+              {uploadedImage && (
+                <div className="w-full h-48 bg-gray-100 rounded-lg overflow-hidden relative">
+                  <img
+                    src={uploadedImage.preview}
+                    alt="Product preview"
+                    className="w-full h-full object-cover"
+                  />
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={handleRemoveImage}
+                    className="absolute top-2 right-2 h-8 w-8 p-0"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
 
-               {/* Upload Section */}
-               <div className="space-y-3">
-                 <div className="flex items-center gap-2">
-                   <Upload className="h-4 w-4 text-muted-foreground" />
-                   <span className="text-sm font-medium">Upload Image</span>
-                 </div>
-                 
-                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-gray-400 transition-colors">
-                   <input
-                     ref={fileInputRef}
-                     type="file"
-                     accept="image/*"
-                     onChange={handleImageUpload}
-                     className="hidden"
-                     id="image-upload"
-                   />
-                   <label 
-                     htmlFor="image-upload" 
-                     className="cursor-pointer flex flex-col items-center gap-2"
-                   >
-                     <ImageIcon className="h-8 w-8 text-muted-foreground" />
-                     <div>
-                       <p className="text-sm font-medium text-gray-900">
-                         {uploadedImage ? 'Change Image' : 'Click to upload'}
-                       </p>
-                       <p className="text-xs text-muted-foreground">
-                         PNG, JPG, GIF up to 5MB
-                       </p>
-                     </div>
-                   </label>
-                 </div>
+              {/* Upload Section */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Upload className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Upload Image</span>
+                </div>
 
-                 {uploadedImage && (
-                   <div className="text-xs text-muted-foreground">
-                     <p>File: {uploadedImage.file.name}</p>
-                     <p>Size: {(uploadedImage.file.size / 1024 / 1024).toFixed(2)} MB</p>
-                   </div>
-                 )}
-               </div>
-             </CardContent>
-           </Card>
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-gray-400 transition-colors">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                    id="image-upload"
+                  />
+                  <label
+                    htmlFor="image-upload"
+                    className="cursor-pointer flex flex-col items-center gap-2"
+                  >
+                    <ImageIcon className="h-8 w-8 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">
+                        {uploadedImage ? 'Change Image' : 'Click to upload'}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        PNG, JPG, GIF up to 5MB
+                      </p>
+                    </div>
+                  </label>
+                </div>
 
-           {/* Product Settings */}
-           <Card>
-             <CardHeader>
-               <CardTitle>Product Settings</CardTitle>
-             </CardHeader>
-             <CardContent className="space-y-4">
-               <div className="flex items-center justify-between">
-                 <div className="flex items-center gap-2">
-                   <Star className="h-4 w-4" />
-                   <span className="text-sm font-medium">Featured Product</span>
-                 </div>
-                 <input
-                   type="checkbox"
-                   checked={product.featured}
-                   onChange={(e) => handleInputChange('featured', e.target.checked)}
-                   className="rounded"
-                 />
-               </div>
-             </CardContent>
-           </Card>
+                {uploadedImage && (
+                  <div className="text-xs text-muted-foreground">
+                    <p>File: {uploadedImage.file.name}</p>
+                    <p>Size: {(uploadedImage.file.size / 1024 / 1024).toFixed(2)} MB</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
 
-           {/* Product Preview */}
-           <Card>
-             <CardHeader>
-               <CardTitle>Product Preview</CardTitle>
-             </CardHeader>
-             <CardContent className="space-y-3">
-               <div className="text-sm">
-                 <span className="font-medium">Name:</span> {product.name || 'Not set'}
-               </div>
-               <div className="text-sm">
-                 <span className="font-medium">Category:</span> {product.category || 'Not set'}
-               </div>
-               <div className="text-sm">
-                 <span className="font-medium">Price:</span> {product.price ? `₹${parseInt(product.price).toLocaleString()}` : 'Not set'}
-               </div>
-               <div className="text-sm">
-                 <span className="font-medium">Stock:</span> {product.stock || 'Not set'}
-               </div>
-               <div className="text-sm">
-                 <span className="font-medium">Status:</span> 
-                 <Badge className={`ml-2 ${product.status === 'active' ? 'bg-green-100 text-green-800' : 
-                   product.status === 'inactive' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'}`}>
-                   {product.status || 'draft'}
-                 </Badge>
-               </div>
-               <div className="text-sm">
-                 <span className="font-medium">Rating:</span> {product.rating} ⭐ ({product.reviews} reviews)
-               </div>
-             </CardContent>
-           </Card>
-         </div>
+          {/* Product Settings */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Product Settings</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Star className="h-4 w-4" />
+                  <span className="text-sm font-medium">Featured Product</span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={product.featured}
+                  onChange={(e) => handleInputChange('featured', e.target.checked)}
+                  className="rounded"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Product Preview */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Product Preview</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="text-sm">
+                <span className="font-medium">Name:</span> {product.name || 'Not set'}
+              </div>
+              <div className="text-sm">
+                <span className="font-medium">Category:</span> {product.category || 'Not set'}
+              </div>
+              <div className="text-sm">
+                <span className="font-medium">Price:</span> {product.price ? `₹${parseInt(product.price).toLocaleString()}` : 'Not set'}
+              </div>
+              <div className="text-sm">
+                <span className="font-medium">Stock:</span> {product.stock || 'Not set'}
+              </div>
+              <div className="text-sm">
+                <span className="font-medium">Status:</span>
+                <Badge className={`ml-2 ${product.status === 'active' ? 'bg-green-100 text-green-800' :
+                  product.status === 'inactive' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'}`}>
+                  {product.status || 'draft'}
+                </Badge>
+              </div>
+              <div className="text-sm flex items-center gap-1">
+                <span className="font-medium">Rating:</span> {product.rating} <Star className="h-4 w-4 text-yellow-500 fill-current" /> ({product.reviews} reviews)
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );

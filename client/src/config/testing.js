@@ -2,18 +2,20 @@
 // This file controls various testing features in the application
 
 export const TESTING_CONFIG = {
-  // Force 2FA input for all logins (regardless of user's 2FA setting)
-  FORCE_2FA_FOR_ALL_LOGINS: true,
-  
-  // Accepted test codes (any of these will work in testing mode)
-  TEST_2FA_CODES: ['123456', '000000', '111111', '999999'],
-  
+  // Force 2FA input for all logins (can be overridden by environment variable)
+  FORCE_2FA_FOR_ALL_LOGINS: process.env.NEXT_PUBLIC_FORCE_2FA === 'true' || false,
+
+  // Accepted test codes (can be overridden by environment variable)
+  TEST_2FA_CODES: process.env.NEXT_PUBLIC_TEST_2FA_CODES
+    ? process.env.NEXT_PUBLIC_TEST_2FA_CODES.split(',')
+    : ['123456', '000000', '111111', '999999'],
+
   // Show testing indicators in UI
-  SHOW_TESTING_INDICATORS: true,
-  
+  SHOW_TESTING_INDICATORS: process.env.NEXT_PUBLIC_SHOW_TESTING_INDICATORS === 'true' || false,
+
   // Other testing features can be added here
-  SKIP_EMAIL_VERIFICATION: false,
-  MOCK_PAYMENT_GATEWAY: false,
+  SKIP_EMAIL_VERIFICATION: process.env.NEXT_PUBLIC_SKIP_EMAIL_VERIFICATION === 'true' || false,
+  MOCK_PAYMENT_GATEWAY: process.env.NEXT_PUBLIC_MOCK_PAYMENT_GATEWAY === 'true' || false,
 };
 
 // Helper function to check if we're in development mode

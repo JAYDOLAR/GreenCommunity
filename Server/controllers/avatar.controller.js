@@ -1,13 +1,14 @@
 import asyncHandler from '../utils/asyncHandler.js';
-import User from '../models/User.model.js';
+import { getUserModel } from '../models/User.model.js';
 import { UserInfo, initializeUserInfoModel } from '../models/UserInfo.model.js';
 import { upload, deleteImage } from '../config/cloudinary.js';
 
 // Upload Profile Picture
 export const uploadProfilePicture = asyncHandler(async (req, res) => {
   try {
+    const User = await getUserModel();
     const user = await User.findById(req.user.id);
-    
+
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
@@ -19,7 +20,7 @@ export const uploadProfilePicture = asyncHandler(async (req, res) => {
 
     // Get current userInfo to check for existing avatar
     const existingUserInfo = await UserInfo.findByUserId(req.user.id);
-    
+
     // If user has an existing avatar, delete it from Cloudinary
     if (existingUserInfo?.avatar?.publicId) {
       try {
@@ -47,7 +48,7 @@ export const uploadProfilePicture = asyncHandler(async (req, res) => {
     // Get the full updated user info to return
     const fullUserData = await User.findById(req.user.id).select('-password');
     const userInfo = await UserInfo.findByUserId(req.user.id);
-    
+
     const userResponse = {
       ...fullUserData.toObject(),
       isGoogleAuth: !!fullUserData.googleId,
@@ -73,7 +74,7 @@ export const uploadProfilePicture = asyncHandler(async (req, res) => {
     });
   } catch (error) {
     console.error('Profile picture upload error:', error);
-    
+
     // Handle specific multer errors
     if (error.message && error.message.includes('Only image files are allowed')) {
       return res.status(400).json({ message: 'Only image files are allowed (JPEG, PNG, WebP)' });
@@ -81,7 +82,7 @@ export const uploadProfilePicture = asyncHandler(async (req, res) => {
     if (error.message && error.message.includes('File too large')) {
       return res.status(400).json({ message: 'Image file size must be less than 5MB' });
     }
-    
+
     res.status(500).json({ message: 'Error uploading profile picture' });
   }
 });
@@ -89,15 +90,16 @@ export const uploadProfilePicture = asyncHandler(async (req, res) => {
 // Delete Profile Picture
 export const deleteProfilePicture = asyncHandler(async (req, res) => {
   try {
+    const User = await getUserModel();
     const user = await User.findById(req.user.id);
-    
+
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
     // Get current userInfo
     const userInfo = await UserInfo.findByUserId(req.user.id);
-    
+
     if (!userInfo?.avatar?.publicId) {
       return res.status(404).json({ message: 'No profile picture found' });
     }

@@ -82,7 +82,7 @@ export const footprintLogAPI = {
         const queryParams = new URLSearchParams();
         if (startDate) queryParams.append('startDate', startDate);
         if (endDate) queryParams.append('endDate', endDate);
-        
+
         return apiRequest(`/api/footprintlog/total?${queryParams.toString()}`);
     },
 
@@ -91,7 +91,7 @@ export const footprintLogAPI = {
         const endDate = new Date();
         const startDate = new Date();
         startDate.setDate(startDate.getDate() - 7);
-        
+
         return footprintLogAPI.getEmissionsForPeriod(
             startDate.toISOString(),
             endDate.toISOString()
@@ -103,7 +103,7 @@ export const footprintLogAPI = {
         const now = new Date();
         const startDate = new Date(now.getFullYear(), now.getMonth(), 1);
         const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-        
+
         return footprintLogAPI.getEmissionsForPeriod(
             startDate.toISOString(),
             endDate.toISOString()
@@ -232,86 +232,105 @@ export const footprintLogAPI = {
     formatLogData: (formData) => {
         const { activityType, quantity, selectedDate, details = {}, activity } = formData;
 
-        // Map frontend activity types to backend expected format
-        const activityMapping = {
-            // Transport activities
-            'transport-car': { activityType: 'transport', mode: 'car' },
-            'transport-flight': { activityType: 'transport', mode: 'flight' },
-            'transport-bus': { activityType: 'transport', mode: 'bus' },
-            'transport-train': { activityType: 'transport', mode: 'train' },
-
-            // Energy activities
-            'energy-electricity': { activityType: 'energy', type: 'electricity' },
-            'energy-gas': { activityType: 'energy', type: 'naturalGas' },
-
-            // Food activities
-            'food-meat': { activityType: 'food', foodType: 'beef' },
-            'food-dairy': { activityType: 'food', foodType: 'chicken' }, // Default to chicken if not specified
-
-            // Waste activities
-            'waste-general': { activityType: 'waste', wasteType: 'landfill' },
-            'waste-recycling': { activityType: 'waste', wasteType: 'recycling' },
-        };
-
-        const mapping = activityMapping[activityType];
-        const backendActivityType = mapping ? mapping.activityType : 'other';
-
-        // Create base details object
-        let apiDetails = {
+        // Create base activity object that matches backend expectations
+        const baseActivity = {
+            activityType, // Backend engine maps this directly
             quantity: parseFloat(quantity),
-            unit: details.unit || 'units',
-            ...details,
+            units: details.unit || 'units',
+            date: selectedDate || new Date(),
+            activity: activity || `${activityType} activity`,
+            details,
         };
 
-        // Add specific fields based on activity type
-        if (mapping) {
-            if (mapping.mode) {
-                // Transport activity
-                apiDetails.mode = mapping.mode;
-                apiDetails.distance = parseFloat(quantity); // For transport, quantity is distance
-            } else if (mapping.type) {
-                // Energy activity
-                apiDetails.type = mapping.type;
-                apiDetails.amount = parseFloat(quantity);
-            } else if (mapping.foodType) {
-                // Food activity - map frontend food types to IPCC categories
-                const foodTypeMapping = {
-                    'beef': 'beef',
-                    'pork': 'beef', // Map to closest IPCC category
-                    'chicken': 'chicken',
-                    'fish': 'chicken', // Map to closest IPCC category
-                    'milk': 'vegetables', // Dairy mapped to vegetables for lower emissions
-                    'cheese': 'vegetables',
-                    'yogurt': 'vegetables'
-                };
+        // Add specific fields based on activity requirements
+        const enrichedActivity = { ...baseActivity };
 
-                apiDetails.foodType = details.foodType ?
-                    foodTypeMapping[details.foodType] || 'vegetables' :
-                    mapping.foodType;
-                apiDetails.weight = parseFloat(quantity);
-            } else if (mapping.wasteType) {
-                // Waste activity
-                apiDetails.wasteType = mapping.wasteType;
-                apiDetails.weight = parseFloat(quantity);
+        // Transportation specific fields
+        if (activityType.startsWith('transport-')) {
+            enrichedActivity.distance = parseFloat(quantity);
+            enrichedActivity.units = details.unit === 'miles' ? 'miles' : 'km';
+
+            // Add passengers if provided
+            if (details.passengers && parseInt(details.passengers) > 1) {
+                enrichedActivity.passengers = parseInt(details.passengers);
+            }
+
+            // Add fuel type modifier
+            if (details.fuelType) {
+                enrichedActivity.fuelType = details.fuelType;
+            }
+
+            // Add flight class modifier
+            if (details.flightClass) {
+                enrichedActivity.flightClass = details.flightClass;
             }
         }
 
-        // Create the log entry structure
-        const logData = {
-            activity: activity || `${activityType} activity`,
-            activityType: backendActivityType,
-            category: details.category || backendActivityType,
-            details: apiDetails,
-            tags: details.tags || [activityType],
-            date: selectedDate ? new Date(selectedDate).toISOString() : new Date().toISOString(),
-        };
+        // Energy specific fields
+        if (activityType.startsWith('energy-')) {
+            enrichedActivity.amount = parseFloat(quantity);
+            enrichedActivity.units = details.unit || 'kWh';
 
-        // Add location if available
-        if (details.location) {
-            logData.location = details.location;
+            // Add energy source modifier
+            if (details.energySource) {
+                enrichedActivity.energySource = details.energySource;
+            }
         }
 
-        return logData;
+        // Food specific fields
+        if (activityType.startsWith('food-')) {
+            enrichedActivity.amount = parseFloat(quantity);
+            enrichedActivity.units = details.unit || 'lbs';
+
+            // Add food type modifier
+            if (details.foodType) {
+                enrichedActivity.foodType = details.foodType;
+            }
+        }
+
+        // Waste specific fields
+        if (activityType.startsWith('waste-')) {
+            enrichedActivity.amount = parseFloat(quantity);
+            enrichedActivity.units = details.unit || 'lbs';
+
+            // Add waste type modifier
+            if (details.wasteType) {
+                enrichedActivity.wasteType = details.wasteType;
+            }
+        }
+
+        // Water specific fields
+        if (activityType.startsWith('water-')) {
+            enrichedActivity.amount = parseFloat(quantity);
+            enrichedActivity.units = details.unit || 'gallons';
+
+            // Add water temperature modifier for laundry
+            if (details.waterTemp) {
+                enrichedActivity.waterTemp = details.waterTemp;
+            }
+        }
+
+        // Shopping specific fields
+        if (activityType.startsWith('shopping-')) {
+            enrichedActivity.amount = parseFloat(quantity);
+            enrichedActivity.units = details.unit || 'items';
+
+            // Add specific type modifiers
+            if (details.clothingType) {
+                enrichedActivity.clothingType = details.clothingType;
+            }
+            if (details.electronicsType) {
+                enrichedActivity.electronicsType = details.electronicsType;
+            }
+            if (details.furnitureType) {
+                enrichedActivity.furnitureType = details.furnitureType;
+            }
+        }
+
+        // Add region information (default to global)
+        enrichedActivity.region = details.region || 'Global';
+
+        return enrichedActivity;
     }
 };
 

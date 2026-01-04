@@ -6,12 +6,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { 
-  ArrowLeft, 
-  ShoppingCart, 
-  Star, 
-  Leaf, 
-  Recycle, 
+import {
+  ArrowLeft,
+  ShoppingCart,
+  Star,
+  Leaf,
+  Recycle,
   Award,
   MapPin,
   Plus,
@@ -22,6 +22,7 @@ import {
   Share2,
   CheckCircle
 } from 'lucide-react';
+import AuthGuard from '@/components/AuthGuard';
 
 const USD_TO_INR = 83;
 
@@ -285,8 +286,8 @@ const ProductDetail = () => {
       <div className="border-b border-border/30 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               onClick={() => router.push('/marketplace')}
               className="flex items-center gap-2"
             >
@@ -310,8 +311,8 @@ const ProductDetail = () => {
           {/* Product Images */}
           <div className="space-y-4">
             <div className="aspect-square overflow-hidden rounded-lg border">
-              <img 
-                src={images[selectedImage]} 
+              <img
+                src={images[selectedImage]}
                 alt={product.name}
                 className="w-full h-full object-cover"
                 onError={(e) => {
@@ -325,12 +326,11 @@ const ProductDetail = () => {
                   <button
                     key={index}
                     onClick={() => setSelectedImage(index)}
-                    className={`aspect-square w-20 overflow-hidden rounded-lg border-2 ${
-                      selectedImage === index ? 'border-primary' : 'border-border'
-                    }`}
+                    className={`aspect-square w-20 overflow-hidden rounded-lg border-2 ${selectedImage === index ? 'border-primary' : 'border-border'
+                      }`}
                   >
-                    <img 
-                      src={image} 
+                    <img
+                      src={image}
                       alt={`${product.name} ${index + 1}`}
                       className="w-full h-full object-cover"
                     />
@@ -354,11 +354,11 @@ const ProductDetail = () => {
                   </Badge>
                 )}
               </div>
-              
+
               <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">
                 {product.name}
               </h1>
-              
+
               <div className="flex items-center gap-4 mb-4">
                 <div className="flex items-center gap-1">
                   <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
@@ -414,11 +414,10 @@ const ProductDetail = () => {
             <div>
               <h3 className="font-semibold text-foreground mb-2">Availability</h3>
               <div className="flex items-center gap-2">
-                <span className={`text-sm font-medium px-3 py-1 rounded-full ${
-                  product.inStock 
-                    ? 'bg-green-100 text-green-800' 
+                <span className={`text-sm font-medium px-3 py-1 rounded-full ${product.inStock
+                    ? 'bg-green-100 text-green-800'
                     : 'bg-red-100 text-red-800'
-                }`}>
+                  }`}>
                   {product.inStock ? 'In Stock' : 'Out of Stock'}
                 </span>
               </div>
@@ -511,8 +510,8 @@ const ProductDetail = () => {
                 .filter(p => p.id !== product.id) // Exclude current product
                 .slice(0, 4) // Show only 4 products
                 .map((relatedProduct) => (
-                  <Card 
-                    key={relatedProduct.id} 
+                  <Card
+                    key={relatedProduct.id}
                     className="cursor-pointer hover:shadow-lg transition-shadow"
                     onClick={() => router.push(`/marketplace/${relatedProduct.id}`)}
                   >
@@ -575,4 +574,12 @@ const ProductDetail = () => {
   );
 };
 
-export default ProductDetail; 
+const ProductDetailPage = () => {
+  return (
+    <AuthGuard intent="marketplace-product">
+      <ProductDetail />
+    </AuthGuard>
+  );
+};
+
+export default ProductDetailPage; 

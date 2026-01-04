@@ -3,36 +3,39 @@
 import { useState } from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
+import AuthGuard from '@/components/AuthGuard';
+import Layout from '@/components/Layout';
+import { User, Camera, Globe, Home, Briefcase, MapPin, CheckCircle } from 'lucide-react';
 
 
 const steps = [
-  { 
-    label: 'User Details', 
-    icon: '👤',
+  {
+    label: 'User Details',
+    icon: <User className="h-5 w-5" />,
     title: 'Tell us about yourself',
     subtitle: 'Enter your personal information including name, date of birth, and gender.'
   },
-  { 
-    label: 'User Photo', 
-    icon: '📸',
+  {
+    label: 'User Photo',
+    icon: <Camera className="h-5 w-5" />,
     title: 'Upload your profile photo',
     subtitle: 'Add a beautiful profile picture to get started with your personalized experience.'
   },
-  { 
-    label: 'Country', 
-    icon: '🌍',
+  {
+    label: 'Country',
+    icon: <Globe className="h-5 w-5" />,
     title: 'Which country do you live in?',
     subtitle: 'Select your country to help us provide location-specific calculations.'
   },
-  { 
-    label: 'Location', 
-    icon: '🏠',
+  {
+    label: 'Location',
+    icon: <Home className="h-5 w-5" />,
     title: 'What\'s your exact location?',
     subtitle: 'Choose your state and district for more accurate regional data.'
   },
-  { 
-    label: 'Profession', 
-    icon: '💼',
+  {
+    label: 'Profession',
+    icon: <Briefcase className="h-5 w-5" />,
     title: 'What\'s your profession?',
     subtitle: 'Tell us about your work to personalize your experience.'
   },
@@ -74,21 +77,21 @@ const generateCalendar = (month, year) => {
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = getDaysInMonth(month + 1, year);
   const days = [];
-  
+
   // Empty cells for days before the first day of the month
   for (let i = 0; i < firstDay; i++) {
     days.push(null);
   }
-  
+
   // Days of the month
   for (let day = 1; day <= daysInMonth; day++) {
     days.push(day);
   }
-  
+
   return days;
 };
 
-export default function UserDetailsForm() {
+function UserDetailsForm() {
   const [stepIndex, setStepIndex] = useState(0);
   const [formData, setFormData] = useState({
     name: '',
@@ -212,35 +215,33 @@ export default function UserDetailsForm() {
                   <span className="text-gray-600 text-sm font-medium">{stepIndex + 1}/{steps.length}</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-3">
-                  <div 
+                  <div
                     className="bg-blue-500 h-3 rounded-full transition-all duration-700 ease-out"
                     style={{ width: `${progress}%` }}
                   />
                 </div>
               </div>
-              
+
               <div className="space-y-6">
                 {steps.map((step, index) => (
                   <div key={index} className="flex items-center gap-4 group">
-                    <div className={`relative w-14 h-14 rounded-2xl flex items-center justify-center text-xl transition-all duration-300 ${
-                      index === stepIndex 
-                        ? 'bg-blue-500 scale-110 text-white' 
-                        : isStepCompleted(index)
-                          ? 'bg-blue-500 text-white' 
-                          : 'bg-white border-2 border-gray-200 text-gray-500'
-                    }`}>
+                    <div className={`relative w-14 h-14 rounded-2xl flex items-center justify-center text-xl transition-all duration-300 ${index === stepIndex
+                      ? 'bg-blue-500 scale-110 text-white'
+                      : isStepCompleted(index)
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-white border-2 border-gray-200 text-gray-500'
+                      }`}>
                       {isStepCompleted(index) ? (
-                        <div className="text-white font-bold text-lg">✓</div>
+                        <CheckCircle className="h-5 w-5 text-white" />
                       ) : (
                         <div>
                           {step.icon}
                         </div>
                       )}
                     </div>
-                    <div className={`transition-all duration-300 ${
-                      index === stepIndex ? 'text-gray-800' : 
+                    <div className={`transition-all duration-300 ${index === stepIndex ? 'text-gray-800' :
                       isStepCompleted(index) ? 'text-gray-600' : 'text-gray-500'
-                    }`}>
+                      }`}>
                       <div className="font-semibold text-sm">{step.label}</div>
                       {index === stepIndex && (
                         <div className="text-xs text-blue-600 font-medium">Current step</div>
@@ -275,7 +276,7 @@ export default function UserDetailsForm() {
                   {currentStep.label === 'User Details' && (
                     <div className="space-y-6">
                       {/* User Icon */}
-                      
+
 
                       {/* Name */}
                       <div>
@@ -291,10 +292,10 @@ export default function UserDetailsForm() {
                       </div>
 
                       {/* Date of Birth with Calendar */}
-                      <div > 
+                      <div >
                         <label className="block text-sm font-medium text-gray-700 mb-2">Date of Birth</label>
                         <div className="relative">
-                         <DatePicker
+                          <DatePicker
                             selected={selectedDate}
                             onChange={(date) => {
                               setSelectedDate(date);
@@ -307,9 +308,9 @@ export default function UserDetailsForm() {
                             dateFormat="dd/MM/yyyy"
                             className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 text-lg"
 
-/>
+                          />
 
-                                                    
+
                         </div>
 
                         {showCalendar && (
@@ -371,13 +372,12 @@ export default function UserDetailsForm() {
                               key={gender}
                               type="button"
                               onClick={() => setFormData({ ...formData, gender })}
-                              className={`p-6 text-center border-2 rounded-2xl transition-all duration-300 hover:scale-105 ${
-                                formData.gender === gender
-                                  ? 'border-blue-500 bg-blue-50 text-blue-700'
-                                  : 'border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100'
-                              }`}
+                              className={`p-6 text-center border-2 rounded-2xl transition-all duration-300 hover:scale-105 ${formData.gender === gender
+                                ? 'border-blue-500 bg-blue-50 text-blue-700'
+                                : 'border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100'
+                                }`}
                             >
-                              
+
                               <div className="font-semibold">{gender}</div>
                             </button>
                           ))}
@@ -396,7 +396,7 @@ export default function UserDetailsForm() {
                             <div className="text-gray-400 text-5xl"></div>
                           )}
                         </div>
-                        
+
                         <label className="cursor-pointer bg-blue-500 text-white px-8 py-4 rounded-2xl font-medium hover:bg-blue-600 transition-all duration-300">
                           <input
                             type="file"
@@ -404,9 +404,9 @@ export default function UserDetailsForm() {
                             onChange={handlePhotoUpload}
                             className="hidden"
                           />
-                           Upload Photo
+                          Upload Photo
                         </label>
-                        
+
                         {formData.photo && (
                           <div className="mt-4 p-3 bg-gray-50 border border-gray-200 rounded-xl">
                             <p className="text-gray-700 font-medium">
@@ -498,8 +498,9 @@ export default function UserDetailsForm() {
 
                       {formData.state && formData.district && (
                         <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
-                          <p className="text-gray-700 font-medium">
-                            📍 Location: {formData.district}, {formData.state}, {formData.country}
+                          <p className="text-gray-700 font-medium flex items-center gap-2">
+                            <MapPin className="h-4 w-4" />
+                            Location: {formData.district}, {formData.state}, {formData.country}
                           </p>
                         </div>
                       )}
@@ -544,7 +545,7 @@ export default function UserDetailsForm() {
                       </svg>
                     </button>
                   </div>
-                  
+
                   <button
                     type="button"
                     onClick={skipToResults}
@@ -561,3 +562,15 @@ export default function UserDetailsForm() {
     </div>
   );
 }
+
+const UserDetailsPage = () => {
+  return (
+    <AuthGuard intent="user-details">
+      <Layout>
+        <UserDetailsForm />
+      </Layout>
+    </AuthGuard>
+  );
+};
+
+export default UserDetailsPage;

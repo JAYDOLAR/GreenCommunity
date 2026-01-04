@@ -12,18 +12,18 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Slider } from '@/components/ui/slider';
 import toast from 'react-hot-toast';
 import QRCode from 'qrcode';
-import { 
+import {
   CreditCard,
   Smartphone,
   ArrowLeft,
   Lock,
   Shield,
+  Leaf,
   CheckCircle,
   Heart,
   Trees,
   Award,
   Calculator,
-  Leaf,
   Globe,
   Zap,
   Star,
@@ -31,15 +31,17 @@ import {
   Copy,
   Download
 } from 'lucide-react';
+import AuthGuard from '@/components/AuthGuard';
+import Layout from '@/components/Layout';
 
 const Payment = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
-  
+
   const projectId = searchParams.get('project');
   const projectName = searchParams.get('name') || 'Climate Project';
   const co2PerDollar = parseFloat(searchParams.get('co2Rate') || '2.5');
-  
+
   const [contributionAmount, setContributionAmount] = useState([50]); // in USD
   const [paymentMethod, setPaymentMethod] = useState('card');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -125,13 +127,18 @@ const Payment = () => {
 
   const handlePayment = async () => {
     setIsProcessing(true);
-    
+
     try {
       // Simulate payment processing
       await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      toast.success(`Payment Successful! 🌱 Thank you for contributing $${contributionAmount[0]} to ${projectName}. You've helped offset ${calculateImpact(contributionAmount[0])} tons of CO₂!`);
-      
+
+      toast.success(
+        <div className="flex items-center gap-2">
+          <Leaf className="h-4 w-4" />
+          Payment Successful! Thank you for contributing ${contributionAmount[0]} to {projectName}. You've helped offset {calculateImpact(contributionAmount[0])} tons of CO₂!
+        </div>
+      );
+
       // Navigate back to projects with success message
       router.push('/projects?payment=success');
     } catch (error) {
@@ -170,7 +177,7 @@ const Payment = () => {
             Complete Your Impact
           </h1>
           <p className="text-sm sm:text-lg text-muted-foreground max-w-2xl mx-auto">
-            Join thousands of climate warriors supporting <span className="font-semibold text-green-600">{projectName}</span> 
+            Join thousands of climate warriors supporting <span className="font-semibold text-green-600">{projectName}</span>
             and help create a sustainable future for our planet
           </p>
         </div>
@@ -179,7 +186,7 @@ const Payment = () => {
           {/* Payment Form */}
           <div className="lg:col-span-3 space-y-3 sm:space-y-6">
             {/* Contribution Amount */}
-            
+
 
             {/* Payment Method */}
             <Card className="border-0 shadow-xl bg-gradient-to-br from-white to-blue-50 dark:from-gray-800 dark:to-blue-900/20">
@@ -196,13 +203,12 @@ const Payment = () => {
                   {paymentMethods.map(method => {
                     const Icon = method.icon;
                     return (
-                      <div 
-                        key={method.id} 
-                        className={`relative p-3 sm:p-4 border-2 rounded-xl transition-all duration-300 cursor-pointer hover:shadow-lg ${
-                          paymentMethod === method.id 
-                            ? 'border-green-500 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 shadow-lg scale-105' 
-                            : 'border-gray-200 dark:border-gray-700 hover:border-green-300'
-                        }`}
+                      <div
+                        key={method.id}
+                        className={`relative p-3 sm:p-4 border-2 rounded-xl transition-all duration-300 cursor-pointer hover:shadow-lg ${paymentMethod === method.id
+                          ? 'border-green-500 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 shadow-lg scale-105'
+                          : 'border-gray-200 dark:border-gray-700 hover:border-green-300'
+                          }`}
                         onClick={() => setPaymentMethod(method.id)}
                       >
                         <div className="flex items-center space-x-2 sm:space-x-4">
@@ -245,7 +251,7 @@ const Payment = () => {
                       id="cardName"
                       placeholder="John Doe"
                       value={cardDetails.name}
-                      onChange={(e) => setCardDetails({...cardDetails, name: e.target.value})}
+                      onChange={(e) => setCardDetails({ ...cardDetails, name: e.target.value })}
                       className="mt-2 h-10 sm:h-12 text-sm"
                     />
                   </div>
@@ -255,7 +261,7 @@ const Payment = () => {
                       id="cardNumber"
                       placeholder="1234 5678 9012 3456"
                       value={cardDetails.number}
-                      onChange={(e) => setCardDetails({...cardDetails, number: e.target.value})}
+                      onChange={(e) => setCardDetails({ ...cardDetails, number: e.target.value })}
                       className="mt-2 h-10 sm:h-12 text-sm"
                     />
                   </div>
@@ -266,7 +272,7 @@ const Payment = () => {
                         id="expiry"
                         placeholder="MM/YY"
                         value={cardDetails.expiry}
-                        onChange={(e) => setCardDetails({...cardDetails, expiry: e.target.value})}
+                        onChange={(e) => setCardDetails({ ...cardDetails, expiry: e.target.value })}
                         className="mt-2 h-10 sm:h-12 text-sm"
                       />
                     </div>
@@ -276,7 +282,7 @@ const Payment = () => {
                         id="cvc"
                         placeholder="123"
                         value={cardDetails.cvc}
-                        onChange={(e) => setCardDetails({...cardDetails, cvc: e.target.value})}
+                        onChange={(e) => setCardDetails({ ...cardDetails, cvc: e.target.value })}
                         className="mt-2 h-10 sm:h-12 text-sm"
                       />
                     </div>
@@ -308,13 +314,13 @@ const Payment = () => {
                         {showQR ? 'Hide' : 'Show'} QR Code
                       </Button>
                     </div>
-                    
+
                     {showQR && qrCodeUrl && (
                       <div className="bg-white p-3 sm:p-6 rounded-2xl shadow-lg border-2 border-green-200 inline-block">
                         <div className="space-y-3 sm:space-y-4">
-                          <img 
-                            src={qrCodeUrl} 
-                            alt="UPI Payment QR Code" 
+                          <img
+                            src={qrCodeUrl}
+                            alt="UPI Payment QR Code"
                             className="w-48 h-48 sm:w-64 sm:h-64 mx-auto"
                           />
                           <div className="text-center space-y-1 sm:space-y-2">
@@ -362,7 +368,7 @@ const Payment = () => {
                       Or scan the QR code above with your UPI app
                     </p>
                   </div>
-                  
+
                   {/* UPI Apps */}
                   <div className="space-y-2 sm:space-y-3">
                     <Label className="text-xs sm:text-sm font-medium">Popular UPI Apps</Label>
@@ -373,9 +379,9 @@ const Payment = () => {
                         { name: 'Paytm', color: 'from-blue-600 to-indigo-600' },
                         { name: 'BHIM', color: 'from-orange-500 to-red-500' }
                       ].map(app => (
-                        <Button 
-                          key={app.name} 
-                          variant="outline" 
+                        <Button
+                          key={app.name}
+                          variant="outline"
                           className={`h-10 sm:h-12 bg-gradient-to-r ${app.color} text-white border-0 hover:opacity-90 transition-opacity text-xs sm:text-sm`}
                         >
                           {app.name}
@@ -405,7 +411,7 @@ const Payment = () => {
                     type="email"
                     placeholder="your.email@example.com"
                     value={billingInfo.email}
-                    onChange={(e) => setBillingInfo({...billingInfo, email: e.target.value})}
+                    onChange={(e) => setBillingInfo({ ...billingInfo, email: e.target.value })}
                     className="mt-2 h-10 sm:h-12 text-sm"
                   />
                 </div>
@@ -415,7 +421,7 @@ const Payment = () => {
                     id="address"
                     placeholder="123 Main Street"
                     value={billingInfo.address}
-                    onChange={(e) => setBillingInfo({...billingInfo, address: e.target.value})}
+                    onChange={(e) => setBillingInfo({ ...billingInfo, address: e.target.value })}
                     className="mt-2 h-10 sm:h-12 text-sm"
                   />
                 </div>
@@ -426,7 +432,7 @@ const Payment = () => {
                       id="city"
                       placeholder="San Francisco"
                       value={billingInfo.city}
-                      onChange={(e) => setBillingInfo({...billingInfo, city: e.target.value})}
+                      onChange={(e) => setBillingInfo({ ...billingInfo, city: e.target.value })}
                       className="mt-2 h-10 sm:h-12 text-sm"
                     />
                   </div>
@@ -436,7 +442,7 @@ const Payment = () => {
                       id="zipCode"
                       placeholder="94102"
                       value={billingInfo.zipCode}
-                      onChange={(e) => setBillingInfo({...billingInfo, zipCode: e.target.value})}
+                      onChange={(e) => setBillingInfo({ ...billingInfo, zipCode: e.target.value })}
                       className="mt-2 h-10 sm:h-12 text-sm"
                     />
                   </div>
@@ -481,7 +487,7 @@ const Payment = () => {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="relative p-4 sm:p-6 bg-gradient-to-r from-green-600 to-emerald-600 rounded-2xl text-white overflow-hidden">
                     <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
                     <div className="relative z-10">
@@ -539,8 +545,8 @@ const Payment = () => {
                 </div>
 
                 {/* Complete Payment Button */}
-                <Button 
-                  className="w-full h-12 sm:h-14 text-sm sm:text-lg font-semibold bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105" 
+                <Button
+                  className="w-full h-12 sm:h-14 text-sm sm:text-lg font-semibold bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
                   onClick={handlePayment}
                   disabled={isProcessing}
                 >
@@ -571,4 +577,14 @@ const Payment = () => {
   );
 };
 
-export default Payment;
+const PaymentPage = () => {
+  return (
+    <AuthGuard intent="payment">
+      <Layout>
+        <Payment />
+      </Layout>
+    </AuthGuard>
+  );
+};
+
+export default PaymentPage;

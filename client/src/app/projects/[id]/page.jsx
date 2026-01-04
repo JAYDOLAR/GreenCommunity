@@ -9,21 +9,23 @@ import { Progress } from '@/components/ui/progress';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { 
-  ArrowLeft, 
-  Heart, 
-  Share2, 
-  MapPin, 
+import {
+  ArrowLeft,
+  Heart,
+  Share2,
+  MapPin,
   Users,
   Calendar,
   Target,
-  Trees, 
-  Wind, 
-  Sun, 
+  Trees,
+  Wind,
+  Sun,
   Droplets,
   Award,
   CheckCircle
 } from 'lucide-react';
+import AuthGuard from '@/components/AuthGuard';
+import Layout from '@/components/Layout';
 
 const ProjectDetail = () => {
   const params = useParams();
@@ -169,7 +171,7 @@ const ProjectDetail = () => {
   }
 
   const fundingPercentage = (project.currentFunding / project.totalFunding) * 100;
-  
+
   const getProjectIcon = (type) => {
     switch (type) {
       case 'forestry': return Trees;
@@ -202,8 +204,8 @@ const ProjectDetail = () => {
       <div className="border-b border-border/30 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               onClick={() => router.push('/projects')}
               className="flex items-center gap-2"
             >
@@ -227,8 +229,8 @@ const ProjectDetail = () => {
           {/* Project Image */}
           <div className="space-y-4">
             <div className="aspect-video overflow-hidden rounded-lg border">
-              <img 
-                src={project.image} 
+              <img
+                src={project.image}
                 alt={project.name}
                 className="w-full h-full object-cover"
                 onError={(e) => {
@@ -236,7 +238,7 @@ const ProjectDetail = () => {
                 }}
               />
             </div>
-            
+
             {/* Data below the main photo */}
             <div className="space-y-4">
               {/* Project Overview */}
@@ -286,11 +288,11 @@ const ProjectDetail = () => {
                       <p className="text-xs text-muted-foreground">Funded</p>
                     </div>
                     <div>
-                      <p className="text-2xl font-bold text-blue-600">₹{(project.currentFunding/10000000).toFixed(1)}Cr</p>
+                      <p className="text-2xl font-bold text-blue-600">₹{(project.currentFunding / 10000000).toFixed(1)}Cr</p>
                       <p className="text-xs text-muted-foreground">Raised</p>
                     </div>
                     <div>
-                      <p className="text-2xl font-bold text-orange-600">₹{((project.totalFunding - project.currentFunding)/10000000).toFixed(1)}Cr</p>
+                      <p className="text-2xl font-bold text-orange-600">₹{((project.totalFunding - project.currentFunding) / 10000000).toFixed(1)}Cr</p>
                       <p className="text-xs text-muted-foreground">Needed</p>
                     </div>
                   </div>
@@ -333,11 +335,11 @@ const ProjectDetail = () => {
                   </Badge>
                 )}
               </div>
-              
+
               <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">
                 {project.name}
               </h1>
-              
+
               <div className="flex items-center gap-4 mb-4">
                 <div className="flex items-center gap-1">
                   <MapPin className="h-4 w-4 text-muted-foreground" />
@@ -368,7 +370,7 @@ const ProjectDetail = () => {
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Current Funding</span>
                   <span className="font-medium">
-                    ₹{(project.currentFunding/10000000).toFixed(1)}Cr / ₹{(project.totalFunding/10000000).toFixed(1)}Cr
+                    ₹{(project.currentFunding / 10000000).toFixed(1)}Cr / ₹{(project.totalFunding / 10000000).toFixed(1)}Cr
                   </span>
                 </div>
                 <Progress value={fundingPercentage} className="h-3" />
@@ -429,7 +431,7 @@ const ProjectDetail = () => {
             <div className="flex flex-col sm:flex-row gap-3">
               <Dialog>
                 <DialogTrigger asChild>
-                  <Button 
+                  <Button
                     className="flex-1 btn-hero"
                     onClick={() => {
                       setContributionAmount([50]);
@@ -470,8 +472,8 @@ const ProjectDetail = () => {
                     </div>
                   </div>
                   <DialogFooter className="flex flex-col sm:flex-row gap-2">
-                    <Button 
-                      className="w-full btn-hero" 
+                    <Button
+                      className="w-full btn-hero"
                       onClick={() => {
                         setIsLoading(true);
                         try {
@@ -522,10 +524,10 @@ const ProjectDetail = () => {
                 .map((relatedProject) => {
                   const relatedFundingPercentage = (relatedProject.currentFunding / relatedProject.totalFunding) * 100;
                   const RelatedProjectIcon = getProjectIcon(relatedProject.type);
-                  
+
                   return (
-                    <Card 
-                      key={relatedProject.id} 
+                    <Card
+                      key={relatedProject.id}
                       className="cursor-pointer hover:shadow-lg transition-shadow"
                       onClick={() => router.push(`/projects/${relatedProject.id}`)}
                     >
@@ -591,8 +593,8 @@ const ProjectDetail = () => {
                               <Users className="h-3 w-3 text-muted-foreground" />
                               <span className="text-xs text-muted-foreground">{relatedProject.contributors.toLocaleString()}</span>
                             </div>
-                            <Button 
-                              size="sm" 
+                            <Button
+                              size="sm"
                               className="btn-hero text-xs px-2 py-1"
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -616,4 +618,14 @@ const ProjectDetail = () => {
   );
 };
 
-export default ProjectDetail; 
+const ProjectDetailPage = () => {
+  return (
+    <AuthGuard intent="project-detail">
+      <Layout>
+        <ProjectDetail />
+      </Layout>
+    </AuthGuard>
+  );
+};
+
+export default ProjectDetailPage; 

@@ -1,15 +1,9 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { SIMPLE_SIDEBAR_ITEMS } from "@/config/navigationConfig";
 
-const sidebarItems = [
-  { name: "Dashboard", path: "/" },
-  { name: "Footprint Log", path: "/footprint" },
-  { name: "Marketplace", path: "/marketplace" },
-  { name: "Projects", path: "/projects" },
-  { name: "Community", path: "/community" },
-  { name: "Settings", path: "/settings" },
-];
+const sidebarItems = SIMPLE_SIDEBAR_ITEMS;
 
 const Sidebar = () => {
   const pathname = usePathname();
@@ -20,9 +14,8 @@ const Sidebar = () => {
           <Link
             key={item.path}
             href={item.path}
-            className={`block px-5 py-4 rounded-2xl hover:bg-primary/10 ${
-              pathname === item.path ? "bg-primary text-white" : ""
-            }`}
+            className={`block px-5 py-4 rounded-2xl hover:bg-primary/10 ${pathname === item.path ? "bg-primary text-white" : ""
+              }`}
           >
             {item.name}
           </Link>
