@@ -118,7 +118,8 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 // Serve static files from public directory (client build)
-app.use(express.static(path.join(__dirname, 'public')));
+// Serve static files from the client build directory
+app.use(express.static(path.join(__dirname, '..', 'client', 'out')));
 app.use("/api/auth", authRoutes);
 app.use("/api/marketplace", marketplaceRoutes);
 app.use("/api/avatar", avatarRoutes);
@@ -147,9 +148,14 @@ app.use((err, req, res, next) => {
   // Handle 404 for API routes
   app.all('/api/*', (req, res) => {
     res.status(404).json({ message: "API route not found" });
-  });
-
-  return app;
-}
+      });
+    
+      // Serve the client application for all other routes
+      app.get('*', (req, res) => {
+              res.sendFile(path.join(__dirname, '..', 'client', 'out', 'index.html'));
+            });
+    
+      return app;
+    }
 
 export default createServer;
