@@ -253,6 +253,12 @@ const products = [
   }
 ];
 
+export async function generateStaticParams() {
+  return products.map((product) => ({
+    id: product.id.toString(),
+  }));
+}
+
 const ProductDetail = () => {
   const params = useParams();
   const router = useRouter();

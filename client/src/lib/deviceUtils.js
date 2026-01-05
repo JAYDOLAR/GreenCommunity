@@ -106,8 +106,10 @@ export const formatTimeWithTimezone = (dateString) => {
   });
 };
 
-export default {
+const deviceUtils = {
   getDeviceInfo,
   getTimezoneInfo,
   formatTimeWithTimezone
 };
+
+export default deviceUtils;
