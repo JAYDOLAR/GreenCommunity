@@ -1,17 +1,15 @@
-"use client";
-
 import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { 
-  ArrowLeft, 
-  ShoppingCart, 
-  Star, 
-  Leaf, 
-  Recycle, 
+import {
+  ArrowLeft,
+  ShoppingCart,
+  Star,
+  Leaf,
+  Recycle,
   Award,
   MapPin,
   Plus,
@@ -259,13 +257,10 @@ export async function generateStaticParams() {
   }));
 }
 
-const ProductDetail = () => {
-  const params = useParams();
+const ProductDetailClient = ({ product }) => {
+  "use client";
   const router = useRouter();
   const [selectedImage, setSelectedImage] = useState(0);
-
-  const productId = parseInt(params.id);
-  const product = products.find(p => p.id === productId);
 
   if (!product) {
     return (
@@ -291,8 +286,8 @@ const ProductDetail = () => {
       <div className="border-b border-border/30 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               onClick={() => router.push('/marketplace')}
               className="flex items-center gap-2"
             >
@@ -316,8 +311,8 @@ const ProductDetail = () => {
           {/* Product Images */}
           <div className="space-y-4">
             <div className="aspect-square overflow-hidden rounded-lg border">
-              <img 
-                src={images[selectedImage]} 
+              <img
+                src={images[selectedImage]}
                 alt={product.name}
                 className="w-full h-full object-cover"
                 onError={(e) => {
@@ -335,8 +330,8 @@ const ProductDetail = () => {
                       selectedImage === index ? 'border-primary' : 'border-border'
                     }`}
                   >
-                    <img 
-                      src={image} 
+                    <img
+                      src={image}
                       alt={`${product.name} ${index + 1}`}
                       className="w-full h-full object-cover"
                     />
@@ -421,8 +416,8 @@ const ProductDetail = () => {
               <h3 className="font-semibold text-foreground mb-2">Availability</h3>
               <div className="flex items-center gap-2">
                 <span className={`text-sm font-medium px-3 py-1 rounded-full ${
-                  product.inStock 
-                    ? 'bg-green-100 text-green-800' 
+                  product.inStock
+                    ? 'bg-green-100 text-green-800'
                     : 'bg-red-100 text-red-800'
                 }`}>
                   {product.inStock ? 'In Stock' : 'Out of Stock'}
@@ -517,8 +512,8 @@ const ProductDetail = () => {
                 .filter(p => p.id !== product.id) // Exclude current product
                 .slice(0, 4) // Show only 4 products
                 .map((relatedProduct) => (
-                  <Card 
-                    key={relatedProduct.id} 
+                  <Card
+                    key={relatedProduct.id}
                     className="cursor-pointer hover:shadow-lg transition-shadow"
                     onClick={() => router.push(`/marketplace/${relatedProduct.id}`)}
                   >
@@ -581,4 +576,11 @@ const ProductDetail = () => {
   );
 };
 
-export default ProductDetail; 
+const ProductDetailPage = ({ params }) => {
+  const productId = parseInt(params.id);
+  const product = products.find(p => p.id === productId);
+
+  return <ProductDetailClient product={product} />;
+};
+
+export default ProductDetailPage;
