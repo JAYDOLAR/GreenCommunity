@@ -84,5 +84,6 @@ jobs:
           app-name: 'Green-community'
           slot-name: 'Production'
           package: .
+                    startup-command: 'npm start'
 
         #run the file
