@@ -1,7 +1,7 @@
-import ProjectView from '@/components/ProjectView';
+"use client";
 
 import { useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -9,158 +9,24 @@ import { Progress } from '@/components/ui/progress';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import {
-  ArrowLeft,
-  Heart,
-  Share2,
-  MapPin,
+import { 
+  ArrowLeft, 
+  Heart, 
+  Share2, 
+  MapPin, 
   Users,
   Calendar,
   Target,
-  Trees,
-  Wind,
-  Sun,
-  Droplets,
-  Award,
-  CheckCircle
+  Trees, 
+  Wind, 
+  Sun, 
+  Droplets
 } from 'lucide-react';
-import AuthGuard from '@/components/AuthGuard';
-import Layout from '@/components/Layout';
 
-const ProjectDetail = () => {
-  const params = useParams();
+const ProjectView = ({ project, allProjects }) => {
   const router = useRouter();
   const [contributionAmount, setContributionAmount] = useState([50]);
   const [isLoading, setIsLoading] = useState(false);
-
-  // Simplified project data
-  const projects = [
-    {
-      id: 1,
-      name: 'Sundarbans Mangrove Restoration',
-      location: 'West Bengal, India',
-      type: 'forestry',
-      image: "/tree1.jpg",
-      description: 'Large-scale mangrove restoration project in the Sundarbans, protecting vital ecosystems.',
-      co2Removed: 142000,
-      co2PerRupee: 0.0005,
-      totalFunding: 165000000,
-      currentFunding: 123750000,
-      contributors: 15230,
-      timeRemaining: '9 months',
-      verified: true,
-      certifications: ['Gold Standard', 'VCS'],
-      featured: false,
-      benefits: [
-        'Biodiversity protection',
-        'Community support',
-        'Coastal protection',
-        'Fisheries development'
-      ]
-    },
-    {
-      id: 2,
-      name: 'Solar Power Expansion',
-      location: 'Rajasthan, India',
-      type: 'renewable',
-      image: "/tree2.jpg",
-      description: 'Installing solar panels for renewable energy generation across Rajasthan.',
-      co2Removed: 98000,
-      co2PerRupee: 0.00034,
-      totalFunding: 430000000,
-      currentFunding: 280000000,
-      contributors: 9250,
-      timeRemaining: '15 months',
-      verified: true,
-      certifications: ['MNRE', 'SECI'],
-      featured: true,
-      benefits: [
-        'Clean energy',
-        'Job creation',
-        'Energy independence',
-        'Infrastructure improvement'
-      ]
-    },
-    {
-      id: 3,
-      name: 'Ganga Water Conservation',
-      location: 'Uttar Pradesh, India',
-      type: 'water',
-      image: "/tree3.jpg",
-      description: 'Conserving water resources and improving water quality in the Ganga basin.',
-      co2Removed: 50000,
-      co2PerRupee: 0.00042,
-      totalFunding: 76000000,
-      currentFunding: 48200000,
-      contributors: 3400,
-      timeRemaining: '7 months',
-      verified: true,
-      certifications: ['NMCG', 'CPCB'],
-      featured: false,
-      benefits: [
-        'Water conservation',
-        'Wildlife habitat',
-        'Tourism development',
-        'Pollution reduction'
-      ]
-    },
-    {
-      id: 4,
-      name: 'Wind Energy Farms',
-      location: 'Tamil Nadu, India',
-      type: 'renewable',
-      image: "/tree4.jpg",
-      description: 'Developing wind farms to harness clean energy in Tamil Nadu.',
-      co2Removed: 60000,
-      co2PerRupee: 0.00031,
-      totalFunding: 39000000,
-      currentFunding: 25500000,
-      contributors: 1990,
-      timeRemaining: '5 months',
-      verified: true,
-      certifications: ['CEIG', 'MoEFCC'],
-      featured: false,
-      benefits: [
-        'Energy production',
-        'Employment opportunities',
-        'Local business growth',
-        'Environmental sustainability'
-      ]
-    },
-    {
-      id: 5,
-      name: 'Tropical Savanna Conservation',
-      location: 'Chhattisgarh, India',
-      type: 'forestry',
-      image: "/tree5.jpg",
-      description: 'Protecting and restoring tropical savanna ecosystems in Chhattisgarh.',
-      co2Removed: 85000,
-      co2PerRupee: 0.00044,
-      totalFunding: 102000000,
-      currentFunding: 76500000,
-      contributors: 6890,
-      timeRemaining: '11 months',
-      verified: true,
-      certifications: ['WWF', 'Govt of India'],
-      featured: true,
-      benefits: [
-        'Biodiversity conservation',
-        'Carbon storage',
-        'Community livelihoods',
-        'Climate resilience'
-      ]
-    }
-  ];
-
-export async function generateStaticParams() {
-  return projects.map((project) => ({
-    id: project.id.toString(),
-  }));
-}
-
-const ProjectDetailContent = ({ params }) => {
-  const projectId = parseInt(params.id);
-  const project = projects.find(p => p.id === projectId);
 
   if (!project) {
     return (
@@ -178,7 +44,7 @@ const ProjectDetailContent = ({ params }) => {
   }
 
   const fundingPercentage = (project.currentFunding / project.totalFunding) * 100;
-
+  
   const getProjectIcon = (type) => {
     switch (type) {
       case 'forestry': return Trees;
@@ -211,8 +77,8 @@ const ProjectDetailContent = ({ params }) => {
       <div className="border-b border-border/30 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <Button
-              variant="ghost"
+            <Button 
+              variant="ghost" 
               onClick={() => router.push('/projects')}
               className="flex items-center gap-2"
             >
@@ -236,8 +102,8 @@ const ProjectDetailContent = ({ params }) => {
           {/* Project Image */}
           <div className="space-y-4">
             <div className="aspect-video overflow-hidden rounded-lg border">
-              <img
-                src={project.image}
+              <img 
+                src={project.image} 
                 alt={project.name}
                 className="w-full h-full object-cover"
                 onError={(e) => {
@@ -245,7 +111,7 @@ const ProjectDetailContent = ({ params }) => {
                 }}
               />
             </div>
-
+            
             {/* Data below the main photo */}
             <div className="space-y-4">
               {/* Project Overview */}
@@ -295,11 +161,11 @@ const ProjectDetailContent = ({ params }) => {
                       <p className="text-xs text-muted-foreground">Funded</p>
                     </div>
                     <div>
-                      <p className="text-2xl font-bold text-blue-600">₹{(project.currentFunding / 10000000).toFixed(1)}Cr</p>
+                      <p className="text-2xl font-bold text-blue-600">₹{(project.currentFunding/10000000).toFixed(1)}Cr</p>
                       <p className="text-xs text-muted-foreground">Raised</p>
                     </div>
                     <div>
-                      <p className="text-2xl font-bold text-orange-600">₹{((project.totalFunding - project.currentFunding) / 10000000).toFixed(1)}Cr</p>
+                      <p className="text-2xl font-bold text-orange-600">₹{((project.totalFunding - project.currentFunding)/10000000).toFixed(1)}Cr</p>
                       <p className="text-xs text-muted-foreground">Needed</p>
                     </div>
                   </div>
@@ -342,11 +208,11 @@ const ProjectDetailContent = ({ params }) => {
                   </Badge>
                 )}
               </div>
-
+              
               <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">
                 {project.name}
               </h1>
-
+              
               <div className="flex items-center gap-4 mb-4">
                 <div className="flex items-center gap-1">
                   <MapPin className="h-4 w-4 text-muted-foreground" />
@@ -377,7 +243,7 @@ const ProjectDetailContent = ({ params }) => {
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Current Funding</span>
                   <span className="font-medium">
-                    ₹{(project.currentFunding / 10000000).toFixed(1)}Cr / ₹{(project.totalFunding / 10000000).toFixed(1)}Cr
+                    ₹{(project.currentFunding/10000000).toFixed(1)}Cr / ₹{(project.totalFunding/10000000).toFixed(1)}Cr
                   </span>
                 </div>
                 <Progress value={fundingPercentage} className="h-3" />
@@ -438,7 +304,7 @@ const ProjectDetailContent = ({ params }) => {
             <div className="flex flex-col sm:flex-row gap-3">
               <Dialog>
                 <DialogTrigger asChild>
-                  <Button
+                  <Button 
                     className="flex-1 btn-hero"
                     onClick={() => {
                       setContributionAmount([50]);
@@ -479,8 +345,8 @@ const ProjectDetailContent = ({ params }) => {
                     </div>
                   </div>
                   <DialogFooter className="flex flex-col sm:flex-row gap-2">
-                    <Button
-                      className="w-full btn-hero"
+                    <Button 
+                      className="w-full btn-hero" 
                       onClick={() => {
                         setIsLoading(true);
                         try {
@@ -525,16 +391,16 @@ const ProjectDetailContent = ({ params }) => {
           <div>
             <h2 className="text-xl font-bold text-foreground mb-4">More Projects You Might Like</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-              {projects
+              {allProjects
                 .filter(p => p.id !== project.id) // Exclude current project
                 .slice(0, 4) // Show only 4 projects
                 .map((relatedProject) => {
                   const relatedFundingPercentage = (relatedProject.currentFunding / relatedProject.totalFunding) * 100;
                   const RelatedProjectIcon = getProjectIcon(relatedProject.type);
-
+                  
                   return (
-                    <Card
-                      key={relatedProject.id}
+                    <Card 
+                      key={relatedProject.id} 
                       className="cursor-pointer hover:shadow-lg transition-shadow"
                       onClick={() => router.push(`/projects/${relatedProject.id}`)}
                     >
@@ -600,8 +466,8 @@ const ProjectDetailContent = ({ params }) => {
                               <Users className="h-3 w-3 text-muted-foreground" />
                               <span className="text-xs text-muted-foreground">{relatedProject.contributors.toLocaleString()}</span>
                             </div>
-                            <Button
-                              size="sm"
+                            <Button 
+                              size="sm" 
                               className="btn-hero text-xs px-2 py-1"
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -625,14 +491,4 @@ const ProjectDetailContent = ({ params }) => {
   );
 };
 
-const ProjectDetailPage = ({ params }) => {
-  return (
-    <AuthGuard intent="project-detail">
-      <Layout>
-        <ProjectDetailContent params={params} />
-      </Layout>
-    </AuthGuard>
-  );
-};
-
-export default ProjectDetailPage; 
+export default ProjectView;

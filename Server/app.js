@@ -38,7 +38,7 @@ app.use(
       directives: {
         defaultSrc: ["'self'"],
         styleSrc: ["'self'", "'unsafe-inline'"],
-        scriptSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'"],
         imgSrc: ["'self'", "data:", "https:"],
       },
     },
@@ -118,6 +118,7 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 // Serve static files from public directory (client build)
+// Serve static files from the client build directory
 app.use(express.static(path.join(__dirname, 'public')));
 app.use("/api/auth", authRoutes);
 app.use("/api/marketplace", marketplaceRoutes);
@@ -147,9 +148,14 @@ app.use((err, req, res, next) => {
   // Handle 404 for API routes
   app.all('/api/*', (req, res) => {
     res.status(404).json({ message: "API route not found" });
-  });
-
-  return app;
-}
+      });
+    
+      // Serve the client application for all other routes
+      app.get('*', (req, res) => {
+              res.sendFile(path.join(__dirname, 'public', 'index.html'));
+            });
+    
+      return app;
+    }
 
 export default createServer;
