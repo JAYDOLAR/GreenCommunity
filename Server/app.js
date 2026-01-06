@@ -119,7 +119,7 @@ app.use(passport.session());
 
 // Serve static files from public directory (client build)
 // Serve static files from the client build directory
-app.use(express.static(path.join(__dirname, '..', 'client', 'out')));
+app.use(express.static(path.join(__dirname, 'public')));
 app.use("/api/auth", authRoutes);
 app.use("/api/marketplace", marketplaceRoutes);
 app.use("/api/avatar", avatarRoutes);
@@ -152,7 +152,7 @@ app.use((err, req, res, next) => {
     
       // Serve the client application for all other routes
       app.get('*', (req, res) => {
-              res.sendFile(path.join(__dirname, '..', 'client', 'out', 'index.html'));
+              res.sendFile(path.join(__dirname, 'public', 'index.html'));
             });
     
       return app;

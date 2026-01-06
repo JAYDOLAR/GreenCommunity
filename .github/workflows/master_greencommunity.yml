@@ -39,27 +39,15 @@ jobs:
 
       - name: Prepare deployment artifacts
         run: |
-          # Copy server files as the main application
-          cp -r Server/* .
-          
-          # Ensure client has built files
-                    if [ ! -d "client/out" ]; then
-            echo "Error: Client build files not found"
-            exit 1
-          fi
-          
-          # Create package-lock.json if missing
-          if [ ! -f "package-lock.json" ]; then
-            cp Server/package-lock.json . 2>/dev/null || echo '{}' > package-lock.json
-          fi
-          
-          # The Server directory is no longer removed, as it is needed for the client to be served
+                  mkdir release
+                  cp -r Server/* release/
+                  cp -r client/out release/public
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: node-app
-          path: .
+          path: release/
 
   deploy:
     runs-on: ubuntu-latest
