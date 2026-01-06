@@ -151,6 +151,7 @@ const ProjectDetail = () => {
       ]
     }
   ];
+};
 
 export async function generateStaticParams() {
   return projects.map((project) => ({
