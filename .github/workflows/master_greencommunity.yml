@@ -39,17 +39,17 @@ jobs:
 
       - name: Prepare deployment artifacts
         run: |
-                  # Create a clean release directory
-                            mkdir release
-                            
-                            # Copy server files into the release directory
-                            cp -r Server/* release/
-                            
-                            # Remove the placeholder public directory from the server files
-                            rm -rf release/public
-                            
-                            # Move the client build output to be the new public directory
-                            mv client/out release/public
+          # Create a clean release directory
+          mkdir release
+          
+          # Copy server files into the release directory
+          cp -r Server/* release/
+          
+          # Remove the placeholder public directory from the server files
+          rm -rf release/public
+          
+          # Move the client build output to be the new public directory
+          mv client/out release/public
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
@@ -84,6 +84,4 @@ jobs:
           app-name: 'Green-community'
           slot-name: 'Production'
           package: .
-                    startup-command: 'npm start'
-
-        #run the file
+          startup-command: 'npm start'
