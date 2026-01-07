@@ -22,9 +22,6 @@ jobs:
     permissions:
       contents: read
 
-    outputs:
-      artifact-name: ${{ steps.artifact-info.outputs.artifact-name }}
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -69,16 +66,10 @@ jobs:
           npm ci --only=production --legacy-peer-deps --prefer-offline --no-audit
           cd ..
 
-      - name: Set artifact name
-        id: artifact-info
-        run: |
-          ARTIFACT_NAME="webapp-${{ github.sha }}-$(date +%Y%m%d-%H%M%S)"
-          echo "artifact-name=$ARTIFACT_NAME" >> $GITHUB_OUTPUT
-
       - name: Upload deployment artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ steps.artifact-info.outputs.artifact-name }}
+          name: node-app   # 👈 must match the deploy job
           path: deployment-package/
           retention-days: 30
           compression-level: 6
@@ -89,17 +80,17 @@ jobs:
     needs: build
 
     permissions:
-      id-token: write
-      contents: read
+      id-token: write   # Required for requesting the JWT
+      contents: read    # Required for actions/checkout
 
     steps:
-      - name: Download deployment artifact
+      - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
-          name: ${{ needs.build.outputs.artifact-name }}
-          path: ./deployment-package
+          name: node-app
+          path: .
 
-      - name: Authenticate to Azure
+      - name: Login to Azure
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_590830FF75664EA1BF5D7DF0E9C1963D }}
@@ -110,11 +101,11 @@ jobs:
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
-          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          app-name: 'Green-community'
           slot-name: 'Production'
-          package: ./deployment-package
+          package: .
+          type: folder   # 👈 ensures directory deployment works
           startup-command: 'npm start'
-          type: folder
           clean: true
           restart: true
 
