@@ -44,38 +44,30 @@ jobs:
           npm ci --prefer-offline --no-audit
           npm run build
           
-      - name: Install server dependencies (dev only, for tests/build)
+      - name: Install server dependencies
         working-directory: ./Server
         run: |
           npm ci --legacy-peer-deps --prefer-offline --no-audit
 
       - name: Run tests (if available)
         run: |
-          if [ -f "client/package.json" ]; then
-            npm --prefix client run test --if-present || true
+          if [ -f "client/package.json" ] && npm --prefix client run test --if-present; then
+            echo "Client tests completed"
           fi
-          if [ -f "Server/package.json" ]; then
-            npm --prefix Server run test --if-present || true
+          if [ -f "Server/package.json" ] && npm --prefix Server run test --if-present; then
+            echo "Server tests completed"
           fi
 
       - name: Prepare deployment package
         run: |
           mkdir -p deployment-package
-          
-          # Copy server source (exclude node_modules)
           rsync -av --exclude='node_modules' --exclude='.git' Server/ deployment-package/
-          
-          # Copy client build output
           cp -r client/.next deployment-package/.next
           cp -r client/public deployment-package/public
-          
-          # Copy package.json and lockfile (so Azure can install prod deps)
-          cp Server/package*.json deployment-package/ 2>/dev/null || true
           cp client/package*.json deployment-package/ 2>/dev/null || true
-
-      - name: Create deployment zip
-        run: |
-          zip -r deployment-package.zip deployment-package
+          cd deployment-package
+          npm ci --only=production --legacy-peer-deps --prefer-offline --no-audit
+          cd ..
 
       - name: Set artifact name
         id: artifact-info
@@ -87,7 +79,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.artifact-info.outputs.artifact-name }}
-          path: deployment-package.zip
+          path: deployment-package/
           retention-days: 30
           compression-level: 6
 
@@ -105,7 +97,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: ${{ needs.build.outputs.artifact-name }}
-          path: .
+          path: ./deployment-package
 
       - name: Authenticate to Azure
         uses: azure/login@v2
@@ -114,35 +106,24 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_99406FEA6DE74B5EB356BA1CAD7B1C2D }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_CBE9DEB1A36B4792AE601A767B1BD1C2 }}
 
-      - name: Ensure Azure skips Oryx build
-        run: |
-          az webapp config appsettings set \
-            --name ${{ env.AZURE_WEBAPP_NAME }} \
-            --resource-group Green_Community \
-            --settings SCM_DO_BUILD_DURING_DEPLOYMENT=false
-          echo "Waiting for app service restart after config change..."
-          sleep 20
-
-      - name: Deploy to Azure Web App (with retry)
-        run: |
-          for i in 1 2 3; do
-            echo "🚀 Attempt $i to deploy..."
-            npx azure-actions/webapps-deploy@v3 \
-              --app-name "${{ env.AZURE_WEBAPP_NAME }}" \
-              --slot-name "Production" \
-              --package "deployment-package.zip" \
-              --startup-command "npm start" \
-              --type zip \
-              --clean true \
-              && break || (echo "⚠️ Deploy failed, retrying in 20s..." && sleep 20)
-          done
+      - name: Deploy to Azure Web App
+        id: deploy-to-webapp
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          slot-name: 'Production'
+          package: ./deployment-package
+          startup-command: 'npm start'
+          type: folder
+          clean: true
+          restart: true
 
       - name: Verify deployment
         run: |
-          echo "Deployment completed!"
-          echo "Application URL: https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net"
+          echo "Deployment completed successfully!"
+          echo "Application URL: ${{ steps.deploy-to-webapp.outputs.webapp-url }}"
           sleep 30
-          if curl -f -s -o /dev/null "https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net"; then
+          if curl -f -s -o /dev/null "${{ steps.deploy-to-webapp.outputs.webapp-url }}"; then
             echo "✅ Health check passed"
           else
             echo "⚠️ Health check failed - app might still be starting"
@@ -168,18 +149,18 @@ jobs:
               repo: context.repo.repo,
               run_id: context.runId,
             });
-            const sorted = artifacts.data.artifacts.sort((a, b) =>
+            const sortedArtifacts = artifacts.data.artifacts.sort((a, b) => 
               new Date(b.created_at) - new Date(a.created_at)
             );
-            for (let i = 5; i < sorted.length; i++) {
+            for (let i = 5; i < sortedArtifacts.length; i++) {
               try {
                 await github.rest.actions.deleteArtifact({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
-                  artifact_id: sorted[i].id,
+                  artifact_id: sortedArtifacts[i].id,
                 });
-                console.log(`Deleted artifact: ${sorted[i].name}`);
-              } catch (err) {
-                console.log(`Failed to delete artifact: ${err.message}`);
+                console.log(`Deleted artifact: ${sortedArtifacts[i].name}`);
+              } catch (error) {
+                console.log(`Failed to delete artifact: ${error.message}`);
               }
             }
