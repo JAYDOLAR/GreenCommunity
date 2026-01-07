@@ -1,3 +1,5 @@
+"use client";
+
 import ProjectView from '@/components/ProjectView';
 
 import { useState } from 'react';
@@ -152,12 +154,6 @@ const ProjectDetail = () => {
     }
   ];
 };
-
-export async function generateStaticParams() {
-  return projects.map((project) => ({
-    id: project.id.toString(),
-  }));
-}
 
 const ProjectDetailContent = ({ params }) => {
   const projectId = parseInt(params.id);

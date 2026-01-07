@@ -1,7 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Enable static export
-    output: 'export',
   trailingSlash: true,
   images: {
     unoptimized: true

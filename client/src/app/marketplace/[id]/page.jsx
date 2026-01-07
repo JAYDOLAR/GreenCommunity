@@ -1,3 +1,5 @@
+"use client";
+
 import ProductView from '@/components/ProductView';
 
 import { useState, useEffect } from 'react';
@@ -216,12 +218,6 @@ const products = [
   }
 ];
 
-export async function generateStaticParams() {
-  return products.map((product) => ({
-    id: product.id.toString(),
-  }));
-}
-
 const ProductDetail = ({ params }) => {
   const productId = parseInt(params.id);
   const product = products.find(p => p.id === productId);
@@ -379,8 +375,8 @@ const ProductDetail = ({ params }) => {
               <h3 className="font-semibold text-foreground mb-2">Availability</h3>
               <div className="flex items-center gap-2">
                 <span className={`text-sm font-medium px-3 py-1 rounded-full ${product.inStock
-                    ? 'bg-green-100 text-green-800'
-                    : 'bg-red-100 text-red-800'
+                  ? 'bg-green-100 text-green-800'
+                  : 'bg-red-100 text-red-800'
                   }`}>
                   {product.inStock ? 'In Stock' : 'Out of Stock'}
                 </span>
