@@ -120,25 +120,29 @@ jobs:
             --name ${{ env.AZURE_WEBAPP_NAME }} \
             --resource-group Green_Community \
             --settings SCM_DO_BUILD_DURING_DEPLOYMENT=false
+          echo "Waiting for app service restart after config change..."
+          sleep 20
 
-      - name: Deploy to Azure Web App
-        id: deploy-to-webapp
-        uses: azure/webapps-deploy@v3
-        with:
-          app-name: ${{ env.AZURE_WEBAPP_NAME }}
-          slot-name: 'Production'
-          package: deployment-package.zip
-          startup-command: 'npm start'
-          type: zip
-          clean: true
-          restart: true
+      - name: Deploy to Azure Web App (with retry)
+        run: |
+          for i in 1 2 3; do
+            echo "🚀 Attempt $i to deploy..."
+            npx azure-actions/webapps-deploy@v3 \
+              --app-name "${{ env.AZURE_WEBAPP_NAME }}" \
+              --slot-name "Production" \
+              --package "deployment-package.zip" \
+              --startup-command "npm start" \
+              --type zip \
+              --clean true \
+              && break || (echo "⚠️ Deploy failed, retrying in 20s..." && sleep 20)
+          done
 
       - name: Verify deployment
         run: |
-          echo "Deployment completed successfully!"
-          echo "Application URL: ${{ steps.deploy-to-webapp.outputs.webapp-url }}"
+          echo "Deployment completed!"
+          echo "Application URL: https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net"
           sleep 30
-          if curl -f -s -o /dev/null "${{ steps.deploy-to-webapp.outputs.webapp-url }}"; then
+          if curl -f -s -o /dev/null "https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net"; then
             echo "✅ Health check passed"
           else
             echo "⚠️ Health check failed - app might still be starting"
@@ -164,10 +168,10 @@ jobs:
               repo: context.repo.repo,
               run_id: context.runId,
             });
-            const sorted = artifacts.data.artifacts.sort((a,b) =>
+            const sorted = artifacts.data.artifacts.sort((a, b) =>
               new Date(b.created_at) - new Date(a.created_at)
             );
-            for (let i=5; i<sorted.length; i++) {
+            for (let i = 5; i < sorted.length; i++) {
               try {
                 await github.rest.actions.deleteArtifact({
                   owner: context.repo.owner,
