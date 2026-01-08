@@ -35,6 +35,14 @@ jobs:
             client/package-lock.json
             Server/package-lock.json
 
+      - name: Cache Next.js build
+        uses: actions/cache@v4
+        with:
+          path: client/.next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('client/package-lock.json') }}-${{ hashFiles('client/src/**.[jt]s', 'client/src/**.[jt]sx') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-${{ hashFiles('client/package-lock.json') }}-
+
       - name: Install and build client
         working-directory: ./client
         run: |
@@ -73,9 +81,10 @@ jobs:
           # Copy client build output only (no source or tests)
           cp -r client/.next deployment-package/.next
           cp -r client/public deployment-package/public
-
-          # Copy minimal package metadata
-          cp client/package*.json deployment-package/ 2>/dev/null || true
+          cp client/next.config.mjs deployment-package/next.config.mjs
+ 
+           # Copy minimal package metadata
+           cp client/package*.json deployment-package/ 2>/dev/null || true
           cp Server/package*.json deployment-package/ 2>/dev/null || true
 
           # Install only production dependencies
