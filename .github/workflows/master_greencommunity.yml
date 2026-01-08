@@ -87,12 +87,30 @@ jobs:
           cp client/next.config.mjs deployment-package/client/next.config.mjs
           cp client/package*.json deployment-package/client/
           
-          # Copy client source files needed for Next.js runtime
-          mkdir -p deployment-package/client/src
-          cp -r client/src/app deployment-package/client/src/app
+          # Copy ALL client source files needed for Next.js runtime
+          cp -r client/src deployment-package/client/src
+          
+          # Copy additional Next.js config files if they exist
+          if [ -f "client/jsconfig.json" ]; then
+            cp client/jsconfig.json deployment-package/client/jsconfig.json
+          fi
+          if [ -f "client/components.json" ]; then
+            cp client/components.json deployment-package/client/components.json
+          fi
+          if [ -f "client/postcss.config.mjs" ]; then
+            cp client/postcss.config.mjs deployment-package/client/postcss.config.mjs
+          fi
+          if [ -f "client/tailwind.config.js" ]; then
+            cp client/tailwind.config.js deployment-package/client/tailwind.config.js
+          fi
           
           # Copy root package.json for server
           cp Server/package*.json deployment-package/
+          
+          # Copy web.config for Azure App Service
+          if [ -f "Server/web.config" ]; then
+            cp Server/web.config deployment-package/web.config
+          fi
 
           # Install only production dependencies for server
           cd deployment-package
