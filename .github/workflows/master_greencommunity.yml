@@ -127,9 +127,16 @@ jobs:
           cd deployment-package
           npm ci --only=production --legacy-peer-deps --prefer-offline --no-audit
           
-          # Install client dependencies for Next.js runtime
+          # Install client dependencies for Next.js runtime (only production)
           cd client
           npm ci --only=production --prefer-offline --no-audit
+          
+          # Remove unnecessary files to reduce package size
+          find . -name "*.test.*" -type f -delete
+          find . -name "__tests__" -type d -exec rm -rf {} + 2>/dev/null || true
+          find . -name "*.md" -type f -delete 2>/dev/null || true
+          find . -name ".git*" -exec rm -rf {} + 2>/dev/null || true
+          
           cd ../..
 
       - name: Upload deployment artifact
@@ -185,12 +192,49 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_99406FEA6DE74B5EB356BA1CAD7B1C2D }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_CBE9DEB1A36B4792AE601A767B1BD1C2 }}
 
-      - name: Deploy to Azure Web App
-        id: deploy-to-webapp
+      - name: Clear Azure App Service cache
+        run: |
+          echo "🧹 Clearing Azure App Service cache to prevent SCM restart conflicts..."
+          az webapp restart --name Green-community --resource-group Green_Community
+          echo "⏳ Waiting for service to stabilize..."
+          sleep 15
+
+      - name: Deploy to Azure Web App (Attempt 1)
+        id: deploy-to-webapp-1
         uses: azure/webapps-deploy@v3
         with:
           app-name: Green-community
           package: .
+        continue-on-error: true
+
+      - name: Wait before retry
+        if: steps.deploy-to-webapp-1.outcome == 'failure'
+        run: |
+          echo "First deployment failed, waiting 30 seconds before retry..."
+          sleep 30
+
+      - name: Deploy to Azure Web App (Attempt 2)
+        id: deploy-to-webapp-2
+        if: steps.deploy-to-webapp-1.outcome == 'failure'
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: Green-community
+          package: .
+        continue-on-error: true
+
+      - name: Final deployment status
+        if: always()
+        run: |
+          if [ "${{ steps.deploy-to-webapp-1.outcome }}" == "success" ]; then
+            echo "✅ Deployment succeeded on first attempt"
+            exit 0
+          elif [ "${{ steps.deploy-to-webapp-2.outcome }}" == "success" ]; then
+            echo "✅ Deployment succeeded on second attempt"
+            exit 0
+          else
+            echo "❌ Both deployment attempts failed"
+            exit 1
+          fi
 
       - name: Alternative deployment method
         if: failure()
@@ -202,11 +246,12 @@ jobs:
           echo "Manual deployment may be required."
 
       - name: Verify deployment
+        if: steps.deploy-to-webapp-1.outcome == 'success' || steps.deploy-to-webapp-2.outcome == 'success'
         run: |
           echo "Deployment completed successfully!"
-          echo "Application URL: ${{ steps.deploy-to-webapp.outputs.webapp-url }}"
+          echo "Application URL: https://green-community.azurewebsites.net"
           sleep 30
-          if curl -f -s -o /dev/null "${{ steps.deploy-to-webapp.outputs.webapp-url }}"; then
+          if curl -f -s -o /dev/null "https://green-community.azurewebsites.net"; then
             echo "✅ Health check passed"
           else
             echo "⚠️ Health check failed - app might still be starting"
