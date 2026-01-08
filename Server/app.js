@@ -7,6 +7,7 @@ import helmet from "helmet";
 import mongoSanitize from "express-mongo-sanitize";
 import path from "path";
 import { fileURLToPath } from "url";
+import next from "next";
 import "./config/passport.js";
 import { connectAllDatabases } from "./config/databases.js";
 import authRoutes from "./routes/auth.routes.js";
@@ -24,138 +25,116 @@ const __dirname = path.dirname(__filename);
 
 dotenv.config();
 
-const app = express();
-
-// Connect to all MongoDB databases
-connectAllDatabases();
+const dev = process.env.NODE_ENV !== "production";
+const clientDir = dev ? path.resolve(__dirname, '../client') : __dirname;
+const nextApp = next({ dev, dir: clientDir });
+const nextHandler = nextApp.getRequestHandler();
 
 async function createServer() {
+  await nextApp.prepare();
+  const app = express();
 
-// Security middleware
-app.use(
-  helmet({
-    contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ["'self'"],
-        styleSrc: ["'self'", "'unsafe-inline'"],
-        scriptSrc: ["'self'", "'unsafe-inline'"],
-        imgSrc: ["'self'", "data:", "https:"],
+  // Connect to all MongoDB databases
+  connectAllDatabases();
+
+  // Security middleware
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          scriptSrc: ["'self'", "'unsafe-inline'"],
+          imgSrc: ["'self'", "data:", "https:"],
+        },
       },
+      hsts: {
+        maxAge: 31536000, // 1 year
+        includeSubDomains: true,
+        preload: true,
+      },
+      noSniff: true,
+      xssFilter: true,
+      referrerPolicy: { policy: "same-origin" },
+    })
+  );
+
+  // CORS configuration
+  const corsOptions = {
+    origin: function (origin, callback) {
+      const allowedOrigins = [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://localhost:3002",
+        process.env.CLIENT_URL,
+      ].filter(Boolean);
+
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        console.log("CORS blocked origin:", origin);
+        callback(new Error("Not allowed by CORS"));
+      }
     },
-    hsts: {
-      maxAge: 31536000, // 1 year
-      includeSubDomains: true,
-      preload: true,
-    },
-    noSniff: true,
-    xssFilter: true,
-    referrerPolicy: { policy: "same-origin" },
-  })
-);
+    credentials: true,
+    optionsSuccessStatus: 200,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "x-session-id"],
+  };
 
-// Rate limiting
-// const limiter = rateLimit({
-//   windowMs: 15 * 60 * 1000, // 15 minutes
-//   max: 100, // limit each IP to 100 requests per windowMs
-//   message: 'Too many requests from this IP, please try again later.',
-//   standardHeaders: true,
-//   legacyHeaders: false,
-// });
+  app.use(cors(corsOptions));
 
-// app.use(limiter);
+  // Body parsing middleware
+  app.use(express.json({ limit: "10mb" }));
+  app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+  app.use(cookieParser());
 
-// CORS configuration
-const corsOptions = {
-  origin: function (origin, callback) {
-    const allowedOrigins = [
-      "http://localhost:3000",
-      "http://localhost:3001",
-      "http://localhost:3002",
-      process.env.CLIENT_URL,
-    ].filter(Boolean);
+  // Data sanitization
+  app.use(mongoSanitize());
 
-    // Allow requests with no origin (like mobile apps or Postman)
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      console.log("CORS blocked origin:", origin);
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
-  credentials: true,
-  optionsSuccessStatus: 200,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "x-session-id"],
-};
+  // Session configuration
+  app.use(
+    session({
+      secret: process.env.SESSION_SECRET || "your-super-secret-key-change-in-production",
+      resave: false,
+      saveUninitialized: false,
+      cookie: {
+        secure: process.env.NODE_ENV === "production",
+        httpOnly: true,
+        maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      },
+    })
+  );
 
-app.use(cors(corsOptions));
+  app.use(passport.initialize());
+  app.use(passport.session());
 
-// Body parsing middleware with size limits
-app.use(express.json({ limit: "10mb" }));
-app.use(express.urlencoded({ extended: true, limit: "10mb" }));
-app.use(cookieParser());
+  // API routes
+  app.use("/api/auth", authRoutes);
+  app.use("/api/marketplace", marketplaceRoutes);
+  app.use("/api/avatar", avatarRoutes);
+  app.use("/api/footprintlog", footprintLogRoutes);
+  app.use("/api/challenges", challengeRoutes);
+  app.use("/api/groups", groupsRoutes);
+  app.use("/api/events", eventsRoutes);
+  app.use("/api/ai", aiRoutes);
 
-// Data sanitization against NoSQL query injection
-app.use(mongoSanitize());
-
-// Session configuration with secure settings
-app.use(
-  session({
-    secret:
-      process.env.SESSION_SECRET ||
-      "your-super-secret-key-change-in-production",
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      secure: process.env.NODE_ENV === "production", // Use secure cookies in production
-      httpOnly: true, // Prevent XSS attacks
-      maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    },
-  })
-);
-
-app.use(passport.initialize());
-app.use(passport.session());
-
-// Serve static files from public directory (client build)
-// Serve static files from the client build directory
-app.use(express.static(path.join(__dirname, 'public')));
-app.use("/api/auth", authRoutes);
-app.use("/api/marketplace", marketplaceRoutes);
-app.use("/api/avatar", avatarRoutes);
-app.use("/api/footprintlog", footprintLogRoutes);
-app.use("/api/challenges", challengeRoutes);
-app.use("/api/groups", groupsRoutes);
-app.use("/api/events", eventsRoutes);
-app.use("/api/ai", aiRoutes);
-
-// Global error handler
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-
-  // Don't leak error details in production
-  const message =
-    process.env.NODE_ENV === "production"
-      ? "Something went wrong!"
-      : err.message;
-
-  res.status(err.status || 500).json({
-    message,
-    ...(process.env.NODE_ENV === "development" && { stack: err.stack }),
+  // Global error handler for API
+  app.use("/api", (err, req, res, next) => {
+    console.error(err.stack);
+    const message = process.env.NODE_ENV === "production" ? "Something went wrong!" : err.message;
+    res.status(err.status || 500).json({
+      message,
+      ...(process.env.NODE_ENV === "development" && { stack: err.stack }),
+    });
   });
-});
 
-  // Handle 404 for API routes
-  app.all('/api/*', (req, res) => {
-    res.status(404).json({ message: "API route not found" });
-      });
-    
-      // Serve the client application for all other routes
-      app.get('*', (req, res) => {
-              res.sendFile(path.join(__dirname, 'public', 'index.html'));
-            });
-    
-      return app;
-    }
+  // Handle all other requests with Next.js
+  app.all("*", (req, res) => {
+    return nextHandler(req, res);
+  });
+
+  return app;
+}
 
 export default createServer;
