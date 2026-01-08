@@ -107,9 +107,20 @@ jobs:
           # Copy root package.json for server
           cp Server/package*.json deployment-package/
           
+          # Copy deployment-specific package.json to root
+          if [ -f "Server/deployment-package.json" ]; then
+            cp Server/deployment-package.json deployment-package/package.json
+          fi
+          
           # Copy web.config for Azure App Service
           if [ -f "Server/web.config" ]; then
             cp Server/web.config deployment-package/web.config
+          fi
+          
+          # Copy startup script for Azure App Service
+          if [ -f "Server/startup.sh" ]; then
+            cp Server/startup.sh deployment-package/startup.sh
+            chmod +x deployment-package/startup.sh
           fi
 
           # Install only production dependencies for server
@@ -145,6 +156,28 @@ jobs:
           name: node-app
           path: .
 
+      - name: Verify deployment package structure
+        run: |
+          echo "📦 Deployment package contents:"
+          ls -la
+          echo ""
+          echo "📁 Client directory structure:"
+          if [ -d "client" ]; then
+            ls -la client/
+            echo ""
+            echo "📁 Client src structure:"
+            if [ -d "client/src" ]; then
+              ls -la client/src/
+            else
+              echo "❌ client/src directory not found"
+            fi
+          else
+            echo "❌ client directory not found"
+          fi
+          echo ""
+          echo "📄 Package.json files:"
+          find . -name "package.json" -type f
+
       - name: Login to Azure
         uses: azure/login@v2
         with:
@@ -156,13 +189,17 @@ jobs:
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'Green-community'
-          slot-name: 'Production'
+          app-name: Green-community
           package: .
-          type: folder   # 👈 ensures directory deployment works
-          startup-command: 'npm start'
-          clean: true
-          restart: true
+
+      - name: Alternative deployment method
+        if: failure()
+        run: |
+          echo "Primary deployment failed, trying alternative method..."
+          # Create a simple zip for manual deployment
+          zip -r deployment.zip . -x "*.git*" "node_modules/*" ".github/*"
+          echo "Alternative deployment package created: deployment.zip"
+          echo "Manual deployment may be required."
 
       - name: Verify deployment
         run: |

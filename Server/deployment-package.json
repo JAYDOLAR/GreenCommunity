@@ -1,0 +1,15 @@
+{
+  "name": "green-community-deployment",
+  "version": "1.0.0",
+  "description": "Green Community Application Deployment Package",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  }
+}
