@@ -58,10 +58,27 @@ jobs:
       - name: Prepare deployment package
         run: |
           mkdir -p deployment-package
-          rsync -av --exclude='node_modules' --exclude='.git' Server/ deployment-package/
+
+          # Copy server (exclude dev-only stuff)
+          rsync -av \
+            --exclude='node_modules' \
+            --exclude='.git' \
+            --exclude='tests' \
+            --exclude='__tests__' \
+            --exclude='*.test.*' \
+            --exclude='docs' \
+            --exclude='.github' \
+            Server/ deployment-package/
+
+          # Copy client build output only (no source or tests)
           cp -r client/.next deployment-package/.next
           cp -r client/public deployment-package/public
+
+          # Copy minimal package metadata
           cp client/package*.json deployment-package/ 2>/dev/null || true
+          cp Server/package*.json deployment-package/ 2>/dev/null || true
+
+          # Install only production dependencies
           cd deployment-package
           npm ci --only=production --legacy-peer-deps --prefer-offline --no-audit
           cd ..
