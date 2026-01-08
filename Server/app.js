@@ -27,7 +27,7 @@ const __dirname = path.dirname(__filename);
 dotenv.config();
 
 const dev = process.env.NODE_ENV !== "production";
-const clientDir = dev ? path.resolve(__dirname, '../client') : __dirname;
+const clientDir = dev ? path.resolve(__dirname, '../client') : path.resolve(__dirname, './client');
 const nextApp = next({ dev, dir: clientDir });
 const nextHandler = nextApp.getRequestHandler();
 

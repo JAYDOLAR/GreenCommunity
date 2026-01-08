@@ -67,7 +67,7 @@ jobs:
         run: |
           mkdir -p deployment-package
 
-          # Copy server (exclude dev-only stuff)
+          # Copy server files to root (exclude dev-only stuff)
           rsync -av \
             --exclude='node_modules' \
             --exclude='.git' \
@@ -78,19 +78,30 @@ jobs:
             --exclude='.github' \
             Server/ deployment-package/
 
-          # Copy client build output only (no source or tests)
-          cp -r client/.next deployment-package/.next
-          cp -r client/public deployment-package/public
-          cp client/next.config.mjs deployment-package/next.config.mjs
- 
-           # Copy minimal package metadata
-           cp client/package*.json deployment-package/ 2>/dev/null || true
-          cp Server/package*.json deployment-package/ 2>/dev/null || true
+          # Create client directory structure for Next.js
+          mkdir -p deployment-package/client
+          
+          # Copy complete client build with proper structure
+          cp -r client/.next deployment-package/client/.next
+          cp -r client/public deployment-package/client/public
+          cp client/next.config.mjs deployment-package/client/next.config.mjs
+          cp client/package*.json deployment-package/client/
+          
+          # Copy client source files needed for Next.js runtime
+          mkdir -p deployment-package/client/src
+          cp -r client/src/app deployment-package/client/src/app
+          
+          # Copy root package.json for server
+          cp Server/package*.json deployment-package/
 
-          # Install only production dependencies
+          # Install only production dependencies for server
           cd deployment-package
           npm ci --only=production --legacy-peer-deps --prefer-offline --no-audit
-          cd ..
+          
+          # Install client dependencies for Next.js runtime
+          cd client
+          npm ci --only=production --prefer-offline --no-audit
+          cd ../..
 
       - name: Upload deployment artifact
         uses: actions/upload-artifact@v4
