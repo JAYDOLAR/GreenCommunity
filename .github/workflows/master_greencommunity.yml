@@ -18,6 +18,7 @@ jobs:
   build:
     name: Build Application
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     permissions:
       contents: read
@@ -38,152 +39,163 @@ jobs:
       - name: Cache Next.js build
         uses: actions/cache@v4
         with:
-          path: client/.next/cache
-          key: ${{ runner.os }}-nextjs-${{ hashFiles('client/package-lock.json') }}-${{ hashFiles('client/src/**.[jt]s', 'client/src/**.[jt]sx') }}
+          path: |
+            client/.next/cache
+            client/node_modules
+            Server/node_modules
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('client/src/**/*', 'Server/**/*') }}
           restore-keys: |
-            ${{ runner.os }}-nextjs-${{ hashFiles('client/package-lock.json') }}-
+            ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-
+            ${{ runner.os }}-nextjs-
 
-      - name: Install and build client
+      - name: Install client dependencies
         working-directory: ./client
         run: |
-          npm ci --prefer-offline --no-audit
-          npm run build
+          npm ci --prefer-offline --no-audit --silent
           
       - name: Install server dependencies
         working-directory: ./Server
         run: |
-          npm ci --legacy-peer-deps --prefer-offline --no-audit
+          npm ci --legacy-peer-deps --prefer-offline --no-audit --silent
+
+      - name: Build Next.js client
+        working-directory: ./client
+        run: |
+          npm run build
 
       - name: Run tests (if available)
         run: |
-          if [ -f "client/package.json" ] && npm --prefix client run test --if-present; then
+          if [ -f "client/package.json" ] && npm --prefix client run test --if-present --passWithNoTests; then
             echo "Client tests completed"
           fi
-          if [ -f "Server/package.json" ] && npm --prefix Server run test --if-present; then
+          if [ -f "Server/package.json" ] && npm --prefix Server run test --if-present --passWithNoTests; then
             echo "Server tests completed"
           fi
 
-      - name: Prepare deployment package
+      - name: Create optimized deployment package
         run: |
+          echo "Creating deployment package..."
           mkdir -p deployment-package
 
-          # Copy server files to root (exclude dev-only stuff)
+          # Copy server files (exclude unnecessary files upfront)
+          echo "Copying server files..."
           rsync -av \
             --exclude='node_modules' \
-            --exclude='.git' \
-            --exclude='tests' \
-            --exclude='__tests__' \
+            --exclude='.git*' \
+            --exclude='tests/' \
+            --exclude='__tests__/' \
             --exclude='*.test.*' \
-            --exclude='docs' \
-            --exclude='.github' \
+            --exclude='*.spec.*' \
+            --exclude='docs/' \
+            --exclude='.github/' \
+            --exclude='coverage/' \
+            --exclude='.nyc_output/' \
+            --exclude='*.log' \
             Server/ deployment-package/
 
-          # Create client directory structure for Next.js
+          # Create minimal Next.js deployment structure
+          echo "Setting up Next.js structure..."
           mkdir -p deployment-package/client
           
-          # Copy complete client build with proper structure
-          cp -r client/.next deployment-package/client/.next
-          cp -r client/public deployment-package/client/public
-          cp client/next.config.mjs deployment-package/client/next.config.mjs
+          # Copy only essential Next.js files
+          cp -r client/.next deployment-package/client/
+          cp -r client/public deployment-package/client/
           cp client/package*.json deployment-package/client/
           
-          # Copy ALL client source files needed for Next.js runtime
-          cp -r client/src deployment-package/client/src
+          # Copy source files for Next.js runtime (needed for production)
+          cp -r client/src deployment-package/client/
           
-          # Copy additional Next.js config files if they exist
-          if [ -f "client/jsconfig.json" ]; then
-            cp client/jsconfig.json deployment-package/client/jsconfig.json
-          fi
-          if [ -f "client/components.json" ]; then
-            cp client/components.json deployment-package/client/components.json
-          fi
-          if [ -f "client/postcss.config.mjs" ]; then
-            cp client/postcss.config.mjs deployment-package/client/postcss.config.mjs
-          fi
-          if [ -f "client/tailwind.config.js" ]; then
-            cp client/tailwind.config.js deployment-package/client/tailwind.config.js
-          fi
+          # Copy config files only if they exist
+          [ -f "client/next.config.mjs" ] && cp client/next.config.mjs deployment-package/client/
+          [ -f "client/jsconfig.json" ] && cp client/jsconfig.json deployment-package/client/
+          [ -f "client/postcss.config.mjs" ] && cp client/postcss.config.mjs deployment-package/client/
+          [ -f "client/tailwind.config.js" ] && cp client/tailwind.config.js deployment-package/client/
+          [ -f "client/components.json" ] && cp client/components.json deployment-package/client/
           
-          # Copy root package.json for server
+          # Copy root package.json
           cp Server/package*.json deployment-package/
           
-          # Copy deployment-specific package.json to root
-          if [ -f "Server/deployment-package.json" ]; then
-            cp Server/deployment-package.json deployment-package/package.json
-          fi
+          # Copy Azure-specific files if they exist
+          [ -f "Server/web.config" ] && cp Server/web.config deployment-package/
+          [ -f "Server/startup.sh" ] && cp Server/startup.sh deployment-package/ && chmod +x deployment-package/startup.sh
           
-          # Copy web.config for Azure App Service
-          if [ -f "Server/web.config" ]; then
-            cp Server/web.config deployment-package/web.config
-          fi
-          
-          # Copy startup script for Azure App Service
-          if [ -f "Server/startup.sh" ]; then
-            cp Server/startup.sh deployment-package/startup.sh
-            chmod +x deployment-package/startup.sh
-          fi
+          echo "Package structure created"
 
-          # Install only production dependencies for server
-          cd deployment-package
-          npm ci --only=production --legacy-peer-deps --prefer-offline --no-audit
+      - name: Install production dependencies
+        working-directory: deployment-package
+        run: |
+          echo "Installing server production dependencies..."
+          npm ci --omit=dev --legacy-peer-deps --prefer-offline --no-audit --silent
           
-          # Install client dependencies for Next.js runtime (only production)
+          echo "Installing client production dependencies..."
           cd client
-          npm ci --only=production --prefer-offline --no-audit
+          npm ci --omit=dev --prefer-offline --no-audit --silent
+          cd ..
           
-          # Remove unnecessary files to reduce package size
-          find . -name "*.test.*" -type f -delete
-          find . -name "__tests__" -type d -exec rm -rf {} + 2>/dev/null || true
-          find . -name "*.md" -type f -delete 2>/dev/null || true
-          find . -name ".git*" -exec rm -rf {} + 2>/dev/null || true
-          
-          cd ../..
+          # Clean up unnecessary files
+          echo "Cleaning up unnecessary files..."
+          find . -name "*.test.*" -delete 2>/dev/null || true
+          find . -name "*.spec.*" -delete 2>/dev/null || true
+          find . -type d -name "__tests__" -exec rm -rf {} + 2>/dev/null || true
+          find . -type d -name "coverage" -exec rm -rf {} + 2>/dev/null || true
+          find . -name "*.md" -delete 2>/dev/null || true
+          find . -name ".git*" -delete 2>/dev/null || true
+          find . -name "*.log" -delete 2>/dev/null || true
+
+      - name: Create deployment archive
+        run: |
+          cd deployment-package
+          echo "Creating compressed deployment archive..."
+          tar -czf ../deployment.tar.gz .
+          cd ..
+          echo "Archive size: $(du -h deployment.tar.gz | cut -f1)"
 
       - name: Upload deployment artifact
         uses: actions/upload-artifact@v4
         with:
-          name: node-app   # 👈 must match the deploy job
-          path: deployment-package/
-          retention-days: 30
-          compression-level: 6
+          name: node-app
+          path: deployment.tar.gz
+          retention-days: 7
+          compression-level: 1  # Already compressed
 
   deploy:
     name: Deploy to Azure Web App
     runs-on: ubuntu-latest
     needs: build
+    timeout-minutes: 25
 
     permissions:
-      id-token: write   # Required for requesting the JWT
-      contents: read    # Required for actions/checkout
+      id-token: write
+      contents: read
 
     steps:
-      - name: Download artifact from build job
+      - name: Download deployment artifact
         uses: actions/download-artifact@v4
         with:
           name: node-app
           path: .
 
-      - name: Verify deployment package structure
+      - name: Extract deployment package
+        run: |
+          echo "Extracting deployment package..."
+          tar -xzf deployment.tar.gz
+          rm deployment.tar.gz
+          echo "Extraction complete"
+
+      - name: Verify deployment structure
         run: |
           echo "📦 Deployment package contents:"
           ls -la
-          echo ""
-          echo "📁 Client directory structure:"
+          echo "📄 Package.json files found:"
+          find . -name "package.json" -type f -exec echo "  - {}" \;
+          
           if [ -d "client" ]; then
-            ls -la client/
-            echo ""
-            echo "📁 Client src structure:"
-            if [ -d "client/src" ]; then
-              ls -la client/src/
-            else
-              echo "❌ client/src directory not found"
-            fi
+            echo "✅ Client directory exists"
+            echo "📁 Client contents:"
+            ls -la client/ | head -10
           else
-            echo "❌ client directory not found"
+            echo "❌ Client directory missing"
           fi
-          echo ""
-          echo "📄 Package.json files:"
-          find . -name "package.json" -type f
 
       - name: Login to Azure
         uses: azure/login@v2
@@ -192,73 +204,67 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_99406FEA6DE74B5EB356BA1CAD7B1C2D }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_CBE9DEB1A36B4792AE601A767B1BD1C2 }}
 
-      - name: Clear Azure App Service cache
+      - name: Configure Azure App Service settings
         run: |
-          echo "🧹 Clearing Azure App Service cache to prevent SCM restart conflicts..."
-          az webapp restart --name Green-community --resource-group Green_Community
-          echo "⏳ Waiting for service to stabilize..."
-          sleep 15
+          echo "Configuring app settings for better deployment..."
+          az webapp config appsettings set \
+            --resource-group Green_Community \
+            --name Green-community \
+            --settings \
+            SCM_DO_BUILD_DURING_DEPLOYMENT=true \
+            WEBSITE_NODE_DEFAULT_VERSION=22.x \
+            NODE_ENV=production \
+            WEBSITE_RUN_FROM_PACKAGE=1 \
+            WEBSITE_ENABLE_SYNC_UPDATE_SITE=true
 
-      - name: Deploy to Azure Web App (Attempt 1)
-        id: deploy-to-webapp-1
+      - name: Stop Azure Web App
+        run: |
+          echo "Stopping app service for deployment..."
+          az webapp stop --name Green-community --resource-group Green_Community
+
+      - name: Deploy to Azure Web App
+        id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
+        timeout-minutes: 15
         with:
           app-name: Green-community
           package: .
-        continue-on-error: true
+          clean: true  # Clean deployment
+          restart: false  # We'll restart manually
 
-      - name: Wait before retry
-        if: steps.deploy-to-webapp-1.outcome == 'failure'
+      - name: Start Azure Web App
         run: |
-          echo "First deployment failed, waiting 30 seconds before retry..."
+          echo "Starting app service..."
+          az webapp start --name Green-community --resource-group Green_Community
+          echo "Waiting for app to start..."
           sleep 30
 
-      - name: Deploy to Azure Web App (Attempt 2)
-        id: deploy-to-webapp-2
-        if: steps.deploy-to-webapp-1.outcome == 'failure'
-        uses: azure/webapps-deploy@v3
-        with:
-          app-name: Green-community
-          package: .
-        continue-on-error: true
-
-      - name: Final deployment status
-        if: always()
+      - name: Warm up application
         run: |
-          if [ "${{ steps.deploy-to-webapp-1.outcome }}" == "success" ]; then
-            echo "✅ Deployment succeeded on first attempt"
-            exit 0
-          elif [ "${{ steps.deploy-to-webapp-2.outcome }}" == "success" ]; then
-            echo "✅ Deployment succeeded on second attempt"
-            exit 0
+          echo "Warming up application..."
+          for i in {1..5}; do
+            echo "Attempt $i/5:"
+            if curl -f -s -m 30 "https://green-community.azurewebsites.net" > /dev/null; then
+              echo "✅ Application is responding"
+              break
+            else
+              echo "⏳ Application not ready yet, waiting..."
+              sleep 15
+            fi
+          done
+
+      - name: Health check
+        run: |
+          echo "Performing final health check..."
+          if curl -f -s -m 30 "https://green-community.azurewebsites.net" > /dev/null; then
+            echo "✅ Deployment successful - Application is healthy"
           else
-            echo "❌ Both deployment attempts failed"
-            exit 1
-          fi
-
-      - name: Alternative deployment method
-        if: failure()
-        run: |
-          echo "Primary deployment failed, trying alternative method..."
-          # Create a simple zip for manual deployment
-          zip -r deployment.zip . -x "*.git*" "node_modules/*" ".github/*"
-          echo "Alternative deployment package created: deployment.zip"
-          echo "Manual deployment may be required."
-
-      - name: Verify deployment
-        if: steps.deploy-to-webapp-1.outcome == 'success' || steps.deploy-to-webapp-2.outcome == 'success'
-        run: |
-          echo "Deployment completed successfully!"
-          echo "Application URL: https://green-community.azurewebsites.net"
-          sleep 30
-          if curl -f -s -o /dev/null "https://green-community.azurewebsites.net"; then
-            echo "✅ Health check passed"
-          else
-            echo "⚠️ Health check failed - app might still be starting"
+            echo "⚠️ Application may still be starting up"
+            echo "Check logs at: https://green-community.scm.azurewebsites.net/api/logs/docker"
           fi
 
   cleanup:
-    name: Cleanup old artifacts
+    name: Cleanup
     runs-on: ubuntu-latest
     needs: [build, deploy]
     if: always()
@@ -272,23 +278,26 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const artifacts = await github.rest.actions.listWorkflowRunArtifacts({
+            const { data: artifacts } = await github.rest.actions.listWorkflowRunArtifacts({
               owner: context.repo.owner,
               repo: context.repo.repo,
               run_id: context.runId,
             });
-            const sortedArtifacts = artifacts.data.artifacts.sort((a, b) => 
+            
+            const sorted = artifacts.artifacts.sort((a, b) => 
               new Date(b.created_at) - new Date(a.created_at)
             );
-            for (let i = 5; i < sortedArtifacts.length; i++) {
+            
+            // Keep only the 3 most recent artifacts
+            for (let i = 3; i < sorted.length; i++) {
               try {
                 await github.rest.actions.deleteArtifact({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
-                  artifact_id: sortedArtifacts[i].id,
+                  artifact_id: sorted[i].id,
                 });
-                console.log(`Deleted artifact: ${sortedArtifacts[i].name}`);
+                console.log(`✅ Deleted artifact: ${sorted[i].name}`);
               } catch (error) {
-                console.log(`Failed to delete artifact: ${error.message}`);
+                console.log(`❌ Failed to delete artifact: ${error.message}`);
               }
             }
