@@ -17,6 +17,7 @@ import groupsRoutes from "./routes/groups.routes.js";
 import eventsRoutes from "./routes/events.routes.js";
 import avatarRoutes from "./routes/avatar.routes.js";
 import footprintLogRoutes from "./routes/footprintlog.routes.js";
+import projectsRoutes from "./routes/projects.routes.js";
 import dotenv from "dotenv";
 import aiRoutes from "./routes/ai.routes.js";
 
@@ -117,6 +118,7 @@ async function createServer() {
   app.use("/api/challenges", challengeRoutes);
   app.use("/api/groups", groupsRoutes);
   app.use("/api/events", eventsRoutes);
+  app.use("/api/projects", projectsRoutes);
   app.use("/api/ai", aiRoutes);
 
   // Global error handler for API

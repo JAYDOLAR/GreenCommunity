@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { getConnection } from '../config/databases.js';
 
 const bulkPricingSchema = new mongoose.Schema({
   min_quantity: {

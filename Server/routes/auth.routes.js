@@ -24,9 +24,11 @@ import {
   verify2FAToken,
   disable2FA,
   verify2FALogin,
+  refresh2FAToken,
   getTrustedDevices,
   removeTrustedDevice,
-  clearAllTrustedDevices
+  clearAllTrustedDevices,
+  generateToken
 } from '../controllers/auth.controller.js';
 import { 
   validateRegister, 
@@ -98,6 +100,7 @@ router.post('/2fa/generate', authenticate, generate2FASecret);
 router.post('/2fa/verify', authenticate, verify2FAToken);
 router.post('/2fa/disable', authenticate, disable2FA);
 router.post('/2fa/verify-login', verify2FALogin);
+router.post('/2fa/refresh-token', refresh2FAToken);
 
 // Trusted Devices Routes
 router.get('/trusted-devices', authenticate, getTrustedDevices);
@@ -134,9 +137,7 @@ router.get('/google/callback',
         
         if (req.user.isDeviceTrusted(userAgent, ipAddress)) {
           // Device is trusted, skip 2FA
-          const token = jwt.sign({ id: req.user._id }, process.env.JWT_SECRET, {
-            expiresIn: '1d'
-          });
+          const token = generateToken(req.user._id);
 
           // Update last login info
           req.user.lastLogin = new Date();
@@ -157,24 +158,13 @@ router.get('/google/callback',
         }
         
         // Device not trusted - require 2FA verification
-        const tempToken = jwt.sign(
-          { 
-            id: req.user._id, 
-            role: 'temp-2fa',
-            email: req.user.email,
-            name: req.user.name
-          }, 
-          process.env.JWT_SECRET, 
-          { expiresIn: '10m' }
-        );
+        const tempToken = generateToken(req.user._id, 'temp-2fa');
         
         return res.redirect(`${redirectUrl}/login?requires2FA=true&tempToken=${tempToken}`);
       }
       
       // No 2FA required - proceed with normal login
-      const token = jwt.sign({ id: req.user._id }, process.env.JWT_SECRET, {
-        expiresIn: '1d'
-      });
+      const token = generateToken(req.user._id);
 
       // Update last login info
       req.user.lastLogin = new Date();

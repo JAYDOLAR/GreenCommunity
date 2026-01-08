@@ -56,10 +56,12 @@ const apiRequest = async (endpoint, options = {}) => {
       // Prefer server-provided error
       const serverMsg = data.error || data.message;
       const details = data.details || data.errors;
+      const errorCode = data.code; // Extract error code if available
       const detailStr = details ? ` Details: ${JSON.stringify(details).slice(0,200)}` : '';
       const message = serverMsg || getFriendlyErrorMessage(response.status);
       const err = new Error(`${message} (HTTP ${response.status}).${detailStr}`);
       err.status = response.status;
+      err.code = errorCode; // Add error code to the error object
       throw err;
     }
 
@@ -276,6 +278,13 @@ export const authAPI = {
     return apiRequest('/api/auth/2fa/verify-login', {
       method: 'POST',
       body: JSON.stringify(body),
+    });
+  },
+
+  refresh2FAToken: async (tempToken) => {
+    return apiRequest('/api/auth/2fa/refresh-token', {
+      method: 'POST',
+      body: JSON.stringify({ tempToken }),
     });
   },
 

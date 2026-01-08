@@ -1,8 +1,7 @@
 "use client";
 
+import React, { useState, useEffect } from 'react';
 import ProjectView from '@/components/ProjectView';
-
-import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -29,134 +28,149 @@ import {
 import AuthGuard from '@/components/AuthGuard';
 import Layout from '@/components/Layout';
 
+// Simplified project data - moved outside component scope
+const projects = [
+  {
+    id: 1,
+    name: 'Sundarbans Mangrove Restoration',
+    location: 'West Bengal, India',
+    type: 'forestry',
+    image: "/tree1.jpg",
+    description: 'Large-scale mangrove restoration project in the Sundarbans, protecting vital ecosystems.',
+    co2Removed: 142000,
+    co2PerRupee: 0.0005,
+    totalFunding: 165000000,
+    currentFunding: 123750000,
+    contributors: 12500,
+    timeRemaining: '14 months',
+    verified: true,
+    certifications: ['UN Climate', 'WWF', 'Forest Stewardship Council'],
+    featured: true,
+    benefits: [
+      'Coastal protection',
+      'Biodiversity preservation',
+      'Community livelihood support',
+      'Carbon sequestration'
+    ]
+  },
+  {
+    id: 2,
+    name: 'Himachal Solar Farm Initiative',
+    location: 'Himachal Pradesh, India',
+    type: 'solar',
+    image: "/tree2.jpg",
+    description: 'Community-driven solar energy project providing clean electricity to remote mountain villages.',
+    co2Removed: 89000,
+    co2PerRupee: 0.00047,
+    totalFunding: 95000000,
+    currentFunding: 71250000,
+    contributors: 8900,
+    timeRemaining: '8 months',
+    verified: true,
+    certifications: ['IREDA', 'MNRE'],
+    featured: false,
+    benefits: [
+      'Clean energy access',
+      'Rural electrification',
+      'Reduced fossil fuel dependency',
+      'Job creation'
+    ]
+  },
+  {
+    id: 3,
+    name: 'Rajasthan Wind Energy Collective',
+    location: 'Rajasthan, India',
+    type: 'wind',
+    image: "/tree3.jpg",
+    description: 'Large-scale wind energy project harnessing desert winds to power sustainable development.',
+    co2Removed: 156000,
+    co2PerRupee: 0.00052,
+    totalFunding: 185000000,
+    currentFunding: 129500000,
+    contributors: 15600,
+    timeRemaining: '18 months',
+    verified: true,
+    certifications: ['GWEC', 'Clean Energy Council'],
+    featured: true,
+    benefits: [
+      'Renewable energy generation',
+      'Desert land utilization',
+      'Economic development',
+      'Environmental protection'
+    ]
+  },
+  {
+    id: 4,
+    name: 'Kerala Rainwater Harvesting Network',
+    location: 'Kerala, India',
+    type: 'water',
+    image: "/tree4.jpg",
+    description: 'Community-based rainwater harvesting system improving water security and conservation.',
+    co2Removed: 34000,
+    co2PerRupee: 0.00044,
+    totalFunding: 102000000,
+    currentFunding: 76500000,
+    contributors: 6890,
+    timeRemaining: '11 months',
+    verified: true,
+    certifications: ['WWF', 'Govt of India'],
+    featured: true,
+    benefits: [
+      'Biodiversity conservation',
+      'Carbon storage',
+      'Community livelihoods',
+      'Climate resilience'
+    ]
+  }
+];
+
 const ProjectDetail = () => {
   const params = useParams();
   const router = useRouter();
   const [contributionAmount, setContributionAmount] = useState([50]);
   const [isLoading, setIsLoading] = useState(false);
-
-  // Simplified project data
-  const projects = [
-    {
-      id: 1,
-      name: 'Sundarbans Mangrove Restoration',
-      location: 'West Bengal, India',
-      type: 'forestry',
-      image: "/tree1.jpg",
-      description: 'Large-scale mangrove restoration project in the Sundarbans, protecting vital ecosystems.',
-      co2Removed: 142000,
-      co2PerRupee: 0.0005,
-      totalFunding: 165000000,
-      currentFunding: 123750000,
-      contributors: 15230,
-      timeRemaining: '9 months',
-      verified: true,
-      certifications: ['Gold Standard', 'VCS'],
-      featured: false,
-      benefits: [
-        'Biodiversity protection',
-        'Community support',
-        'Coastal protection',
-        'Fisheries development'
-      ]
-    },
-    {
-      id: 2,
-      name: 'Solar Power Expansion',
-      location: 'Rajasthan, India',
-      type: 'renewable',
-      image: "/tree2.jpg",
-      description: 'Installing solar panels for renewable energy generation across Rajasthan.',
-      co2Removed: 98000,
-      co2PerRupee: 0.00034,
-      totalFunding: 430000000,
-      currentFunding: 280000000,
-      contributors: 9250,
-      timeRemaining: '15 months',
-      verified: true,
-      certifications: ['MNRE', 'SECI'],
-      featured: true,
-      benefits: [
-        'Clean energy',
-        'Job creation',
-        'Energy independence',
-        'Infrastructure improvement'
-      ]
-    },
-    {
-      id: 3,
-      name: 'Ganga Water Conservation',
-      location: 'Uttar Pradesh, India',
-      type: 'water',
-      image: "/tree3.jpg",
-      description: 'Conserving water resources and improving water quality in the Ganga basin.',
-      co2Removed: 50000,
-      co2PerRupee: 0.00042,
-      totalFunding: 76000000,
-      currentFunding: 48200000,
-      contributors: 3400,
-      timeRemaining: '7 months',
-      verified: true,
-      certifications: ['NMCG', 'CPCB'],
-      featured: false,
-      benefits: [
-        'Water conservation',
-        'Wildlife habitat',
-        'Tourism development',
-        'Pollution reduction'
-      ]
-    },
-    {
-      id: 4,
-      name: 'Wind Energy Farms',
-      location: 'Tamil Nadu, India',
-      type: 'renewable',
-      image: "/tree4.jpg",
-      description: 'Developing wind farms to harness clean energy in Tamil Nadu.',
-      co2Removed: 60000,
-      co2PerRupee: 0.00031,
-      totalFunding: 39000000,
-      currentFunding: 25500000,
-      contributors: 1990,
-      timeRemaining: '5 months',
-      verified: true,
-      certifications: ['CEIG', 'MoEFCC'],
-      featured: false,
-      benefits: [
-        'Energy production',
-        'Employment opportunities',
-        'Local business growth',
-        'Environmental sustainability'
-      ]
-    },
-    {
-      id: 5,
-      name: 'Tropical Savanna Conservation',
-      location: 'Chhattisgarh, India',
-      type: 'forestry',
-      image: "/tree5.jpg",
-      description: 'Protecting and restoring tropical savanna ecosystems in Chhattisgarh.',
-      co2Removed: 85000,
-      co2PerRupee: 0.00044,
-      totalFunding: 102000000,
-      currentFunding: 76500000,
-      contributors: 6890,
-      timeRemaining: '11 months',
-      verified: true,
-      certifications: ['WWF', 'Govt of India'],
-      featured: true,
-      benefits: [
-        'Biodiversity conservation',
-        'Carbon storage',
-        'Community livelihoods',
-        'Climate resilience'
-      ]
-    }
-  ];
 };
 
 const ProjectDetailContent = ({ params }) => {
-  const projectId = parseInt(params.id);
+  const router = useRouter();
+  const urlParams = useParams();
+  const [contributionAmount, setContributionAmount] = useState([50]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [resolvedParams, setResolvedParams] = useState(null);
+  
+  // Handle params resolution for client component
+  useEffect(() => {
+    const resolveParams = async () => {
+      try {
+        if (params && typeof params.then === 'function') {
+          // params is a Promise
+          const resolved = await params;
+          setResolvedParams(resolved);
+        } else {
+          // params is already resolved or use URL params as fallback
+          setResolvedParams(params || urlParams);
+        }
+      } catch (error) {
+        console.error('Error resolving params:', error);
+        // Fallback: use URL params
+        setResolvedParams(urlParams);
+      }
+    };
+    
+    resolveParams();
+  }, [params, urlParams]);
+  
+  if (!resolvedParams) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-muted-foreground">Loading project details...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  const projectId = parseInt(resolvedParams.id);
   const project = projects.find(p => p.id === projectId);
 
   if (!project) {
@@ -179,9 +193,9 @@ const ProjectDetailContent = ({ params }) => {
   const getProjectIcon = (type) => {
     switch (type) {
       case 'forestry': return Trees;
-      case 'renewable': return Wind;
+      case 'solar': return Sun;
+      case 'wind': return Wind;
       case 'water': return Droplets;
-      case 'agriculture': return Sun;
       default: return Trees;
     }
   };
@@ -189,9 +203,9 @@ const ProjectDetailContent = ({ params }) => {
   const getTypeColor = (type) => {
     switch (type) {
       case 'forestry': return 'text-green-600';
-      case 'renewable': return 'text-blue-600';
+      case 'solar': return 'text-yellow-600';
+      case 'wind': return 'text-blue-600';
       case 'water': return 'text-cyan-600';
-      case 'agriculture': return 'text-orange-600';
       default: return 'text-green-600';
     }
   };

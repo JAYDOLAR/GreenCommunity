@@ -16,6 +16,7 @@ import ChatBot from '@/components/ChatBot';
 import AuthGuard from '@/components/AuthGuard';
 import Layout from '@/components/Layout';
 import { MARKETPLACE_CATEGORIES, USD_TO_INR } from '@/config/marketplaceConfig';
+import { marketplaceApi } from '@/lib/marketplaceApi';
 
 // Shared data and logic
 const categories = MARKETPLACE_CATEGORIES;
@@ -30,11 +31,12 @@ function MobileMarketplaceView() {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await fetch('/api/marketplace');
-        const data = await response.json();
-        setProducts(data.products || []);
+        setIsLoading(true);
+        const response = await marketplaceApi.getProducts();
+        setProducts(response.data?.products || []);
       } catch (error) {
         console.error('Failed to fetch products:', error);
+        setProducts([]); // Set empty array on error to prevent crashes
       } finally {
         setIsLoading(false);
       }
@@ -149,11 +151,12 @@ function TabletMarketplaceView() {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await fetch('/api/marketplace');
-        const data = await response.json();
-        setProducts(data.products || []);
+        setIsLoading(true);
+        const response = await marketplaceApi.getProducts();
+        setProducts(response.data?.products || []);
       } catch (error) {
         console.error('Failed to fetch products:', error);
+        setProducts([]); // Set empty array on error to prevent crashes
       } finally {
         setIsLoading(false);
       }
@@ -301,11 +304,12 @@ function DesktopMarketplaceView() {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await fetch('/api/marketplace');
-        const data = await response.json();
-        setProducts(data.products || []);
+        setIsLoading(true);
+        const response = await marketplaceApi.getProducts();
+        setProducts(response.data?.products || []);
       } catch (error) {
         console.error('Failed to fetch products:', error);
+        setProducts([]); // Set empty array on error to prevent crashes
       } finally {
         setIsLoading(false);
       }

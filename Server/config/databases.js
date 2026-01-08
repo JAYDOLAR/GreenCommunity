@@ -20,7 +20,8 @@ const DB_CONFIG = {
   COMMUNITY_DB: 'greencommunity-community',
   ANALYTICS_DB: 'greencommunity-analytics',
   FOOTPRINT_DB: 'greencommunity-footprint',
-  AI_DB: 'greencommunity-ai'
+  AI_DB: 'greencommunity-ai',
+  PROJECTS_DB: 'greencommunity-projects'
 };
 
 // Store database connections

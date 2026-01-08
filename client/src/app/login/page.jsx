@@ -52,6 +52,8 @@ export default function LoginPage() {
   const [tempToken, setTempToken] = useState('');
   const [twoFactorCode, setTwoFactorCode] = useState('');
   const [showSuccessNotification, setShowSuccessNotification] = useState(false);
+  const [tokenExpiresAt, setTokenExpiresAt] = useState(null);
+  const [timeRemaining, setTimeRemaining] = useState(null);
 
   // Remember device states
   const [rememberDevice, setRememberDevice] = useState(false);
@@ -72,6 +74,7 @@ export default function LoginPage() {
     if (requires2FAFromUrl && tempTokenFromUrl) {
       setRequires2FA(true);
       setTempToken(tempTokenFromUrl);
+      setTokenExpiresAt(Date.now() + 10 * 60 * 1000); // 10 minutes from now
 
       // Remove query params from URL
       window.history.replaceState({}, document.title, window.location.pathname);
@@ -81,6 +84,31 @@ export default function LoginPage() {
     if (email && emailError) setEmailError('');
     if (password && passwordError) setPasswordError('');
   }, [email, password]);
+
+  // Timer effect for 2FA token expiration
+  useEffect(() => {
+    let interval = null;
+    
+    if (requires2FA && tokenExpiresAt) {
+      interval = setInterval(() => {
+        const remaining = tokenExpiresAt - Date.now();
+        if (remaining <= 0) {
+          setTimeRemaining(null);
+          setError('Your login session has expired. Please log in again.');
+          setErrorType('session');
+          setRequires2FA(false);
+          setTempToken('');
+          setTokenExpiresAt(null);
+        } else {
+          setTimeRemaining(Math.ceil(remaining / 1000));
+        }
+      }, 1000);
+    }
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [requires2FA, tokenExpiresAt]);
 
   // Auto-hide error after 5 seconds
   useEffect(() => {
@@ -145,6 +173,7 @@ export default function LoginPage() {
       if (data.requires2FA && data.tempToken) {
         setRequires2FA(true);
         setTempToken(data.tempToken);
+        setTokenExpiresAt(Date.now() + 10 * 60 * 1000); // 10 minutes from now
         setIsSubmitting(false);
         return;
       }
@@ -266,16 +295,56 @@ export default function LoginPage() {
       }, 2000);
 
     } catch (error) {
+      console.error('2FA verification failed:', error);
+      
       // Handle 2FA verification errors gracefully with user-friendly messages
       let errorMessage = 'Invalid authentication code. Please try again.';
       let errorType = 'auth';
 
-      // Check for specific 2FA error messages and provide better context
-      if (error.message) {
+      // Check for specific error codes and types
+      if (error.code) {
+        switch (error.code) {
+          case 'TOKEN_EXPIRED':
+            errorMessage = 'Your login session has expired. Please log in again.';
+            errorType = 'session';
+            // Reset 2FA state and redirect to login
+            setRequires2FA(false);
+            setTempToken('');
+            setTwoFactorCode('');
+            setTimeout(() => {
+              router.push('/login');
+            }, 2000);
+            break;
+          case 'TOKEN_INVALID':
+          case 'TOKEN_NOT_ACTIVE':
+          case 'TOKEN_ERROR':
+            errorMessage = 'Login session is invalid. Please log in again.';
+            errorType = 'session';
+            // Reset 2FA state and redirect to login
+            setRequires2FA(false);
+            setTempToken('');
+            setTwoFactorCode('');
+            setTimeout(() => {
+              router.push('/login');
+            }, 2000);
+            break;
+          default:
+            errorMessage = 'Authentication failed. Please try again.';
+        }
+      } else if (error.message) {
+        // Check for specific 2FA error messages and provide better context
         if (error.message.includes('Invalid 2FA') || error.message.includes('Invalid authentication') || error.message.includes('Invalid token')) {
           errorMessage = 'The authentication code you entered is incorrect. Please check your authenticator app and try again.';
-        } else if (error.message.includes('expired')) {
-          errorMessage = 'The authentication code has expired. Please enter the current code from your authenticator app.';
+        } else if (error.message.includes('expired') || error.message.includes('Temporary token has expired')) {
+          errorMessage = 'Your login session has expired. Please log in again.';
+          errorType = 'session';
+          // Reset 2FA state and redirect to login
+          setRequires2FA(false);
+          setTempToken('');
+          setTwoFactorCode('');
+          setTimeout(() => {
+            router.push('/login');
+          }, 2000);
         } else if (error.message.includes('Network error')) {
           errorMessage = 'Connection problem. Please check your internet and try again.';
           errorType = 'network';
@@ -430,6 +499,11 @@ export default function LoginPage() {
             <p className="text-sm text-muted-foreground mt-1">
               Please enter the 6-digit code from your authenticator app
             </p>
+            {timeRemaining && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Session expires in {Math.floor(timeRemaining / 60)}:{String(timeRemaining % 60).padStart(2, '0')}
+              </p>
+            )}
           </div>
 
           <div>

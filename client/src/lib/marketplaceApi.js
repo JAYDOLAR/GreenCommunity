@@ -85,7 +85,7 @@ export const marketplaceApi = {
       params.append('sortBy', filters.sortBy || 'created_at');
       params.append('sortOrder', filters.sortOrder || 'desc');
 
-      const response = await apiRequest(`/marketplace/products?${params.toString()}`);
+      const response = await apiRequest(`/api/marketplace/products?${params.toString()}`);
 
       return {
         ...response,
@@ -103,7 +103,7 @@ export const marketplaceApi = {
   // Get single product by ID
   async getProductById(id) {
     try {
-      const response = await apiRequest(`/marketplace/products/${id}`);
+      const response = await apiRequest(`/api/marketplace/products/${id}`);
       return {
         ...response,
         data: transformProduct(response.data)
@@ -117,7 +117,7 @@ export const marketplaceApi = {
   // Get featured products
   async getFeaturedProducts(limit = 8) {
     try {
-      const response = await apiRequest(`/marketplace/featured?limit=${limit}`);
+      const response = await apiRequest(`/api/marketplace/featured?limit=${limit}`);
       return {
         ...response,
         data: response.data.map(transformProduct)
@@ -131,7 +131,7 @@ export const marketplaceApi = {
   // Get categories with product counts
   async getCategories() {
     try {
-      const response = await apiRequest('/marketplace/categories');
+      const response = await apiRequest('/api/marketplace/categories');
 
       // Transform backend categories to client format
       const clientCategories = [
@@ -187,7 +187,7 @@ export const marketplaceApi = {
   // Search products
   async searchProducts(searchOptions) {
     try {
-      const response = await apiRequest('/marketplace/search', {
+      const response = await apiRequest('/api/marketplace/search', {
         method: 'POST',
         body: JSON.stringify(searchOptions)
       });
@@ -213,7 +213,7 @@ export const marketplaceApi = {
         }
       });
 
-      const response = await apiRequest(`/marketplace/sustainable?${params.toString()}`);
+      const response = await apiRequest(`/api/marketplace/sustainable?${params.toString()}`);
 
       return {
         ...response,

@@ -13,7 +13,7 @@ import QRCode from 'qrcode';
 
 
 // Generate JWT token with additional security
-const generateToken = (userId, userRole = 'user') => {
+export const generateToken = (userId, userRole = 'user') => {
   const payload = {
     id: userId,
     role: userRole,
@@ -21,8 +21,11 @@ const generateToken = (userId, userRole = 'user') => {
     jti: generateJwtId() // JWT ID for token tracking
   };
 
+  // Different expiration times based on token type
+  const expiresIn = userRole === 'temp-2fa' ? '10m' : '1d'; // 2FA tokens expire in 10 minutes
+
   return jwt.sign(payload, process.env.JWT_SECRET, {
-    expiresIn: '1d',
+    expiresIn,
     algorithm: 'HS256',
     issuer: 'greencommunity-app',
     audience: 'greencommunity-users'
@@ -643,6 +646,7 @@ export const updateNotificationPreferences = asyncHandler(async (req, res) => {
   } = req.body;
 
   try {
+    const User = await getUserModel();
     const user = await User.findById(req.user.id);
 
     if (!user) {
@@ -691,6 +695,7 @@ export const updateAppPreferences = asyncHandler(async (req, res) => {
   } = req.body;
 
   try {
+    const User = await getUserModel();
     const user = await User.findById(req.user.id);
 
     if (!user) {
@@ -729,6 +734,7 @@ export const updateAppPreferences = asyncHandler(async (req, res) => {
 // Get User Profile and Settings
 export const getUserSettings = asyncHandler(async (req, res) => {
   try {
+    const User = await getUserModel();
     const user = await User.findById(req.user.id).select('-password');
 
     if (!user) {
@@ -773,6 +779,7 @@ export const getUserSettings = asyncHandler(async (req, res) => {
 
 // Two-Factor Authentication Functions
 export const generate2FASecret = asyncHandler(async (req, res) => {
+  const User = await getUserModel();
   const user = await User.findById(req.user.id);
   if (!user) {
     return res.status(404).json({ message: 'User not found' });
@@ -802,6 +809,7 @@ export const generate2FASecret = asyncHandler(async (req, res) => {
 
 export const verify2FAToken = asyncHandler(async (req, res) => {
   const { token } = req.body;
+  const User = await getUserModel();
   const user = await User.findById(req.user.id);
 
   if (!user) {
@@ -811,7 +819,8 @@ export const verify2FAToken = asyncHandler(async (req, res) => {
   const verified = speakeasy.totp.verify({
     secret: user.twoFactorSecret,
     encoding: 'base32',
-    token: token
+    token: token,
+    window: 1
   });
 
   if (verified) {
@@ -824,6 +833,7 @@ export const verify2FAToken = asyncHandler(async (req, res) => {
 });
 
 export const disable2FA = asyncHandler(async (req, res) => {
+  const User = await getUserModel();
   const user = await User.findById(req.user.id);
   if (!user) {
     return res.status(404).json({ message: 'User not found' });
@@ -845,32 +855,84 @@ export const verify2FALogin = asyncHandler(async (req, res) => {
   }
 
   try {
-    // Verify the temporary token
-    const decoded = jwt.verify(tempToken, process.env.JWT_SECRET);
+    // Get User model
+    const User = await getUserModel();
+    
+    // Verify the temporary token with more lenient clock tolerance
+    const decoded = jwt.verify(tempToken, process.env.JWT_SECRET, { 
+      clockTolerance: 30, // 30 seconds tolerance for clock skew
+      issuer: 'greencommunity-app',
+      audience: 'greencommunity-users'
+    });
 
     if (decoded.role !== 'temp-2fa') {
+      console.error('Invalid token role:', decoded.role);
       return res.status(401).json({ message: 'Invalid temporary token' });
     }
 
+    console.log('Temporary token verified for user:', decoded.id);
+
     const user = await User.findById(decoded.id);
     if (!user) {
+      console.error('User not found for ID:', decoded.id);
       return res.status(404).json({ message: 'User not found' });
     }
 
     // Verify that user actually has 2FA enabled and has a secret
     if (!user.twoFactorEnabled || !user.twoFactorSecret) {
+      console.error('2FA not enabled for user:', user.email);
       return res.status(400).json({ message: 'Two-factor authentication is not enabled for this account' });
     }
 
-    // Verify the TOTP code
-    const verified = speakeasy.totp.verify({
-      secret: user.twoFactorSecret,
-      encoding: 'base32',
-      token: token,
-      window: 1 // Allow 1 time step tolerance for clock skew
+    console.log('Verifying TOTP code for user:', user.email);
+    console.log('2FA Debug Info:', {
+      hasSecret: !!user.twoFactorSecret,
+      secretLength: user.twoFactorSecret?.length,
+      tokenReceived: token,
+      tokenType: typeof token,
+      tokenLength: token?.length,
+      currentTime: Math.floor(Date.now() / 1000),
+      serverTime: new Date().toISOString()
     });
 
+    // Try verification with different window sizes and get more info
+    let verified = false;
+    let verificationAttempts = [];
+
+    // Try with different window sizes
+    for (let window = 1; window <= 6; window++) {
+      const attempt = speakeasy.totp.verify({
+        secret: user.twoFactorSecret,
+        encoding: 'base32',
+        token: token,
+        window: window
+      });
+      
+      verificationAttempts.push({ window, result: attempt });
+      
+      if (attempt && !verified) {
+        verified = true;
+        console.log(`2FA verification successful with window ${window} for user:`, user.email);
+        break;
+      }
+    }
+
+    // Also try to get the current expected token for debugging
+    try {
+      const currentToken = speakeasy.totp({
+        secret: user.twoFactorSecret,
+        encoding: 'base32'
+      });
+      console.log('Current expected token:', currentToken);
+      console.log('Token comparison:', { received: token, expected: currentToken, match: token === currentToken });
+    } catch (debugError) {
+      console.error('Error generating current token for debug:', debugError);
+    }
+
+    console.log('Verification attempts:', verificationAttempts);
+
     if (!verified) {
+      console.error('Invalid 2FA code for user:', user.email, 'after trying all windows');
       return res.status(400).json({ message: 'Invalid 2FA code' });
     }
 
@@ -932,12 +994,35 @@ export const verify2FALogin = asyncHandler(async (req, res) => {
 
   } catch (error) {
     console.error('2FA verification error:', error);
-    return res.status(401).json({ message: 'Invalid or expired temporary token' });
+    
+    // More specific error messages based on error type
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({ 
+        message: 'Temporary token has expired. Please log in again.',
+        code: 'TOKEN_EXPIRED'
+      });
+    } else if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({ 
+        message: 'Invalid temporary token format.',
+        code: 'TOKEN_INVALID'
+      });
+    } else if (error.name === 'NotBeforeError') {
+      return res.status(401).json({ 
+        message: 'Temporary token not yet active.',
+        code: 'TOKEN_NOT_ACTIVE'
+      });
+    }
+    
+    return res.status(401).json({ 
+      message: 'Invalid or expired temporary token',
+      code: 'TOKEN_ERROR'
+    });
   }
 });
 
 // Get user's trusted devices
 export const getTrustedDevices = asyncHandler(async (req, res) => {
+  const User = await getUserModel();
   const user = await User.findById(req.user.id).select('trustedDevices');
 
   if (!user) {
@@ -962,10 +1047,9 @@ export const getTrustedDevices = asyncHandler(async (req, res) => {
 // Remove a trusted device
 export const removeTrustedDevice = asyncHandler(async (req, res) => {
   const { deviceId } = req.params;
-
-  const user = await User.findById(req.user.id);
-
-  if (!user) {
+  
+  const User = await getUserModel();
+  const user = await User.findById(req.user.id);  if (!user) {
     return res.status(404).json({ message: 'User not found' });
   }
 
@@ -983,6 +1067,7 @@ export const removeTrustedDevice = asyncHandler(async (req, res) => {
 
 // Clear all trusted devices
 export const clearAllTrustedDevices = asyncHandler(async (req, res) => {
+  const User = await getUserModel();
   const user = await User.findById(req.user.id);
 
   if (!user) {
@@ -993,4 +1078,51 @@ export const clearAllTrustedDevices = asyncHandler(async (req, res) => {
   await user.save();
 
   res.json({ message: 'All trusted devices cleared successfully' });
+});
+
+// Refresh temporary 2FA token
+export const refresh2FAToken = asyncHandler(async (req, res) => {
+  const { tempToken } = req.body;
+
+  if (!tempToken) {
+    return res.status(400).json({ message: 'Temporary token is required' });
+  }
+
+  try {
+    // Get User model
+    const User = await getUserModel();
+    
+    // Verify the old temporary token (allow even if expired)
+    const decoded = jwt.verify(tempToken, process.env.JWT_SECRET, { 
+      ignoreExpiration: true, // Allow expired tokens for refresh
+      issuer: 'greencommunity-app',
+      audience: 'greencommunity-users'
+    });
+
+    if (decoded.role !== 'temp-2fa') {
+      return res.status(401).json({ message: 'Invalid temporary token' });
+    }
+
+    const user = await User.findById(decoded.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Verify that user actually has 2FA enabled
+    if (!user.twoFactorEnabled || !user.twoFactorSecret) {
+      return res.status(400).json({ message: 'Two-factor authentication is not enabled for this account' });
+    }
+
+    // Generate new temporary token
+    const newTempToken = generateToken(user._id, 'temp-2fa');
+
+    res.status(200).json({
+      tempToken: newTempToken,
+      message: 'Temporary token refreshed successfully'
+    });
+
+  } catch (error) {
+    console.error('Token refresh error:', error);
+    return res.status(401).json({ message: 'Invalid temporary token' });
+  }
 });

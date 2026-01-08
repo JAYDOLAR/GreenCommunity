@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -54,16 +54,23 @@ const Popup = dynamic(() => import('react-leaflet').then(mod => mod.Popup), {
   loading: () => null
 });
 
-// Import Leaflet CSS only on client side
-if (typeof window !== 'undefined') {
-  try {
-    require('leaflet/dist/leaflet.css');
-  } catch (error) {
-    console.warn('Failed to load Leaflet CSS:', error);
-  }
-}
+// Import Leaflet CSS only on client side using useEffect
+const useLeafletCSS = () => {
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        import('leaflet/dist/leaflet.css');
+      } catch (error) {
+        console.warn('Failed to load Leaflet CSS:', error);
+      }
+    }
+  }, []);
+};
 
 const Projects = () => {
+  // Load Leaflet CSS
+  useLeafletCSS();
+  
   const [viewMode, setViewMode] = useState(() => {
     // Initialize from localStorage if available, otherwise default to 'list'
     if (typeof window !== 'undefined') {
