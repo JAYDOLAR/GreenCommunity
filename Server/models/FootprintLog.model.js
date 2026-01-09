@@ -30,6 +30,8 @@ const FootprintLogSchema = new Schema(
         "water-usage", "water-shower", "water-dishwasher", "water-laundry",
         // Shopping
         "shopping-clothing", "shopping-electronics", "shopping-books", "shopping-furniture",
+        // Assessment aggregate (client-computed annual footprint)
+        "assessment-annual",
         // Legacy support
         "transport", "energy", "food", "waste", "other"
       ],

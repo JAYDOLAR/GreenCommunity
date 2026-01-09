@@ -9,52 +9,54 @@ function calculateFallbackEmission(activityData) {
   // Simple fallback emission factors (kg CO2e per unit)
   const fallbackFactors = {
     // Transportation (per mile)
-    'transport-car': 0.4,
-    'transport-bus': 0.15,
-    'transport-train': 0.12,
-    'transport-subway': 0.08,
-    'transport-taxi': 0.45,
-    'transport-motorcycle': 0.25,
-    'transport-flight': 0.2,
-    'transport-ferry': 0.35,
-    'transport-bicycle': 0,
-    'transport-walking': 0,
+    "transport-car": 0.4,
+    "transport-bus": 0.15,
+    "transport-train": 0.12,
+    "transport-subway": 0.08,
+    "transport-taxi": 0.45,
+    "transport-motorcycle": 0.25,
+    "transport-flight": 0.2,
+    "transport-ferry": 0.35,
+    "transport-bicycle": 0,
+    "transport-walking": 0,
 
     // Energy
-    'energy-electricity': 0.5, // per kWh
-    'energy-gas': 5.3, // per therm
-    'energy-heating-oil': 22.4, // per gallon
-    'energy-propane': 12.7, // per gallon
-    'energy-coal': 2.0, // per lb
-    'energy-wood': 0.1, // per cord (low emissions)
+    "energy-electricity": 0.5, // per kWh
+    "energy-gas": 5.3, // per therm
+    "energy-heating-oil": 22.4, // per gallon
+    "energy-propane": 12.7, // per gallon
+    "energy-coal": 2.0, // per lb
+    "energy-wood": 0.1, // per cord (low emissions)
 
     // Food (per lb)
-    'food-beef': 27.0,
-    'food-pork': 12.1,
-    'food-chicken': 6.9,
-    'food-fish': 5.4,
-    'food-dairy': 3.2,
-    'food-eggs': 4.8, // per dozen
-    'food-rice': 2.7,
-    'food-vegetables': 0.4,
-    'food-fruits': 0.3,
+    "food-beef": 27.0,
+    "food-pork": 12.1,
+    "food-chicken": 6.9,
+    "food-fish": 5.4,
+    "food-dairy": 3.2,
+    "food-eggs": 4.8, // per dozen
+    "food-rice": 2.7,
+    "food-vegetables": 0.4,
+    "food-fruits": 0.3,
 
     // Waste (per lb)
-    'waste-general': 0.94,
-    'waste-recycling': -0.5, // negative = saves emissions
-    'waste-compost': -0.2,
+    "waste-general": 0.94,
+    "waste-recycling": -0.5, // negative = saves emissions
+    "waste-compost": -0.2,
 
     // Water
-    'water-usage': 0.006, // per gallon
-    'water-shower': 0.125, // per minute
-    'water-dishwasher': 1.8, // per load
-    'water-laundry': 2.3, // per load
+    "water-usage": 0.006, // per gallon
+    "water-shower": 0.125, // per minute
+    "water-dishwasher": 1.8, // per load
+    "water-laundry": 2.3, // per load
 
     // Shopping (per item)
-    'shopping-clothing': 15.0,
-    'shopping-electronics': 300.0,
-    'shopping-books': 2.5,
-    'shopping-furniture': 250.0,
+    "shopping-clothing": 15.0,
+    "shopping-electronics": 300.0,
+    "shopping-books": 2.5,
+    "shopping-furniture": 250.0,
+    // Assessment (client-computed aggregate, quantity = total kg CO2e)
+    "assessment-annual": 1.0,
   };
 
   const factor = fallbackFactors[activityType] || 1.0;
@@ -76,7 +78,10 @@ export async function createLog(req, res) {
       calculation = await ipcc.calculateCarbonFootprint({ ...req.body });
       emission = calculation.calculated_kgCO2e || fallbackEmission;
     } catch (calcError) {
-      console.log("IPCC calculation failed, using fallback:", calcError.message);
+      console.log(
+        "IPCC calculation failed, using fallback:",
+        calcError.message
+      );
       emission = fallbackEmission;
       calculation = {
         method: "fallback",
@@ -102,7 +107,7 @@ export async function createLog(req, res) {
       success: true,
       log: log.toObject(),
       calculation,
-      emission
+      emission,
     });
   } catch (err) {
     console.error("Error creating log:", err);
@@ -115,7 +120,7 @@ export async function previewEmissions(req, res) {
   try {
     let calculation, emission;
 
-    // Always calculate fallback emission first  
+    // Always calculate fallback emission first
     const fallbackEmission = calculateFallbackEmission(req.body);
 
     // Try IPCC calculation but don't fail if it doesn't work
@@ -123,7 +128,10 @@ export async function previewEmissions(req, res) {
       calculation = await ipcc.calculateCarbonFootprint({ ...req.body });
       emission = calculation.calculated_kgCO2e || fallbackEmission;
     } catch (calcError) {
-      console.log("IPCC preview calculation failed, using fallback:", calcError.message);
+      console.log(
+        "IPCC preview calculation failed, using fallback:",
+        calcError.message
+      );
       emission = fallbackEmission;
       calculation = {
         method: "fallback",
@@ -144,7 +152,7 @@ export async function previewEmissions(req, res) {
       calculation,
       preview: true,
       activityType: req.body.activityType,
-      quantity: req.body.quantity
+      quantity: req.body.quantity,
     });
   } catch (err) {
     console.error("Error previewing emissions:", err);
