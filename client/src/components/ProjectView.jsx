@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from 'react';
+import { usePreferences } from '@/context/PreferencesContext';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -27,6 +28,11 @@ const ProjectView = ({ project, allProjects }) => {
   const router = useRouter();
   const [contributionAmount, setContributionAmount] = useState([50]);
   const [isLoading, setIsLoading] = useState(false);
+  const { preferences } = usePreferences();
+  const carbonUnit = (preferences?.carbonUnits || 'kg');
+  // project.co2Removed assumed stored in tons; convert for display if needed
+  const toPreferred = (tonsValue) => carbonUnit === 'kg' ? `${(tonsValue * 1000).toLocaleString()} kg` : `${tonsValue.toLocaleString()} tons`;
+  const formatImpact = (tonsValue) => carbonUnit === 'kg' ? `${(tonsValue * 1000).toFixed(2)} kg` : `${tonsValue.toFixed(2)} tons`;
 
   if (!project) {
     return (
@@ -130,7 +136,7 @@ const ProjectView = ({ project, allProjects }) => {
                       <Target className="h-4 w-4 text-green-600" />
                       <div>
                         <p className="text-xs text-muted-foreground">CO₂ Offset</p>
-                        <p className="text-sm font-medium text-green-600">-{project.co2Removed.toLocaleString()} tons</p>
+                        <p className="text-sm font-medium text-green-600">-{toPreferred(project.co2Removed)}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -220,7 +226,7 @@ const ProjectView = ({ project, allProjects }) => {
                 </div>
                 <div className="flex items-center gap-1 text-green-600">
                   <Target className="h-4 w-4" />
-                  <span className="font-medium">-{project.co2Removed.toLocaleString()} tons CO₂</span>
+                  <span className="font-medium">-{formatImpact(project.co2Removed)} CO₂</span>
                 </div>
               </div>
 
@@ -292,7 +298,7 @@ const ProjectView = ({ project, allProjects }) => {
                   <div className="text-center">
                     <div className="text-sm text-muted-foreground">Your Impact</div>
                     <div className="text-2xl font-bold text-primary">
-                      {calculateImpact(contributionAmount[0])} tons CO₂
+                      {carbonUnit === 'kg' ? `${(calculateImpact(contributionAmount[0]) * 1000).toFixed(2)} kg CO₂` : `${calculateImpact(contributionAmount[0])} tons CO₂`}
                     </div>
                     <div className="text-sm text-muted-foreground">will be offset</div>
                   </div>
@@ -338,7 +344,7 @@ const ProjectView = ({ project, allProjects }) => {
                       <div className="text-center">
                         <div className="text-sm text-muted-foreground">Your Impact</div>
                         <div className="text-2xl font-bold text-primary">
-                          {calculateImpact(contributionAmount[0])} tons CO₂
+                          {carbonUnit === 'kg' ? `${(calculateImpact(contributionAmount[0]) * 1000).toFixed(2)} kg CO₂` : `${calculateImpact(contributionAmount[0])} tons CO₂`}
                         </div>
                         <div className="text-sm text-muted-foreground">will be offset</div>
                       </div>
@@ -449,7 +455,7 @@ const ProjectView = ({ project, allProjects }) => {
                             </div>
                             <div className="flex items-center gap-1 text-green-600">
                               <Target className="h-3 w-3" />
-                              <span className="text-xs">-{relatedProject.co2Removed.toLocaleString()} tons CO₂</span>
+                              <span className="text-xs">-{carbonUnit === 'kg' ? `${(relatedProject.co2Removed * 1000).toLocaleString()} kg CO₂` : `${relatedProject.co2Removed.toLocaleString()} tons CO₂`}</span>
                             </div>
                           </div>
                           <div className="space-y-1">

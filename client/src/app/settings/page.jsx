@@ -55,8 +55,7 @@ const Settings = () => {
     phone: '',
     location: '',
     bio: '',
-    joinDate: '',
-    preferredUnits: 'metric'
+  joinDate: ''
   });
 
   const [isGoogleAuth, setIsGoogleAuth] = useState(false);
@@ -118,7 +117,7 @@ const Settings = () => {
               .join(', ') : ''),
         bio: userData.userInfo?.bio || userData.profile?.bio || '',
         joinDate: userData.createdAt || '',
-        preferredUnits: userData.userInfo?.preferences?.units || userData.profile?.preferredUnits || 'metric'
+  // preferredUnits removed from UI
       });
 
       // Update notifications - use userInfo notifications or fallback to profile
@@ -192,7 +191,7 @@ const Settings = () => {
         email: isGoogleAuth ? undefined : profileData.email, // Don't send email for Google users
         phone: profileData.phone,
         bio: profileData.bio,
-        preferredUnits: profileData.preferredUnits,
+  // preferredUnits removed
         location: profileData.location
       });
 
@@ -467,21 +466,7 @@ const Settings = () => {
                       placeholder={t('Tell About Yourself')}
                     />
                   </div>
-                  <div>
-                    <Label>{t('Preferred units')}</Label>
-                    <Select
-                      value={profileData.preferredUnits}
-                      onValueChange={(value) => handleProfileUpdate('preferredUnits', value)}
-                    >
-                      <SelectTrigger className="mt-1">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="metric">{t('Metric Units')}</SelectItem>
-                        <SelectItem value="imperial">{t('Imperial Units')}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  {/* Preferred units selection removed; carbonUnits managed in App Preferences */}
                   <Button
                     className="btn-hero"
                     onClick={saveProfileSettings}
@@ -676,15 +661,16 @@ const Settings = () => {
                     </SelectContent>
                   </Select>
                 </div>
+                {/* General units preference removed; only Carbon Emission Units remains */}
                 <div>
-                  <Label>{t('preferences:units')}</Label>
-                  <Select value={preferences.units} onValueChange={(value) => handlePreferenceChange('units', value)}>
+                  <Label>Carbon Emission Units</Label>
+                  <Select value={preferences.carbonUnits || 'kg'} onValueChange={(value) => handlePreferenceChange('carbonUnits', value)}>
                     <SelectTrigger className="mt-1">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="metric">{t('preferences:metric')}</SelectItem>
-                      <SelectItem value="imperial">{t('preferences:imperial')}</SelectItem>
+                      <SelectItem value="kg">kg CO₂</SelectItem>
+                      <SelectItem value="tons">tons CO₂</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

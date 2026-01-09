@@ -8,7 +8,7 @@ const defaultPreferences = {
   theme: "light",
   language: "en",
   currency: "usd",
-  units: "metric",
+  carbonUnits: "kg", // preferred carbon emission display unit
   privacy: "public",
 };
 

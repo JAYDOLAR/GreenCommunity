@@ -35,6 +35,7 @@ import dynamic from 'next/dynamic';
 import ChatBot from '@/components/ChatBot';
 import AuthGuard from '@/components/AuthGuard';
 import Layout from '@/components/Layout';
+import { usePreferences } from '@/context/PreferencesContext';
 
 // Dynamically import Leaflet components to avoid SSR issues
 const MapContainer = dynamic(() => import('react-leaflet').then(mod => mod.MapContainer), {
@@ -70,6 +71,11 @@ const useLeafletCSS = () => {
 const Projects = () => {
   // Load Leaflet CSS
   useLeafletCSS();
+  const { preferences } = usePreferences();
+  const carbonUnit = preferences?.carbonUnits || 'kg';
+  const formatCO2 = (tonsValue) => carbonUnit === 'kg' ? `${(tonsValue * 1000).toLocaleString()} kg CO₂` : `${tonsValue.toLocaleString()} tons CO₂`;
+  const displayCO2Value = (tonsValue) => carbonUnit === 'kg' ? (tonsValue * 1000).toLocaleString() : tonsValue.toLocaleString();
+  const formatImpact = (tonsValue) => carbonUnit === 'kg' ? `${(tonsValue * 1000).toFixed(2)} kg CO₂` : `${tonsValue.toFixed(2)} tons CO₂`;
   
   const [viewMode, setViewMode] = useState(() => {
     // Initialize from localStorage if available, otherwise default to 'list'
@@ -516,7 +522,7 @@ const Projects = () => {
                     <div className="space-y-2 mb-3">
                       <div className="flex items-center justify-between">
                         <div className="text-green-600 font-medium text-sm">
-                          {project.co2Removed.toLocaleString()} tons CO₂
+                          {formatCO2(project.co2Removed)}
                         </div>
                         <Badge className="text-xs">
                           {projectTypes.find(t => t.value === project.type)?.label || project.type}
@@ -703,9 +709,9 @@ const Projects = () => {
                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
                             <div className="text-center">
                               <div className="text-lg sm:text-xl font-bold text-primary">
-                                {project.co2Removed.toLocaleString()}
+                                {displayCO2Value(project.co2Removed)}
                               </div>
-                              <div className="text-xs sm:text-sm text-muted-foreground">tons CO₂</div>
+                              <div className="text-xs sm:text-sm text-muted-foreground">{carbonUnit === 'kg' ? 'kg CO₂' : 'tons CO₂'}</div>
                             </div>
                             <div className="text-center">
                               <div className="text-lg sm:text-xl font-bold text-primary">
@@ -780,7 +786,7 @@ const Projects = () => {
                                     <div className="text-center">
                                       <div className="text-xs sm:text-sm text-muted-foreground">Your Impact</div>
                                       <div className="text-xl sm:text-2xl font-bold text-primary">
-                                        {calculateImpact(contributionAmount[0])} tons CO₂
+                                        {carbonUnit === 'kg' ? `${(calculateImpact(contributionAmount[0]) * 1000).toFixed(2)} kg CO₂` : `${calculateImpact(contributionAmount[0])} tons CO₂`}
                                       </div>
                                       <div className="text-xs sm:text-sm text-muted-foreground">will be offset</div>
                                     </div>

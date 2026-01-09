@@ -78,10 +78,11 @@ const userInfoSchema = new mongoose.Schema({
   
   // Preferences
   preferences: {
-    units: {
+    // Preferred unit for displaying carbon emissions totals (kg vs tons)
+    carbonUnits: {
       type: String,
-      enum: ['metric', 'imperial'],
-      default: 'metric'
+      enum: ['kg', 'tons'],
+      default: 'kg'
     },
     privacy: {
       type: String,
@@ -153,7 +154,7 @@ userInfoSchema.pre('save', function(next) {
   this.updatedAt = Date.now();
   
   // Calculate profile completion percentage
-  const totalFields = 15; // Total important fields for completion
+  const totalFields = 14; // Adjusted after removing general units
   let completedCount = 0;
   const completedFields = [];
   
@@ -167,7 +168,6 @@ userInfoSchema.pre('save', function(next) {
   if (this.profession) { completedCount++; completedFields.push('profession'); }
   if (this.avatar?.url) { completedCount++; completedFields.push('avatar'); }
   if (this.socialLinks?.website) { completedCount++; completedFields.push('socialLinks.website'); }
-  if (this.preferences?.units) { completedCount++; completedFields.push('preferences.units'); }
   if (this.preferences?.privacy) { completedCount++; completedFields.push('preferences.privacy'); }
   if (this.preferences?.language) { completedCount++; completedFields.push('preferences.language'); }
   if (this.preferences?.currency) { completedCount++; completedFields.push('preferences.currency'); }

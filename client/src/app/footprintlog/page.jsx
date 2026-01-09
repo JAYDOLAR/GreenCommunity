@@ -1,13 +1,29 @@
 "use client";
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   ACTIVITY_TYPES,
   FUEL_TYPES,
@@ -18,41 +34,37 @@ import {
   WATER_TEMPERATURES,
   CLOTHING_TYPES,
   ELECTRONICS_TYPES,
-  FURNITURE_TYPES
-} from '@/config/footprintConfig';
+  FURNITURE_TYPES,
+} from "@/config/footprintConfig";
 import {
   Car,
   Home,
   Utensils,
-  Plane,
   Plus,
   Calculator,
   Calendar as CalendarIcon,
-  TrendingUp,
   TrendingDown,
   Filter,
   Clock,
   Trash2,
-  Edit3,
   RefreshCw,
   CheckCircle,
-  AlertTriangle
-} from 'lucide-react';
-import { format } from 'date-fns';
-import { cn } from '@/lib/utils';
-import { toast, Toaster } from 'react-hot-toast';
+  AlertTriangle,
+} from "lucide-react";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
+import { toast, Toaster } from "react-hot-toast";
 
-import ProtectedLayout from '@/components/ProtectedLayout';
-import AuthGuard from '@/components/AuthGuard';
-import ChatBot from '@/components/ChatBot';
-import Layout from '@/components/Layout';
-import { useFootprintLog } from '@/lib/useFootprintLog';
-import { usePreferences, useTranslation } from "@/context/PreferencesContext";
-import Link from 'next/link';
+import AuthGuard from "@/components/AuthGuard";
+import ChatBot from "@/components/ChatBot";
+import Layout from "@/components/Layout";
+import { useFootprintLog } from "@/lib/useFootprintLog";
+import { useTranslation } from "@/context/PreferencesContext";
+import Link from "next/link";
 
 const FootprintLog = () => {
-  const { t } = useTranslation(['footprint', 'common']);
-  
+  const { t } = useTranslation(["footprint", "common"]);
+
   // Use the custom hook for API operations
   const {
     logs,
@@ -66,29 +78,31 @@ const FootprintLog = () => {
     calculateEmissionsWithAPI,
     getWeeklyTotal,
     getMonthlyTotal,
-    refresh
+    refresh,
   } = useFootprintLog();
 
   // Form state
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [activityType, setActivityType] = useState('');
-  const [quantity, setQuantity] = useState('');
+  const [activityType, setActivityType] = useState("");
+  const [quantity, setQuantity] = useState("");
   const [calculatedEmissions, setCalculatedEmissions] = useState(0);
   const [showResult, setShowResult] = useState(false);
   const [isCalculating, setIsCalculating] = useState(false);
   const [editingLog, setEditingLog] = useState(null);
 
   // Additional details based on activity type
-  const [fuelType, setFuelType] = useState('');
-  const [passengers, setPassengers] = useState('1');
-  const [flightClass, setFlightClass] = useState('');
-  const [energySource, setEnergySource] = useState('');
-  const [foodType, setFoodType] = useState('');
-  const [wasteType, setWasteType] = useState('');
-  const [waterTemp, setWaterTemp] = useState('');
-  const [clothingType, setClothingType] = useState('');
-  const [electronicsType, setElectronicsType] = useState('');
-  const [furnitureType, setFurnitureType] = useState('');
+  const [fuelType, setFuelType] = useState("");
+  const [passengers, setPassengers] = useState("1");
+  const [flightClass, setFlightClass] = useState("");
+  const [energySource, setEnergySource] = useState("");
+  const [foodType, setFoodType] = useState("");
+  const [wasteType, setWasteType] = useState("");
+  const [waterTemp, setWaterTemp] = useState("");
+  const [clothingType, setClothingType] = useState("");
+  const [electronicsType, setElectronicsType] = useState("");
+  const [furnitureType, setFurnitureType] = useState("");
+  // Search state for activity type dropdown
+  const [activitySearch, setActivitySearch] = useState("");
 
   // Import activity types and options from configuration
   const activityTypes = ACTIVITY_TYPES;
@@ -104,86 +118,90 @@ const FootprintLog = () => {
 
   // Helper function to get dynamic field label based on activity type
   const getQuantityLabel = () => {
-    if (!activityType) return 'Quantity';
+    if (!activityType) return "Quantity";
 
-    const selectedActivity = activityTypes.find(type => type.value === activityType);
-    if (!selectedActivity) return 'Quantity';
+    const selectedActivity = activityTypes.find(
+      (type) => type.value === activityType
+    );
+    if (!selectedActivity) return "Quantity";
 
     const unit = selectedActivity.unit;
 
     // Create contextual labels based on activity category and unit
     switch (selectedActivity.category) {
-      case 'Transportation':
-        if (unit === 'miles') return 'Distance';
-        return 'Quantity';
+      case "Transportation":
+        if (unit === "miles") return "Distance";
+        return "Quantity";
 
-      case 'Energy':
-        if (unit === 'kWh') return 'Energy Usage';
-        if (unit === 'therms') return 'Gas Usage';
-        if (unit === 'gallons') return 'Fuel Amount';
-        if (unit === 'lbs') return 'Weight';
-        if (unit === 'cords') return 'Wood Amount';
-        return 'Quantity';
+      case "Energy":
+        if (unit === "kWh") return "Energy Usage";
+        if (unit === "therms") return "Gas Usage";
+        if (unit === "gallons") return "Fuel Amount";
+        if (unit === "lbs") return "Weight";
+        if (unit === "cords") return "Wood Amount";
+        return "Quantity";
 
-      case 'Food':
-        if (unit === 'lbs') return 'Weight';
-        if (unit === 'dozen') return 'Number of Dozens';
-        return 'Amount';
+      case "Food":
+        if (unit === "lbs") return "Weight";
+        if (unit === "dozen") return "Number of Dozens";
+        return "Amount";
 
-      case 'Waste':
-        if (unit === 'lbs') return 'Weight';
-        return 'Amount';
+      case "Waste":
+        if (unit === "lbs") return "Weight";
+        return "Amount";
 
-      case 'Water':
-        if (unit === 'gallons') return 'Water Volume';
-        if (unit === 'minutes') return 'Duration';
-        if (unit === 'loads') return 'Number of Loads';
-        return 'Amount';
+      case "Water":
+        if (unit === "gallons") return "Water Volume";
+        if (unit === "minutes") return "Duration";
+        if (unit === "loads") return "Number of Loads";
+        return "Amount";
 
-      case 'Shopping':
-        if (unit === 'items') return 'Number of Items';
-        return 'Quantity';
+      case "Shopping":
+        if (unit === "items") return "Number of Items";
+        return "Quantity";
 
       default:
-        return 'Quantity';
+        return "Quantity";
     }
   };
 
   // Helper function to get placeholder text based on activity type
   const getQuantityPlaceholder = () => {
-    if (!activityType) return '0';
+    if (!activityType) return "0";
 
-    const selectedActivity = activityTypes.find(type => type.value === activityType);
-    if (!selectedActivity) return '0';
+    const selectedActivity = activityTypes.find(
+      (type) => type.value === activityType
+    );
+    if (!selectedActivity) return "0";
 
     const unit = selectedActivity.unit;
 
     switch (selectedActivity.category) {
-      case 'Transportation':
-        return unit === 'miles' ? 'Enter distance' : 'Enter quantity';
+      case "Transportation":
+        return unit === "miles" ? "Enter distance" : "Enter quantity";
 
-      case 'Energy':
-        if (unit === 'kWh') return 'Enter kWh used';
-        if (unit === 'therms') return 'Enter therms used';
-        if (unit === 'gallons') return 'Enter gallons used';
-        return 'Enter amount';
+      case "Energy":
+        if (unit === "kWh") return "Enter kWh used";
+        if (unit === "therms") return "Enter therms used";
+        if (unit === "gallons") return "Enter gallons used";
+        return "Enter amount";
 
-      case 'Food':
-        return unit === 'dozen' ? 'Enter dozens' : 'Enter weight in lbs';
+      case "Food":
+        return unit === "dozen" ? "Enter dozens" : "Enter weight in lbs";
 
-      case 'Waste':
-        return 'Enter weight in lbs';
+      case "Waste":
+        return "Enter weight in lbs";
 
-      case 'Water':
-        if (unit === 'minutes') return 'Enter minutes';
-        if (unit === 'loads') return 'Enter number';
-        return 'Enter gallons';
+      case "Water":
+        if (unit === "minutes") return "Enter minutes";
+        if (unit === "loads") return "Enter number";
+        return "Enter gallons";
 
-      case 'Shopping':
-        return 'Enter number of items';
+      case "Shopping":
+        return "Enter number of items";
 
       default:
-        return 'Enter amount';
+        return "Enter amount";
     }
   };
 
@@ -191,7 +209,9 @@ const FootprintLog = () => {
   const isFormValid = () => {
     if (!activityType || !quantity) return false;
 
-    const selectedActivity = activityTypes.find(type => type.value === activityType);
+    const selectedActivity = activityTypes.find(
+      (type) => type.value === activityType
+    );
     if (!selectedActivity) return false;
 
     // Check required fields based on activity type
@@ -202,7 +222,8 @@ const FootprintLog = () => {
     if (selectedActivity.requiresWasteType && !wasteType) return false;
     if (selectedActivity.requiresWaterTemp && !waterTemp) return false;
     if (selectedActivity.requiresClothingType && !clothingType) return false;
-    if (selectedActivity.requiresElectronicsType && !electronicsType) return false;
+    if (selectedActivity.requiresElectronicsType && !electronicsType)
+      return false;
     if (selectedActivity.requiresFurnitureType && !furnitureType) return false;
 
     return true;
@@ -210,7 +231,9 @@ const FootprintLog = () => {
 
   // Calculate emissions preview (using backend API)
   const calculateEmissionsPreview = async () => {
-    const selectedActivity = activityTypes.find(type => type.value === activityType);
+    const selectedActivity = activityTypes.find(
+      (type) => type.value === activityType
+    );
     if (selectedActivity && quantity) {
       setIsCalculating(true);
       try {
@@ -229,8 +252,8 @@ const FootprintLog = () => {
             clothingType,
             electronicsType,
             furnitureType,
-            unit: selectedActivity.unit
-          }
+            unit: selectedActivity.unit,
+          },
         };
 
         const result = await calculateEmissionsWithAPI(activityData);
@@ -241,11 +264,12 @@ const FootprintLog = () => {
         toast.success(
           <div className="flex items-center gap-2">
             <CheckCircle className="h-4 w-4" />
-            Impact calculated successfully using {result.calculation?.method || 'backend'} method
+            Impact calculated successfully using{" "}
+            {result.calculation?.method || "backend"} method
           </div>
         );
       } catch (error) {
-        console.error('Failed to calculate emissions:', error);
+        console.error("Failed to calculate emissions:", error);
         // Fallback to client-side calculation if API fails
         const fallbackEmissions = calculateEmissions({
           activityType,
@@ -261,8 +285,8 @@ const FootprintLog = () => {
             clothingType,
             electronicsType,
             furnitureType,
-            unit: selectedActivity.unit
-          }
+            unit: selectedActivity.unit,
+          },
         });
         setCalculatedEmissions(fallbackEmissions);
         setShowResult(true);
@@ -279,12 +303,14 @@ const FootprintLog = () => {
   };
 
   const getSelectedActivityDetails = () => {
-    return activityTypes.find(type => type.value === activityType);
+    return activityTypes.find((type) => type.value === activityType);
   };
 
   // Add handler for Add to Log with API integration
   const handleAddToLog = async () => {
-    const selectedActivity = activityTypes.find(type => type.value === activityType);
+    const selectedActivity = activityTypes.find(
+      (type) => type.value === activityType
+    );
     if (!selectedActivity || !quantity) {
       toast.error(
         <div className="flex items-center gap-2">
@@ -300,39 +326,51 @@ const FootprintLog = () => {
       let activityDescription = selectedActivity.label;
 
       // Enhanced activity descriptions based on specific fields
-      if (activityType.startsWith('transport-')) {
+      if (activityType.startsWith("transport-")) {
         if (fuelType) {
-          const fuelLabel = fuelTypes.find(f => f.value === fuelType)?.label;
+          const fuelLabel = fuelTypes.find((f) => f.value === fuelType)?.label;
           activityDescription = `${fuelLabel} ${selectedActivity.label}`;
         }
         if (flightClass) {
-          const classLabel = flightClasses.find(f => f.value === flightClass)?.label;
+          const classLabel = flightClasses.find(
+            (f) => f.value === flightClass
+          )?.label;
           activityDescription = `${classLabel} ${selectedActivity.label}`;
         }
-      } else if (activityType.startsWith('energy-')) {
+      } else if (activityType.startsWith("energy-")) {
         if (energySource) {
-          const sourceLabel = energySources.find(e => e.value === energySource)?.label;
+          const sourceLabel = energySources.find(
+            (e) => e.value === energySource
+          )?.label;
           activityDescription = `${sourceLabel} Usage`;
         }
-      } else if (activityType.startsWith('food-')) {
+      } else if (activityType.startsWith("food-")) {
         if (foodType) {
-          const foodLabel = foodTypes.find(f => f.value === foodType)?.label;
+          const foodLabel = foodTypes.find((f) => f.value === foodType)?.label;
           activityDescription = `${foodLabel} Consumption`;
         }
-      } else if (activityType.startsWith('waste-')) {
+      } else if (activityType.startsWith("waste-")) {
         if (wasteType) {
-          const wasteLabel = wasteTypes.find(w => w.value === wasteType)?.label;
+          const wasteLabel = wasteTypes.find(
+            (w) => w.value === wasteType
+          )?.label;
           activityDescription = `${wasteLabel} ${selectedActivity.label}`;
         }
-      } else if (activityType.startsWith('shopping-')) {
+      } else if (activityType.startsWith("shopping-")) {
         if (clothingType) {
-          const clothingLabel = clothingTypes.find(c => c.value === clothingType)?.label;
+          const clothingLabel = clothingTypes.find(
+            (c) => c.value === clothingType
+          )?.label;
           activityDescription = `${clothingLabel} Purchase`;
         } else if (electronicsType) {
-          const electronicsLabel = electronicsTypes.find(e => e.value === electronicsType)?.label;
+          const electronicsLabel = electronicsTypes.find(
+            (e) => e.value === electronicsType
+          )?.label;
           activityDescription = `${electronicsLabel} Purchase`;
         } else if (furnitureType) {
-          const furnitureLabel = furnitureTypes.find(f => f.value === furnitureType)?.label;
+          const furnitureLabel = furnitureTypes.find(
+            (f) => f.value === furnitureType
+          )?.label;
           activityDescription = `${furnitureLabel} Purchase`;
         }
       }
@@ -357,7 +395,7 @@ const FootprintLog = () => {
           furnitureType,
           unit: selectedActivity.unit,
           category: selectedActivity.category,
-        }
+        },
       };
 
       // Submit to API
@@ -368,32 +406,32 @@ const FootprintLog = () => {
 
       // Reset form
       setShowResult(false);
-      setActivityType('');
-      setQuantity('');
-      setFuelType('');
-      setPassengers('1');
-      setFlightClass('');
-      setEnergySource('');
-      setFoodType('');
-      setWasteType('');
-      setWaterTemp('');
-      setClothingType('');
-      setElectronicsType('');
-      setFurnitureType('');
+      setActivityType("");
+      setQuantity("");
+      setFuelType("");
+      setPassengers("1");
+      setFlightClass("");
+      setEnergySource("");
+      setFoodType("");
+      setWasteType("");
+      setWaterTemp("");
+      setClothingType("");
+      setElectronicsType("");
+      setFurnitureType("");
       setSelectedDate(new Date());
     } catch (error) {
-      console.error('Failed to add log:', error);
+      console.error("Failed to add log:", error);
       toast.error(`Failed to add activity: ${error.message}`);
     }
   };
 
   // Handle delete log
   const handleDeleteLog = async (logId) => {
-    if (window.confirm('Are you sure you want to delete this activity?')) {
+    if (window.confirm("Are you sure you want to delete this activity?")) {
       try {
         await deleteLog(logId);
       } catch (error) {
-        console.error('Failed to delete log:', error);
+        console.error("Failed to delete log:", error);
       }
     }
   };
@@ -402,17 +440,18 @@ const FootprintLog = () => {
   const formatLogForDisplay = (log) => {
     // Map activity types to icons
     const iconMap = {
-      'transport': Car,
-      'energy': Home,
-      'food': Utensils,
-      'waste': Trash2,
-      'other': Clock
+      transport: Car,
+      energy: Home,
+      food: Utensils,
+      waste: Trash2,
+      other: Clock,
     };
 
     // Handle date formatting with validation
-    let formattedDate = 'Invalid Date';
+    let formattedDate = "Invalid Date";
     try {
-      const dateValue = log.createdAt || log.date || log.selectedDate || new Date();
+      const dateValue =
+        log.createdAt || log.date || log.selectedDate || new Date();
       const dateObj = new Date(dateValue);
 
       // Check if date is valid
@@ -423,7 +462,7 @@ const FootprintLog = () => {
         formattedDate = format(new Date(), "yyyy-MM-dd");
       }
     } catch (error) {
-      console.warn('Date formatting error:', error, 'for log:', log);
+      console.warn("Date formatting error:", error, "for log:", log);
       formattedDate = format(new Date(), "yyyy-MM-dd");
     }
 
@@ -433,15 +472,17 @@ const FootprintLog = () => {
       activity: log.activity,
       type: log.category || log.activityType,
       amount: log.details?.quantity || log.quantity || 0,
-      unit: log.details?.unit || 'units',
+      unit: log.details?.unit || "units",
       co2: log.emission || 0,
       icon: iconMap[log.activityType] || Clock,
-      rawLog: log
+      rawLog: log,
     };
   };
 
   // Get formatted logs for display
-  const displayLogs = (logs || []).filter(log => log && log._id).map(formatLogForDisplay);
+  const displayLogs = (logs || [])
+    .filter((log) => log && log._id)
+    .map(formatLogForDisplay);
 
   // Calculate weekly and monthly totals
   const weeklyTotal = getWeeklyTotal();
@@ -449,7 +490,7 @@ const FootprintLog = () => {
   const averageDaily = weeklyTotal / 7;
 
   return (
-    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 bg-gradient-to-b from-background to-accent/5 min-h-screen">
+  <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 bg-gradient-to-b from-background to-accent/5 min-h-screen">
       <Toaster position="top-right" />
 
       {/* Error State */}
@@ -466,18 +507,18 @@ const FootprintLog = () => {
       {/* Header */}
       <div className="flex justify-between items-start">
         <div className="space-y-2">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gradient">{t('footprint:carbon_footprint_log')}</h1>
-          <p className="text-sm sm:text-base text-muted-foreground">{t('footprint:monitor_environmental_impact')}</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gradient">
+            {t("footprint:carbon_footprint_log")}
+          </h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
+            {t("footprint:monitor_environmental_impact")}
+          </p>
         </div>
         <div className="flex gap-2">
           <Link href="/CarbonCalculator">
-            <Button
-              variant="default"
-              size="sm"
-              className="shrink-0"
-            >
+            <Button variant="default" size="sm" className="shrink-0">
               <Calculator className="h-4 w-4 mr-2" />
-              {t('footprint:full_assessment')}
+              {t("footprint:full_assessment")}
             </Button>
           </Link>
           <Button
@@ -487,8 +528,10 @@ const FootprintLog = () => {
             disabled={loading}
             className="shrink-0"
           >
-            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-            {t('footprint:refresh')}
+            <RefreshCw
+              className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`}
+            />
+            {t("footprint:refresh")}
           </Button>
         </div>
       </div>
@@ -506,99 +549,199 @@ const FootprintLog = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <Card className="card-eco">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">{t('footprint:this_week')}</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              {t("footprint:this_week")}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-xl sm:text-2xl font-bold text-foreground">
-              {weeklyTotal.toFixed(1)} <span className="text-xs sm:text-sm font-normal text-muted-foreground">kg CO₂</span>
+              {weeklyTotal.toFixed(1)}{" "}
+              <span className="text-xs sm:text-sm font-normal text-muted-foreground">
+                kg CO₂
+              </span>
             </div>
             <div className="flex items-center gap-2 mt-2">
               <TrendingDown className="h-3 w-3 sm:h-4 sm:w-4 text-success" />
-              <span className="text-xs sm:text-sm text-success">8% lower than last week</span>
+              <span className="text-xs sm:text-sm text-success">
+                8% lower than last week
+              </span>
             </div>
           </CardContent>
         </Card>
 
         <Card className="card-gradient">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">{t('footprint:total_entries')}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-xl sm:text-2xl font-bold text-foreground">{logs.length}</div>
-            <div className="text-xs sm:text-sm text-muted-foreground mt-2">{t('footprint:activities_logged')}</div>
-          </CardContent>
-        </Card>
-
-        <Card className="card-gradient">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">{t('footprint:average_daily')}</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              {t("footprint:total_entries")}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-xl sm:text-2xl font-bold text-foreground">
-              {averageDaily.toFixed(1)} <span className="text-xs sm:text-sm font-normal text-muted-foreground">kg CO₂</span>
+              {logs.length}
             </div>
-            <div className="text-xs sm:text-sm text-muted-foreground mt-2">{t('footprint:per_day_this_week')}</div>
+            <div className="text-xs sm:text-sm text-muted-foreground mt-2">
+              {t("footprint:activities_logged")}
+            </div>
           </CardContent>
         </Card>
 
         <Card className="card-gradient">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">{t('footprint:total_emissions')}</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              {t("footprint:average_daily")}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-xl sm:text-2xl font-bold text-foreground">
-              {totalEmissions.toFixed(1)} <span className="text-xs sm:text-sm font-normal text-muted-foreground">kg CO₂</span>
+              {averageDaily.toFixed(1)}{" "}
+              <span className="text-xs sm:text-sm font-normal text-muted-foreground">
+                kg CO₂
+              </span>
             </div>
-            <div className="text-xs sm:text-sm text-muted-foreground mt-2">All time</div>
+            <div className="text-xs sm:text-sm text-muted-foreground mt-2">
+              {t("footprint:per_day_this_week")}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="card-gradient">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              {t("footprint:total_emissions")}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-xl sm:text-2xl font-bold text-foreground">
+              {totalEmissions.toFixed(1)}{" "}
+              <span className="text-xs sm:text-sm font-normal text-muted-foreground">
+                kg CO₂
+              </span>
+            </div>
+            <div className="text-xs sm:text-sm text-muted-foreground mt-2">
+              All time
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+  <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Left Column - Activity Form */}
         <div className="lg:col-span-1">
           <Card className="card-gradient">
             <CardHeader className="space-y-2">
               <CardTitle className="flex items-center gap-2">
                 <Plus className="h-5 w-5" />
-                {t('footprint:log_new_activity')}
+                {t("footprint:log_new_activity")}
               </CardTitle>
-              <CardDescription>{t('footprint:record_daily_activities')}</CardDescription>
+              <CardDescription>
+                {t("footprint:record_daily_activities")}
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3 sm:space-y-4">
               {/* Activity Type */}
               <div>
-                <Label className="text-sm sm:text-base">{t('footprint:activity_type')}</Label>
+                <Label className="text-sm sm:text-base">
+                  {t("footprint:activity_type")}
+                </Label>
                 <Select value={activityType} onValueChange={setActivityType}>
                   <SelectTrigger className="mt-1">
-                    <SelectValue placeholder={t('footprint:choose_activity_type')} />
+                    <SelectValue
+                      placeholder={t("footprint:choose_activity_type")}
+                    />
                   </SelectTrigger>
-                  <SelectContent>
-                    {/* Group activities by category */}
-                    {['Transportation', 'Energy', 'Food', 'Waste', 'Water', 'Shopping'].map((category) => {
-                      const categoryActivities = activityTypes.filter(type => type.category === category);
-                      if (categoryActivities.length === 0) return null;
-
+                  <SelectContent className="max-h-80 overflow-y-auto p-0">
+                    {/* Search box (does not close the select) */}
+                    <div className="sticky top-0 z-10 bg-popover p-2 pb-2 border-b border-border">
+                      <Input
+                        autoFocus
+                        value={activitySearch}
+                        onChange={(e) => setActivitySearch(e.target.value)}
+                        placeholder={
+                          t("footprint:search_activity") || "Search activity..."
+                        }
+                        className="h-8 text-xs"
+                      />
+                      {activitySearch && (
+                        <div className="mt-1 text-[10px] text-muted-foreground flex justify-between">
+                          <span>
+                            {t("footprint:searching_for") || "Searching for"}: "
+                            {activitySearch}"
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setActivitySearch("")}
+                            className="text-primary hover:underline"
+                          >
+                            {t("common:clear") || "Clear"}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                    {(() => {
+                      const filtered = activityTypes.filter((type) => {
+                        if (!activitySearch.trim()) return true;
+                        const q = activitySearch.toLowerCase();
+                        return (
+                          type.label.toLowerCase().includes(q) ||
+                          type.category.toLowerCase().includes(q) ||
+                          type.value.toLowerCase().includes(q)
+                        );
+                      });
+                      const categories = [
+                        "Transportation",
+                        "Energy",
+                        "Food",
+                        "Waste",
+                        "Water",
+                        "Shopping",
+                      ];
                       return (
-                        <div key={category}>
-                          <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                            {category}
-                          </div>
-                          {categoryActivities.map((type) => {
-                            const Icon = type.icon;
+                        <div
+                          className="pr-1 max-h-72 overflow-auto overscroll-contain scroll-py-2"
+                          style={{ WebkitOverflowScrolling: "touch" }}
+                        >
+                          {filtered.length === 0 && (
+                            <div className="px-3 py-4 text-xs text-muted-foreground">
+                              {t("footprint:no_results_found") ||
+                                "No results found"}
+                            </div>
+                          )}
+                          {categories.map((category) => {
+                            const categoryActivities = filtered.filter(
+                              (t) => t.category === category
+                            );
+                            if (categoryActivities.length === 0) return null;
                             return (
-                              <SelectItem key={type.value} value={type.value}>
-                                <div className="flex items-center gap-2">
-                                  <Icon className="h-4 w-4" />
-                                  <span>{type.label}</span>
-                                  <span className="text-xs text-muted-foreground ml-auto">({type.unit})</span>
+                              <div key={category}>
+                                <div className="px-2 pt-3 pb-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider bg-popover/80 backdrop-blur supports-[backdrop-filter]:bg-popover/60 sticky top-0">
+                                  {category}
                                 </div>
-                              </SelectItem>
+                                {categoryActivities.map((type) => {
+                                  const Icon = type.icon;
+                                  return (
+                                    <SelectItem
+                                      key={type.value}
+                                      value={type.value}
+                                      className="text-xs py-1.5"
+                                    >
+                                      <div className="flex items-center gap-2 w-full">
+                                        <Icon className="h-4 w-4 shrink-0" />
+                                        <span className="truncate">
+                                          {type.label}
+                                        </span>
+                                        <span className="text-[10px] text-muted-foreground ml-auto">
+                                          ({type.unit})
+                                        </span>
+                                      </div>
+                                    </SelectItem>
+                                  );
+                                })}
+                              </div>
                             );
                           })}
                         </div>
                       );
-                    })}
+                    })()}
                   </SelectContent>
                 </Select>
               </div>
@@ -607,7 +750,9 @@ const FootprintLog = () => {
               {activityType && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <Label className="text-sm sm:text-base">{getQuantityLabel()}</Label>
+                    <Label className="text-sm sm:text-base">
+                      {getQuantityLabel()}
+                    </Label>
                     <Input
                       type="number"
                       placeholder={getQuantityPlaceholder()}
@@ -619,7 +764,7 @@ const FootprintLog = () => {
                   <div>
                     <Label className="text-sm sm:text-base">Unit</Label>
                     <Input
-                      value={getSelectedActivityDetails()?.unit || ''}
+                      value={getSelectedActivityDetails()?.unit || ""}
                       disabled
                       className="mt-1 bg-muted"
                     />
@@ -628,7 +773,9 @@ const FootprintLog = () => {
               )}
 
               {/* Fuel Type for Car/Motorcycle/Taxi Travel */}
-              {(activityType === 'transport-car' || activityType === 'transport-motorcycle' || activityType === 'transport-taxi') && (
+              {(activityType === "transport-car" ||
+                activityType === "transport-motorcycle" ||
+                activityType === "transport-taxi") && (
                 <div>
                   <Label className="text-sm sm:text-base">Fuel Type</Label>
                   <Select value={fuelType} onValueChange={setFuelType}>
@@ -647,7 +794,7 @@ const FootprintLog = () => {
               )}
 
               {/* Flight Class for Air Travel */}
-              {activityType === 'transport-flight' && (
+              {activityType === "transport-flight" && (
                 <div>
                   <Label className="text-sm sm:text-base">Flight Class</Label>
                   <Select value={flightClass} onValueChange={setFlightClass}>
@@ -656,7 +803,10 @@ const FootprintLog = () => {
                     </SelectTrigger>
                     <SelectContent>
                       {flightClasses.map((classType) => (
-                        <SelectItem key={classType.value} value={classType.value}>
+                        <SelectItem
+                          key={classType.value}
+                          value={classType.value}
+                        >
                           {classType.label}
                         </SelectItem>
                       ))}
@@ -666,7 +816,7 @@ const FootprintLog = () => {
               )}
 
               {/* Energy Source for Electricity */}
-              {activityType === 'energy-electricity' && (
+              {activityType === "energy-electricity" && (
                 <div>
                   <Label className="text-sm sm:text-base">Energy Source</Label>
                   <Select value={energySource} onValueChange={setEnergySource}>
@@ -685,27 +835,31 @@ const FootprintLog = () => {
               )}
 
               {/* Food Type for All Food Categories */}
-              {(activityType === 'food-beef' || activityType === 'food-pork' || activityType === 'food-chicken' ||
-                activityType === 'food-fish' || activityType === 'food-dairy') && (
-                  <div>
-                    <Label className="text-sm sm:text-base">Food Type</Label>
-                    <Select value={foodType} onValueChange={setFoodType}>
-                      <SelectTrigger className="mt-1">
-                        <SelectValue placeholder="Select food type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {foodTypes.map((food) => (
-                          <SelectItem key={food.value} value={food.value}>
-                            {food.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
+              {(activityType === "food-beef" ||
+                activityType === "food-pork" ||
+                activityType === "food-chicken" ||
+                activityType === "food-fish" ||
+                activityType === "food-dairy") && (
+                <div>
+                  <Label className="text-sm sm:text-base">Food Type</Label>
+                  <Select value={foodType} onValueChange={setFoodType}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Select food type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {foodTypes.map((food) => (
+                        <SelectItem key={food.value} value={food.value}>
+                          {food.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
               {/* Waste Type for Waste Activities */}
-              {(activityType === 'waste-general' || activityType === 'waste-recycling') && (
+              {(activityType === "waste-general" ||
+                activityType === "waste-recycling") && (
                 <div>
                   <Label className="text-sm sm:text-base">Waste Type</Label>
                   <Select value={wasteType} onValueChange={setWasteType}>
@@ -724,9 +878,11 @@ const FootprintLog = () => {
               )}
 
               {/* Water Temperature for Laundry */}
-              {activityType === 'water-laundry' && (
+              {activityType === "water-laundry" && (
                 <div>
-                  <Label className="text-sm sm:text-base">Water Temperature</Label>
+                  <Label className="text-sm sm:text-base">
+                    Water Temperature
+                  </Label>
                   <Select value={waterTemp} onValueChange={setWaterTemp}>
                     <SelectTrigger className="mt-1">
                       <SelectValue placeholder="Select water temperature" />
@@ -743,7 +899,7 @@ const FootprintLog = () => {
               )}
 
               {/* Clothing Type for Clothing Purchases */}
-              {activityType === 'shopping-clothing' && (
+              {activityType === "shopping-clothing" && (
                 <div>
                   <Label className="text-sm sm:text-base">Clothing Type</Label>
                   <Select value={clothingType} onValueChange={setClothingType}>
@@ -762,16 +918,24 @@ const FootprintLog = () => {
               )}
 
               {/* Electronics Type for Electronics Purchases */}
-              {activityType === 'shopping-electronics' && (
+              {activityType === "shopping-electronics" && (
                 <div>
-                  <Label className="text-sm sm:text-base">Electronics Type</Label>
-                  <Select value={electronicsType} onValueChange={setElectronicsType}>
+                  <Label className="text-sm sm:text-base">
+                    Electronics Type
+                  </Label>
+                  <Select
+                    value={electronicsType}
+                    onValueChange={setElectronicsType}
+                  >
                     <SelectTrigger className="mt-1">
                       <SelectValue placeholder="Select electronics type" />
                     </SelectTrigger>
                     <SelectContent>
                       {electronicsTypes.map((electronics) => (
-                        <SelectItem key={electronics.value} value={electronics.value}>
+                        <SelectItem
+                          key={electronics.value}
+                          value={electronics.value}
+                        >
                           {electronics.label}
                         </SelectItem>
                       ))}
@@ -781,16 +945,22 @@ const FootprintLog = () => {
               )}
 
               {/* Furniture Type for Furniture Purchases */}
-              {activityType === 'shopping-furniture' && (
+              {activityType === "shopping-furniture" && (
                 <div>
                   <Label className="text-sm sm:text-base">Furniture Type</Label>
-                  <Select value={furnitureType} onValueChange={setFurnitureType}>
+                  <Select
+                    value={furnitureType}
+                    onValueChange={setFurnitureType}
+                  >
                     <SelectTrigger className="mt-1">
                       <SelectValue placeholder="Select furniture type" />
                     </SelectTrigger>
                     <SelectContent>
                       {furnitureTypes.map((furniture) => (
-                        <SelectItem key={furniture.value} value={furniture.value}>
+                        <SelectItem
+                          key={furniture.value}
+                          value={furniture.value}
+                        >
                           {furniture.label}
                         </SelectItem>
                       ))}
@@ -800,10 +970,14 @@ const FootprintLog = () => {
               )}
 
               {/* Number of Passengers for Transport */}
-              {(activityType.startsWith('transport-') &&
-                !['transport-bicycle', 'transport-walking'].includes(activityType)) && (
+              {activityType.startsWith("transport-") &&
+                !["transport-bicycle", "transport-walking"].includes(
+                  activityType
+                ) && (
                   <div>
-                    <Label className="text-sm sm:text-base">Total Passengers</Label>
+                    <Label className="text-sm sm:text-base">
+                      Total Passengers
+                    </Label>
                     <Input
                       type="number"
                       min="1"
@@ -815,13 +989,14 @@ const FootprintLog = () => {
                       onBlur={(e) => {
                         const value = parseInt(e.target.value);
                         if (isNaN(value) || value < 1) {
-                          setPassengers('1');
+                          setPassengers("1");
                         }
                       }}
                       className="mt-1"
                     />
                     <p className="text-xs text-muted-foreground mt-1">
-                      Impact will be calculated per person based on total passengers
+                      Impact will be calculated per person based on total
+                      passengers
                     </p>
                   </div>
                 )}
@@ -839,7 +1014,11 @@ const FootprintLog = () => {
                       )}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {selectedDate ? format(selectedDate, "PPP") : <span>Choose activity date</span>}
+                      {selectedDate ? (
+                        format(selectedDate, "PPP")
+                      ) : (
+                        <span>Choose activity date</span>
+                      )}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
@@ -868,7 +1047,7 @@ const FootprintLog = () => {
                 ) : (
                   <>
                     <Calculator className="h-4 w-4 mr-2" />
-                    {t('footprint:calculate_impact')}
+                    {t("footprint:calculate_impact")}
                   </>
                 )}
               </Button>
@@ -877,13 +1056,20 @@ const FootprintLog = () => {
               {showResult && (
                 <div className="p-3 sm:p-4 bg-primary/10 border border-primary/20 rounded-lg">
                   <div className="text-center">
-                    <div className="text-xs sm:text-sm text-muted-foreground">Environmental Impact</div>
+                    <div className="text-xs sm:text-sm text-muted-foreground">
+                      Environmental Impact
+                    </div>
                     <div className="text-xl sm:text-2xl font-bold text-primary">
                       {calculatedEmissions.toFixed(2)} kg CO₂
                     </div>
-                    <div className="text-xs text-muted-foreground mt-1">Carbon dioxide equivalent</div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Carbon dioxide equivalent
+                    </div>
                   </div>
-                  <Button className="w-full mt-3 btn-hero text-sm sm:text-base" onClick={handleAddToLog}>
+                  <Button
+                    className="w-full mt-3 btn-hero text-sm sm:text-base"
+                    onClick={handleAddToLog}
+                  >
                     <Plus className="h-4 w-4 mr-2" />
                     Add to My Timeline
                   </Button>
@@ -894,33 +1080,46 @@ const FootprintLog = () => {
         </div>
 
         {/* Right Column - Timeline */}
-        <div className="lg:col-span-2">
-          <Card className="card-gradient">
-            <CardHeader>
+        <div className="lg:col-span-2 lg:h-full lg:flex lg:flex-col">
+          <Card className="card-gradient lg:h-full lg:flex lg:flex-col">
+            <CardHeader className="shrink-0">
               <div className="flex items-center justify-between">
                 <div className="space-y-2">
                   <CardTitle className="flex items-center gap-2 text-lg sm:text-xl md:text-xl lg:text-2xl font-semibold text-muted-foreground group-hover:text-primary transition-colors">
-                    {t('footprint:activity_timeline')}
+                    {t("footprint:activity_timeline")}
                   </CardTitle>
-                  <CardDescription className="text-xs sm:text-sm md:text-sm lg:text-base">{t('footprint:environmental_impact_journey')}</CardDescription>
+                  <CardDescription className="text-xs sm:text-sm md:text-sm lg:text-base">
+                    {t("footprint:environmental_impact_journey")}
+                  </CardDescription>
                 </div>
-                <Button variant="outline" size="sm" className="group-hover:bg-primary/10 transition-colors">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="group-hover:bg-primary/10 transition-colors"
+                >
                   <Filter className="h-4 w-4 mr-2" />
-                  {t('footprint:filter_activities')}
+                  {t("footprint:filter_activities")}
                 </Button>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="lg:flex-1 lg:overflow-y-auto lg:pr-2 custom-scroll">
               {loading && displayLogs.length === 0 ? (
                 <div className="text-center py-8">
                   <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-2 text-muted-foreground" />
-                  <p className="text-muted-foreground">{t('footprint:loading_activities')}</p>
+                  <p className="text-muted-foreground">
+                    {t("footprint:loading_activities")}
+                  </p>
                 </div>
               ) : displayLogs.length === 0 ? (
                 <div className="text-center py-8">
                   <Clock className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                  <p className="text-muted-foreground">{t('footprint:journey_starts_here')}</p>
-                  <p className="text-sm text-muted-foreground mt-1">Log your first activity to begin tracking your environmental impact</p>
+                  <p className="text-muted-foreground">
+                    {t("footprint:journey_starts_here")}
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Log your first activity to begin tracking your environmental
+                    impact
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-3 sm:space-y-4">
@@ -936,20 +1135,27 @@ const FootprintLog = () => {
                         </div>
 
                         <div className="flex-1">
-                          <div className="font-medium text-foreground text-sm sm:text-base">{entry.activity}</div>
+                          <div className="font-medium text-foreground text-sm sm:text-base">
+                            {entry.activity}
+                          </div>
                           <div className="text-xs sm:text-sm text-muted-foreground">
                             {entry.amount} {entry.unit} • {entry.date}
                           </div>
                         </div>
 
                         <div className="text-right">
-                          <Badge variant="secondary" className="mb-1 text-xs capitalize">
+                          <Badge
+                            variant="secondary"
+                            className="mb-1 text-xs capitalize"
+                          >
                             {entry.type}
                           </Badge>
                           <div className="text-base sm:text-lg font-bold text-foreground">
                             +{entry.co2.toFixed(2)} kg
                           </div>
-                          <div className="text-xs text-muted-foreground">CO₂</div>
+                          <div className="text-xs text-muted-foreground">
+                            CO₂
+                          </div>
                         </div>
 
                         <div className="opacity-0 group-hover:opacity-100 transition-opacity flex flex-col gap-1">

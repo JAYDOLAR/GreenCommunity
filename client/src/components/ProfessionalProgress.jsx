@@ -4,10 +4,6 @@ import { Progress } from '@/components/ui/progress';
 import { useEffect, useState } from 'react';
 import { usePreferences } from "@/context/PreferencesContext";
 
-const unitLabels = {
-  metric: { distance: "km", weight: "kg" },
-  imperial: { distance: "mi", weight: "lb" },
-};
 
 const ProfessionalProgress = ({ 
   value, 
@@ -17,8 +13,7 @@ const ProfessionalProgress = ({
   showAnimation = true,
   skipAnimation = false 
 }) => {
-  const { preferences } = usePreferences();
-  const units = unitLabels[preferences.units] || unitLabels.metric;
+  const { preferences } = usePreferences(); // preferences.units removed; keep hook if future prefs needed
   const [animatedValue, setAnimatedValue] = useState(0);
 
   useEffect(() => {

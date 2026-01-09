@@ -532,7 +532,6 @@ export const updateProfile = asyncHandler(async (req, res) => {
     phone,
     location,
     bio,
-    preferredUnits,
     firstName,
     lastName,
     dateOfBirth,
@@ -594,9 +593,7 @@ export const updateProfile = asyncHandler(async (req, res) => {
     }
 
     // Handle preferences
-    if (preferredUnits) {
-      userInfoUpdate['preferences.units'] = preferredUnits;
-    }
+  // preferredUnits deprecated; use preferences.carbonUnits via updateAppPreferences endpoint
 
     // Update or create UserInfo record
     const userInfo = await UserInfo.createOrUpdate(req.user.id, userInfoUpdate);
@@ -689,7 +686,7 @@ export const updateAppPreferences = asyncHandler(async (req, res) => {
     theme,
     language,
     currency,
-    units,
+  carbonUnits,
     privacy,
     dataSharing
   } = req.body;
@@ -711,7 +708,7 @@ export const updateAppPreferences = asyncHandler(async (req, res) => {
       theme: theme !== undefined ? theme : currentPreferences.theme || 'light',
       language: language !== undefined ? language : currentPreferences.language || 'en',
       currency: currency !== undefined ? currency : currentPreferences.currency || 'usd',
-      units: units !== undefined ? units : currentPreferences.units || 'metric',
+  carbonUnits: carbonUnits !== undefined ? carbonUnits : currentPreferences.carbonUnits || 'kg',
       privacy: privacy !== undefined ? privacy : currentPreferences.privacy || 'public',
       dataSharing: dataSharing !== undefined ? dataSharing : currentPreferences.dataSharing || false
     };

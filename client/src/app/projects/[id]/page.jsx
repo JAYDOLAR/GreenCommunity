@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { usePreferences } from '@/context/PreferencesContext';
 import ProjectView from '@/components/ProjectView';
 import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -124,12 +125,7 @@ const projects = [
   }
 ];
 
-const ProjectDetail = () => {
-  const params = useParams();
-  const router = useRouter();
-  const [contributionAmount, setContributionAmount] = useState([50]);
-  const [isLoading, setIsLoading] = useState(false);
-};
+// Legacy placeholder removed (ProjectDetail merged into ProjectDetailContent logic)
 
 const ProjectDetailContent = ({ params }) => {
   const router = useRouter();
@@ -137,6 +133,10 @@ const ProjectDetailContent = ({ params }) => {
   const [contributionAmount, setContributionAmount] = useState([50]);
   const [isLoading, setIsLoading] = useState(false);
   const [resolvedParams, setResolvedParams] = useState(null);
+  const { preferences } = usePreferences();
+  const carbonUnit = preferences?.carbonUnits || 'kg';
+  const toPreferred = (tonsValue) => carbonUnit === 'kg' ? `${(tonsValue * 1000).toLocaleString()} kg CO₂` : `${tonsValue.toLocaleString()} tons CO₂`;
+  const formatImpact = (tonsValue) => carbonUnit === 'kg' ? `${(tonsValue * 1000).toFixed(2)} kg CO₂` : `${tonsValue.toFixed(2)} tons CO₂`;
   
   // Handle params resolution for client component
   useEffect(() => {
@@ -275,7 +275,7 @@ const ProjectDetailContent = ({ params }) => {
                       <Target className="h-4 w-4 text-green-600" />
                       <div>
                         <p className="text-xs text-muted-foreground">CO₂ Offset</p>
-                        <p className="text-sm font-medium text-green-600">-{project.co2Removed.toLocaleString()} tons</p>
+                        <p className="text-sm font-medium text-green-600">-{formatImpact(project.co2Removed)}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -365,7 +365,7 @@ const ProjectDetailContent = ({ params }) => {
                 </div>
                 <div className="flex items-center gap-1 text-green-600">
                   <Target className="h-4 w-4" />
-                  <span className="font-medium">-{project.co2Removed.toLocaleString()} tons CO₂</span>
+                  <span className="font-medium">-{formatImpact(project.co2Removed)} CO₂</span>
                 </div>
               </div>
 
@@ -437,7 +437,7 @@ const ProjectDetailContent = ({ params }) => {
                   <div className="text-center">
                     <div className="text-sm text-muted-foreground">Your Impact</div>
                     <div className="text-2xl font-bold text-primary">
-                      {calculateImpact(contributionAmount[0])} tons CO₂
+                      {carbonUnit === 'kg' ? `${(calculateImpact(contributionAmount[0]) * 1000).toFixed(2)} kg CO₂` : `${calculateImpact(contributionAmount[0])} tons CO₂`}
                     </div>
                     <div className="text-sm text-muted-foreground">will be offset</div>
                   </div>
@@ -483,7 +483,7 @@ const ProjectDetailContent = ({ params }) => {
                       <div className="text-center">
                         <div className="text-sm text-muted-foreground">Your Impact</div>
                         <div className="text-2xl font-bold text-primary">
-                          {calculateImpact(contributionAmount[0])} tons CO₂
+                          {carbonUnit === 'kg' ? `${(calculateImpact(contributionAmount[0]) * 1000).toFixed(2)} kg CO₂` : `${calculateImpact(contributionAmount[0])} tons CO₂`}
                         </div>
                         <div className="text-sm text-muted-foreground">will be offset</div>
                       </div>

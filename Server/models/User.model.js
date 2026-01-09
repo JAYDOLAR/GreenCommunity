@@ -209,11 +209,6 @@ const userSchema = new mongoose.Schema({
       twitter: String,
       linkedin: String
     },
-    preferredUnits: {
-      type: String,
-      enum: ['metric', 'imperial'],
-      default: 'metric'
-    },
     // Notification Preferences
     notificationPreferences: {
       emailUpdates: { type: Boolean, default: true },
@@ -240,11 +235,6 @@ const userSchema = new mongoose.Schema({
         type: String,
         enum: ['usd', 'eur', 'inr'],
         default: 'usd'
-      },
-      units: {
-        type: String,
-        enum: ['metric', 'imperial'],
-        default: 'metric'
       },
       privacy: {
         type: String,
