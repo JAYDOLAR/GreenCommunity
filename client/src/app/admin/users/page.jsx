@@ -64,16 +64,30 @@ const UsersPage = () => {
     return matchesSearch && matchesStatus && matchesRole;
   });
 
-  const handleStatusChange = (userId, newStatus) => {
-    setUsers(users.map(user => 
-      user.id === userId ? { ...user, status: newStatus } : user
-    ));
+  const handleStatusChange = async (userId, newStatus) => {
+    try {
+      const updatedUser = await updateUser({ id: userId, status: newStatus });
+      if (updatedUser) {
+        setUsers(prev => prev.map(u => u.id === userId ? { ...u, status: updatedUser.status, isEmailVerified: updatedUser.isEmailVerified } : u));
+      } else {
+        setUsers(prev => prev.map(u => u.id === userId ? { ...u, status: newStatus } : u));
+      }
+    } catch (e) {
+      console.error('Failed to change status:', e);
+    }
   };
 
-  const handleRoleChange = (userId, newRole) => {
-    setUsers(users.map(user => 
-      user.id === userId ? { ...user, role: newRole } : user
-    ));
+  const handleRoleChange = async (userId, newRole) => {
+    try {
+      const updatedUser = await updateUser({ id: userId, role: newRole });
+      if (updatedUser) {
+        setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: updatedUser.role } : u));
+      } else {
+        setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: newRole } : u));
+      }
+    } catch (e) {
+      console.error('Failed to change role:', e);
+    }
   };
 
   const handleViewUser = (user) => {
@@ -106,7 +120,7 @@ const UsersPage = () => {
     try {
       // Fetch fresh data from API before exporting
       const adminToken = localStorage.getItem('adminToken');
-      const response = await fetch('/api/admin/users', {
+      const response = await fetch('/api/admin/users?limit=1000&page=1', {
         headers: {
           'Authorization': `Bearer ${adminToken}`
         }
@@ -156,7 +170,7 @@ const UsersPage = () => {
       const adminToken = localStorage.getItem('adminToken');
       console.log('Admin token:', adminToken ? 'exists' : 'missing');
       
-      const response = await fetch('/api/admin/users', {
+      const response = await fetch('/api/admin/users?limit=1000&page=1', {
         headers: {
           'Authorization': `Bearer ${adminToken}`
         }
@@ -385,7 +399,12 @@ const UsersPage = () => {
               filteredUsers.map((user) => (
               <div key={user.id} className="flex items-center gap-4 p-4 border rounded-lg hover:bg-accent/50 transition-colors relative">
                 <div className="w-10 h-10 bg-accent rounded-full flex items-center justify-center">
-                  <img src={user.avatar} alt={user.name} className="w-8 h-8 rounded-full" />
+                  <img 
+                    src={user.avatar || '/user.png'} 
+                    alt={user.name} 
+                    className="w-8 h-8 rounded-full" 
+                    onError={(e) => { e.target.src = '/user.png'; }}
+                  />
                 </div>
                 
                 <div className="flex-1">
@@ -462,7 +481,12 @@ const UsersPage = () => {
                         <div className="p-4">
                           <div className="space-y-3">
                             <div className="flex items-center gap-3">
-                              <img src={selectedUser.avatar} alt={selectedUser.name} className="w-12 h-12 rounded-full" />
+                              <img 
+                                src={selectedUser.avatar || '/user.png'} 
+                                alt={selectedUser.name} 
+                                className="w-12 h-12 rounded-full" 
+                                onError={(e) => { e.target.src = '/user.png'; }}
+                              />
                               <div>
                                 <h3 className="font-semibold">{selectedUser.name}</h3>
                                 <p className="text-sm text-gray-600">{selectedUser.email}</p>

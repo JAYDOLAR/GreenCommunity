@@ -391,7 +391,7 @@ function UserDetailsForm() {
                       <div className="flex flex-col items-center">
                         <div className="w-40 h-40 bg-gray-100 rounded-full border-4 border-gray-200 flex items-center justify-center mb-6 overflow-hidden">
                           {photoPreview ? (
-                            <img src={photoPreview} alt="Profile" className="w-full h-full object-cover" />
+                            <img src={photoPreview || '/user.png'} alt="Profile" className="w-full h-full object-cover" onError={(e) => { e.target.src = '/user.png'; }} />
                           ) : (
                             <div className="text-gray-400 text-5xl"></div>
                           )}

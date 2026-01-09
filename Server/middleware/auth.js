@@ -52,6 +52,54 @@ export const authenticate = async (req, res, next) => {
   }
 };
 
+// Admin authentication that permits access even if the admin account is locked
+export const authenticateAdmin = async (req, res, next) => {
+  try {
+    // Accept admin token via cookie or Authorization header
+    let token = req.cookies?.adminToken;
+    if (!token) {
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        token = authHeader.substring(7);
+      }
+    }
+
+    if (!token) {
+      return res.status(401).json({ message: 'Access denied. No token provided.' });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (!decoded || !decoded.id) {
+      return res.status(401).json({ message: 'Invalid token payload.' });
+    }
+
+    const User = await getUserModel();
+    const user = await User.findById(decoded.id).select('-password');
+    if (!user) {
+      return res.status(401).json({ message: 'Invalid token. User not found.' });
+    }
+
+    // Ensure role is admin
+    if (user.role !== 'admin' && decoded.role !== 'admin') {
+      return res.status(403).json({ message: 'Access denied. Admin only.' });
+    }
+
+    // Do NOT block locked admins here to allow remediation from admin panel
+    req.user = user;
+    next();
+  } catch (error) {
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({ message: 'Token expired. Please log in again.' });
+    } else if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({ message: 'Invalid token.' });
+    }
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Admin authentication error:', error);
+    }
+    res.status(500).json({ message: 'Server error during authentication.' });
+  }
+};
+
 export const optionalAuth = async (req, res, next) => {
   try {
     // Check for token in cookies first, then in Authorization header

@@ -91,12 +91,27 @@ export const marketplaceApi = {
         ...response,
         data: {
           ...response.data,
-          products: response.data.products.map(transformProduct)
+          products: (response.data?.products || []).map(transformProduct)
         }
       };
     } catch (error) {
-      console.error('Error fetching products:', error);
-      throw error;
+      console.error('Failed to fetch marketplace data:', error);
+      
+      // Return fallback data structure if API fails
+      return {
+        success: false,
+        data: {
+          products: [],
+          pagination: {
+            currentPage: 1,
+            totalPages: 0,
+            totalProducts: 0,
+            hasNextPage: false,
+            hasPrevPage: false
+          }
+        },
+        error: error.message
+      };
     }
   },
 

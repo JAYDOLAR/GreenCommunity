@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
 import { getUserModel } from '../models/User.model.js';
+import { initializeUserInfoModel } from '../models/UserInfo.model.js';
 import asyncHandler from '../utils/asyncHandler.js';
 
 // Import model functions for dashboard stats
@@ -8,6 +9,7 @@ import { getUserPointsModel } from '../models/UserPoints.model.js';
 import { getEventModel } from '../models/Event.model.js';
 import { getChallengeModel } from '../models/Challenge.model.js';
 import { getGroupModel } from '../models/Group.model.js';
+import { getProjectModel } from '../models/Project.model.js';
 
 /**
  * Admin login handler
@@ -149,12 +151,28 @@ export const updateUser = asyncHandler(async (req, res) => {
     }
     
     // Update allowed fields only
-    const allowedFields = ['name', 'email', 'role', 'status', 'isEmailVerified'];
+    const allowedFields = ['name', 'email', 'role', 'isEmailVerified'];
     allowedFields.forEach(field => {
       if (userData[field] !== undefined) {
         user[field] = userData[field];
       }
     });
+
+    // Map requested status to underlying fields
+    if (userData.status !== undefined) {
+      const status = String(userData.status).toLowerCase();
+      if (status === 'active') {
+        user.isEmailVerified = true;
+        user.lockUntil = undefined;
+      } else if (status === 'inactive') {
+        user.isEmailVerified = false;
+        user.lockUntil = undefined;
+      } else if (status === 'suspended') {
+        // Lock account for a long time (1 year) to represent suspension
+        const oneYearMs = 365 * 24 * 60 * 60 * 1000;
+        user.lockUntil = new Date(Date.now() + oneYearMs);
+      }
+    }
     
     // Save the updated user
     await user.save();
@@ -169,7 +187,7 @@ export const updateUser = asyncHandler(async (req, res) => {
         email: user.email,
         role: user.role,
         isEmailVerified: user.isEmailVerified,
-        status: user.status,
+        status: user.lockUntil && user.lockUntil > new Date() ? 'suspended' : (user.isEmailVerified ? 'active' : 'inactive'),
         createdAt: user.createdAt,
         updatedAt: user.updatedAt
       }
@@ -472,6 +490,19 @@ export const getUsers = asyncHandler(async (req, res) => {
       .limit(limit)
       .lean(); // Use lean() for better performance
     
+    // Fetch UserInfo records for avatars (Cloudinary URLs) in parallel
+    const UserInfo = await initializeUserInfoModel();
+    const userIds = users.map(u => u._id);
+    let userInfos = [];
+    if (userIds.length > 0) {
+      userInfos = await UserInfo.find({ userId: { $in: userIds } })
+        .select('userId avatar.url')
+        .lean();
+    }
+    const userIdToAvatarUrl = new Map(
+      userInfos.map(ui => [String(ui.userId), ui.avatar?.url || null])
+    );
+    
     // Calculate statistics
     const totalStats = await User.aggregate([
       {
@@ -500,11 +531,13 @@ export const getUsers = asyncHandler(async (req, res) => {
       name: user.name,
       email: user.email,
       role: user.role,
-      status: user.isEmailVerified ? 'active' : 'inactive', // Simplified status
+      status: (user.lockUntil && user.lockUntil > new Date()) ? 'suspended' : (user.isEmailVerified ? 'active' : 'inactive'),
       isEmailVerified: user.isEmailVerified,
       lastLogin: user.lastLogin || null,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
+      // Avatar for admin list (Cloudinary or other)
+      avatar: user.profile?.avatar_url || userIdToAvatarUrl.get(String(user._id)) || null,
       // Add marketplace profile info if available
       isSeller: user.marketplace_profile?.is_seller || false,
       sellerStatus: user.marketplace_profile?.seller_status || null,
@@ -555,4 +588,88 @@ export const getUsers = asyncHandler(async (req, res) => {
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
+});
+
+/**
+ * Admin: Create project
+ * Uses existing Project model and database
+ */
+export const createProjectAdmin = asyncHandler(async (req, res) => {
+  const Project = await getProjectModel();
+  const body = req.body || {};
+
+  // Map incoming admin fields to Project schema
+  const mapped = {
+    name: body.name,
+    location: body.location,
+    type: body.type,
+    region: body.region || 'unknown',
+    description: body.description || '',
+    image: body.image || '',
+    status: (body.status === 'active') ? 'active' : (body.status === 'rejected' ? 'on-hold' : 'planned'),
+    fundingGoal: body.totalFunding != null ? Number(body.totalFunding) : (body.fundingGoal != null ? Number(body.fundingGoal) : 0),
+    currentFunding: body.currentFunding != null ? Number(body.currentFunding) : 0,
+    verified: !!body.verified,
+    featured: !!body.featured,
+    endDate: body.expectedCompletion ? new Date(body.expectedCompletion) : undefined,
+  };
+
+  // Basic validation
+  if (!mapped.name || !mapped.location || !mapped.type) {
+    return res.status(400).json({ success: false, message: 'Missing required fields: name, location, type' });
+  }
+
+  const project = new Project(mapped);
+  await project.save();
+
+  return res.status(201).json({ success: true, message: 'Project created', project });
+});
+
+/**
+ * Admin: Update project
+ */
+export const updateProjectAdmin = asyncHandler(async (req, res) => {
+  const Project = await getProjectModel();
+  const body = req.body || {};
+  const id = body.id || body._id;
+  if (!id) {
+    return res.status(400).json({ success: false, message: 'Project id is required' });
+  }
+
+  const updates = {};
+  if (body.name !== undefined) updates.name = body.name;
+  if (body.location !== undefined) updates.location = body.location;
+  if (body.type !== undefined) updates.type = body.type;
+  if (body.region !== undefined) updates.region = body.region || 'unknown';
+  if (body.description !== undefined) updates.description = body.description;
+  if (body.image !== undefined) updates.image = body.image;
+  if (body.status !== undefined) updates.status = (body.status === 'active') ? 'active' : (body.status === 'rejected' ? 'on-hold' : 'planned');
+  if (body.totalFunding !== undefined) updates.fundingGoal = Number(body.totalFunding);
+  if (body.fundingGoal !== undefined) updates.fundingGoal = Number(body.fundingGoal);
+  if (body.currentFunding !== undefined) updates.currentFunding = Number(body.currentFunding);
+  if (body.verified !== undefined) updates.verified = !!body.verified;
+  if (body.featured !== undefined) updates.featured = !!body.featured;
+  if (body.expectedCompletion !== undefined) updates.endDate = body.expectedCompletion ? new Date(body.expectedCompletion) : undefined;
+
+  const updated = await Project.findByIdAndUpdate(id, updates, { new: true });
+  if (!updated) {
+    return res.status(404).json({ success: false, message: 'Project not found' });
+  }
+  return res.status(200).json({ success: true, message: 'Project updated', project: updated });
+});
+
+/**
+ * Admin: Delete project
+ */
+export const deleteProjectAdmin = asyncHandler(async (req, res) => {
+  const Project = await getProjectModel();
+  const { id } = req.query;
+  if (!id) {
+    return res.status(400).json({ success: false, message: 'Project id is required' });
+  }
+  const deleted = await Project.findByIdAndDelete(id);
+  if (!deleted) {
+    return res.status(404).json({ success: false, message: 'Project not found' });
+  }
+  return res.status(200).json({ success: true, message: 'Project deleted' });
 });

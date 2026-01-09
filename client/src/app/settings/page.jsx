@@ -842,7 +842,7 @@ const Settings = () => {
           <div className="bg-white p-8 rounded-lg shadow-lg max-w-sm w-full">
             <h2 className="text-xl font-bold mb-4">Enable Two-Factor Authentication</h2>
             <p className="mb-4">Scan the QR code with your authenticator app and enter the code below to verify.</p>
-            <img src={qrCodeUrl} alt="2FA QR Code" className="mx-auto mb-4" />
+            <img src={qrCodeUrl || '/vercel.svg'} alt="2FA QR Code" className="mx-auto mb-4" />
             <Input
               type="text"
               value={twoFactorCode}

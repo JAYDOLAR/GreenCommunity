@@ -95,12 +95,12 @@ const AdminLayout = ({ children }) => {
 
   // Show admin layout with sidebar
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
+    <div className="flex min-h-screen bg-gray-50">
       <AdminSidebar />
-      <div className="flex-1 overflow-y-auto overflow-x-hidden">
-        <div className="min-h-full">
+      <div className="flex-1">
+        <main className="w-full min-h-screen">
           {children}
-        </div>
+        </main>
       </div>
     </div>
   );

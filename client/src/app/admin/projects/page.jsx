@@ -72,14 +72,38 @@ const ProjectsPage = () => {
   });
 
   const fetchProjects = async () => {
+    setIsLoading(true);
     try {
-      const response = await fetch('/api/admin/projects');
-      const data = await response.json();
-      if (data.projects) {
+      const response = await fetch('/api/projects?limit=1000&page=1');
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const rawText = await response.text();
+      let data;
+      
+      try {
+        data = rawText ? JSON.parse(rawText) : { projects: [] };
+      } catch (jsonError) {
+        console.error('JSON Parse Error:', jsonError);
+        console.error('Raw Response:', rawText.slice(0, 300));
+        throw new Error('Invalid response from server');
+      }
+      
+      if (data.success && data.data?.projects) {
+        setProjects(data.data.projects);
+      } else if (data.projects) {
         setProjects(data.projects);
+      } else {
+        setProjects([]);
       }
     } catch (error) {
       console.error('Failed to fetch projects:', error);
+      // Set some fallback data to prevent UI crashes
+      setProjects([]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -337,7 +361,7 @@ const ProjectsPage = () => {
             <Target className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{projects.reduce((sum, p) => sum + p.co2Removed, 0).toLocaleString()} kg</div>
+            <div className="text-2xl font-bold">{projects.reduce((sum, p) => sum + (p.co2Removed || 0), 0).toLocaleString()} kg</div>
             <p className="text-xs text-muted-foreground">CO₂ removed</p>
           </CardContent>
         </Card>
@@ -399,10 +423,15 @@ const ProjectsPage = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {filteredProjects.map((project) => (
-              <div key={project.id} className="flex items-center gap-4 p-4 border rounded-lg hover:bg-accent/50 transition-colors">
+            {filteredProjects.map((project, idx) => (
+              <div key={project.id || project._id || idx} className="flex items-center gap-4 p-4 border rounded-lg hover:bg-accent/50 transition-colors">
                 <div className="w-16 h-16 bg-accent rounded-lg overflow-hidden flex-shrink-0">
-                  <img src={project.image} alt={project.name} className="w-full h-full object-cover" />
+                  <img
+                    src={project.image || '/tree1.jpg'}
+                    alt={project.name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => { e.target.src = '/tree1.jpg'; }}
+                  />
                 </div>
                 
                 <div className="flex-1">
@@ -433,9 +462,9 @@ const ProjectsPage = () => {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-muted-foreground">Funding Progress</span>
-                      <span className="font-medium">{project.funding}%</span>
+                      <span className="font-medium">{Math.min(100, Math.round(((project.currentFunding || 0) / Math.max(1, project.fundingGoal || project.totalFunding || 0)) * 100))}%</span>
                     </div>
-                    <Progress value={project.funding} className="h-2" />
+                    <Progress value={Math.min(100, Math.round(((project.currentFunding || 0) / Math.max(1, project.fundingGoal || project.totalFunding || 0)) * 100))} className="h-2" />
                     <div className="flex items-center gap-4 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <DollarSign className="h-3 w-3" />
@@ -443,11 +472,11 @@ const ProjectsPage = () => {
                       </span>
                       <span className="flex items-center gap-1">
                         <Users className="h-3 w-3" />
-                        {project.contributors.toLocaleString()} contributors
+                        {(project.contributors || 0).toLocaleString()} contributors
                       </span>
                       <span className="flex items-center gap-1">
                         <Target className="h-3 w-3" />
-                        {project.co2Removed.toLocaleString()} kg CO₂
+                        {(((project.impact && project.impact.carbonOffset) || project.co2Removed || 0)).toLocaleString()} kg CO₂
                       </span>
                     </div>
                   </div>

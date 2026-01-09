@@ -108,7 +108,7 @@ function MobileMarketplaceView() {
               {product.featured && (
                 <Badge className="absolute top-1 sm:top-2 left-1 sm:left-2 z-10 bg-success text-white text-[10px] sm:text-xs pointer-events-none">Featured</Badge>
               )}
-              <img src={product.image} alt={product.name} className="w-14 h-14 sm:w-16 sm:h-16 object-cover rounded" />
+              <img src={product.image || '/Marketplace/1.jpeg'} alt={product.name} className="w-14 h-14 sm:w-16 sm:h-16 object-cover rounded" onError={(e) => { e.target.src = '/Marketplace/1.jpeg'; }} />
               <div className="flex-1 space-y-1">
                 <div className="flex items-center justify-between">
                   <h3 className="font-semibold text-xs text-foreground leading-tight">{product.name}</h3>

@@ -182,7 +182,7 @@ const AdminSidebar = () => {
   };
 
   return (
-    <div className="bg-card border-r border-border h-screen w-64 flex flex-col">
+    <div className="bg-card border-r border-border min-h-screen w-64 flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-border flex-shrink-0">
         <div className="flex items-center gap-2">

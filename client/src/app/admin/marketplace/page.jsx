@@ -296,7 +296,7 @@ const MarketplacePage = () => {
             {filteredProducts.map((product) => (
               <div key={product.id} className="flex items-center gap-4 p-4 border rounded-lg hover:bg-accent/50 transition-colors">
                 <div className="w-16 h-16 bg-accent rounded-lg overflow-hidden flex-shrink-0">
-                  <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                  <img src={product.image || '/Marketplace/1.jpeg'} alt={product.name} className="w-full h-full object-cover" onError={(e) => { e.target.src = '/Marketplace/1.jpeg'; }} />
                 </div>
                 
                 <div className="flex-1">

@@ -92,6 +92,7 @@ const Projects = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [hoveredProject, setHoveredProject] = useState(null);
+  const [projects, setProjects] = useState([]);
   const router = useRouter();
 
   // Add error boundary
@@ -158,133 +159,31 @@ const Projects = () => {
     { value: 'agriculture', label: 'Sustainable Agriculture' },
   ];
 
-  const projects = [
-    {
-      id: 1,
-      name: 'Sundarbans Mangrove Restoration',
-      location: 'West Bengal, India',
-      type: 'forestry',
-      region: 'east-india',
-      image: "/tree1.jpg",
-      coordinates: [88.6, 22.2], // Sundarbans coordinates
-      description: 'Large-scale mangrove restoration project in the Sundarbans, protecting vital ecosystems.',
-      co2Removed: 142000,
-      co2PerRupee: 0.0005,  // Adjusted
-      totalFunding: 165000000, // Example funding
-      currentFunding: 123750000, // Example current funding
-      contributors: 15230,
-      timeRemaining: '9 months',
-      verified: true,
-      certifications: ['Gold Standard', 'VCS'],
-      featured: false,
-      benefits: [
-        'Biodiversity protection',
-        'Community support',
-        'Coastal protection',
-        'Fisheries development'
-      ]
-    },
-    {
-      id: 2,
-      name: 'Solar Power Expansion',
-      location: 'Rajasthan, India',
-      type: 'renewable',
-      region: 'west-india',
-      image: "/tree2.jpg",
-      coordinates: [73.5, 26.9], // Rajasthan coordinates
-      description: 'Installing solar panels for renewable energy generation across Rajasthan.',
-      co2Removed: 98000,
-      co2PerRupee: 0.00034, // Adjusted
-      totalFunding: 430000000, // Example funding
-      currentFunding: 280000000, // Example current funding
-      contributors: 9250,
-      timeRemaining: '15 months',
-      verified: true,
-      certifications: ['MNRE', 'SECI'],
-      featured: true,
-      benefits: [
-        'Clean energy',
-        'Job creation',
-        'Energy independence',
-        'Infrastructure improvement'
-      ]
-    },
-    {
-      id: 3,
-      name: 'Ganga Water Conservation',
-      location: 'Uttar Pradesh, India',
-      type: 'water',
-      region: 'north-india',
-      image: "/tree3.jpg",
-      coordinates: [81.0, 26.8], // Ganga coordinates
-      description: 'Conserving water resources and improving water quality in the Ganga basin.',
-      co2Removed: 50000,
-      co2PerRupee: 0.00042, // Adjusted
-      totalFunding: 76000000, // Example funding
-      currentFunding: 48200000, // Example current funding
-      contributors: 3400,
-      timeRemaining: '7 months',
-      verified: true,
-      certifications: ['NMCG', 'CPCB'],
-      featured: false,
-      benefits: [
-        'Water conservation',
-        'Wildlife habitat',
-        'Tourism development',
-        'Pollution reduction'
-      ]
-    },
-    {
-      id: 4,
-      name: 'Wind Energy Farms',
-      location: 'Tamil Nadu, India',
-      type: 'renewable',
-      region: 'south-india',
-      image: "/tree4.jpg",
-      coordinates: [78.7, 10.8], // Tamil Nadu coordinates
-      description: 'Developing wind farms to harness clean energy in Tamil Nadu.',
-      co2Removed: 60000,
-      co2PerRupee: 0.00031, // Adjusted
-      totalFunding: 39000000, // Example funding
-      currentFunding: 25500000, // Example current funding
-      contributors: 1990,
-      timeRemaining: '5 months',
-      verified: true,
-      certifications: ['CEIG', 'MoEFCC'],
-      featured: false,
-      benefits: [
-        'Energy production',
-        'Employment opportunities',
-        'Local business growth',
-        'Environmental sustainability'
-      ]
-    },
-    {
-      id: 5,
-      name: 'Tropical Savanna Conservation',
-      location: 'Chhattisgarh, India',
-      type: 'forestry',
-      region: 'central-india',
-      image: "/tree5.jpg",
-      coordinates: [82.0, 21.7], // Chhattisgarh coordinates
-      description: 'Protecting and restoring tropical savanna ecosystems in Chhattisgarh.',
-      co2Removed: 85000,
-      co2PerRupee: 0.00044, // Adjusted
-      totalFunding: 102000000, // Example funding
-      currentFunding: 76500000, // Example current funding
-      contributors: 6890,
-      timeRemaining: '11 months',
-      verified: true,
-      certifications: ['WWF', 'Govt of India'],
-      featured: true,
-      benefits: [
-        'Biodiversity conservation',
-        'Carbon storage',
-        'Community livelihoods',
-        'Climate resilience'
-      ]
-    }
-  ];
+  // Fetch projects from API
+  useEffect(() => {
+    const fetchProjects = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const res = await fetch('/api/projects?limit=1000&page=1');
+        const rawText = await res.text();
+        const data = rawText ? JSON.parse(rawText) : {};
+        if (data.success && data.data?.projects) {
+          setProjects(data.data.projects);
+        } else if (Array.isArray(data.projects)) {
+          setProjects(data.projects);
+        } else {
+          setProjects([]);
+        }
+      } catch (err) {
+        console.error('Failed to load projects:', err);
+        setProjects([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchProjects();
+  }, []);
 
   const filteredProjects = projects.filter(project => {
     if (!project || !project.name) return false;
@@ -432,13 +331,13 @@ const Projects = () => {
 
             return (
               <motion.div
-                key={project.id}
+                key={project.id || project._id || index}
                 className="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer group z-10"
                 style={{ left: `${left}%`, top: `${top}%` }}
                 initial={{ scale: 0, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ delay: index * 0.1 }}
-                onClick={() => handleProjectClick(project.id)}
+                onClick={() => handleProjectClick(project.id || project._id)}
               >
                 <div className={`${getPinStyle(project.type)} group-hover:scale-125 transition-transform duration-200 drop-shadow-lg`}>
                   <MapPin className="h-5 w-5" />
@@ -497,14 +396,14 @@ const Projects = () => {
 
             return (
               <Marker
-                key={project.id}
+                key={project.id || project._id || index}
                 position={[lat, lng]}
                 icon={customIcon}
                 eventHandlers={{
-                  click: () => handleProjectClick(project.id),
+                  click: () => handleProjectClick(project.id || project._id),
                   mouseover: (e) => {
                     e.target.openPopup();
-                    setHoveredProject(project.id);
+                    setHoveredProject(project.id || project._id);
                   },
                   mouseout: (e) => {
                     e.target.closePopup();
@@ -513,7 +412,7 @@ const Projects = () => {
                 }}
               >
                 <Popup autoPan={false} closeButton={false}>
-                  <div className="p-3 min-w-[250px] cursor-pointer hover:bg-gray-50 transition-colors" onClick={() => handleProjectClick(project.id)}>
+                  <div className="p-3 min-w-[250px] cursor-pointer hover:bg-gray-50 transition-colors" onClick={() => handleProjectClick(project.id || project._id)}>
                     <div className="font-semibold text-primary mb-2 text-base">{project.name}</div>
                     <div className="text-gray-600 mb-3 text-sm flex items-center gap-1">
                       <MapPin className="h-3 w-3" />
@@ -522,7 +421,7 @@ const Projects = () => {
                     <div className="space-y-2 mb-3">
                       <div className="flex items-center justify-between">
                         <div className="text-green-600 font-medium text-sm">
-                          {formatCO2(project.co2Removed)}
+                          {(project.co2Removed || 0).toLocaleString()} tons CO₂
                         </div>
                         <Badge className="text-xs">
                           {projectTypes.find(t => t.value === project.type)?.label || project.type}
@@ -640,16 +539,17 @@ const Projects = () => {
           <div className="space-y-3 sm:space-y-6">
             {filteredProjects.map((project, index) => {
               const IconComponent = getProjectIcon(project.type);
-              const fundingPercentage = (project.currentFunding / project.totalFunding) * 100;
+              const totalTarget = project.fundingGoal || project.totalFunding || 0;
+              const fundingPercentage = totalTarget > 0 ? ((project.currentFunding || 0) / totalTarget) * 100 : 0;
 
               return (
                 <motion.div
-                  key={project.id}
+                  key={project.id || project._id || index}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
                   className="cursor-pointer"
-                  onClick={() => handleProjectClick(project.id)}
+                  onClick={() => handleProjectClick(project.id || project._id)}
                 >
                   <Card className="hover:shadow-lg transition-all duration-300 border-0 bg-white/80 backdrop-blur-sm">
                     <CardContent className="p-4 sm:p-6">
@@ -657,7 +557,7 @@ const Projects = () => {
                         {/* Project Image */}
                         <div className="relative w-full sm:w-96 h-64 sm:h-80 rounded-lg overflow-hidden bg-gradient-to-br from-primary/20 to-primary/10">
                           <img
-                            src={project.image}
+                            src={project.image || '/tree1.jpg'}
                             alt={project.name}
                             className="w-full h-full object-cover"
                             onError={(e) => {
@@ -709,13 +609,13 @@ const Projects = () => {
                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
                             <div className="text-center">
                               <div className="text-lg sm:text-xl font-bold text-primary">
-                                {displayCO2Value(project.co2Removed)}
+                                {(((project.impact && project.impact.carbonOffset) || project.co2Removed || 0)).toLocaleString()}
                               </div>
                               <div className="text-xs sm:text-sm text-muted-foreground">{carbonUnit === 'kg' ? 'kg CO₂' : 'tons CO₂'}</div>
                             </div>
                             <div className="text-center">
                               <div className="text-lg sm:text-xl font-bold text-primary">
-                                {project.contributors.toLocaleString()}
+                                {(project.contributors || 0).toLocaleString()}
                               </div>
                               <div className="text-xs sm:text-sm text-muted-foreground">contributors</div>
                             </div>

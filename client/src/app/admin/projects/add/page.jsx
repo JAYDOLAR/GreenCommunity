@@ -319,7 +319,7 @@ const AddProjectPage = () => {
               {uploadedImage && (
                 <div className="w-full h-48 bg-gray-100 rounded-lg overflow-hidden relative">
                   <img 
-                    src={uploadedImage.preview} 
+                    src={uploadedImage.preview || '/tree1.jpg'} 
                     alt="Project preview" 
                     className="w-full h-full object-cover"
                   />

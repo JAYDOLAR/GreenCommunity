@@ -42,13 +42,26 @@ const apiRequest = async (endpoint, options = {}) => {
 
     let data;
     const rawText = await response.text();
+    
+    // Handle empty responses
+    if (!rawText) {
+      if (response.ok) {
+        return { success: true, data: null };
+      } else {
+        throw new Error(`Server returned empty response with status ${response.status}`);
+      }
+    }
+    
     try {
-      data = rawText ? JSON.parse(rawText) : {};
+      data = JSON.parse(rawText);
     } catch (jsonError) {
       // Include body preview in error to help debug 500s
       const preview = rawText?.slice(0, 300) || '';
-      const err = new Error(`Server response error. Status ${response.status}. Body: ${preview}`);
+      console.error('JSON Parse Error:', jsonError);
+      console.error('Raw Response:', preview);
+      const err = new Error(`Invalid JSON response from server. Status: ${response.status}. Body preview: ${preview}`);
       err.status = response.status;
+      err.isJsonError = true;
       throw err;
     }
 
@@ -79,8 +92,11 @@ const apiRequest = async (endpoint, options = {}) => {
     return data;
   } catch (error) {
     // Handle fetch/network errors
-    if (error.name === 'TypeError' && error.message.includes('fetch')) {
-      throw new Error('Network error. Please check your connection and try again.');
+    const msg = String(error?.message || '').toLowerCase();
+    if ((error.name === 'TypeError' && error.message.includes('fetch')) || msg.includes('load failed') || msg.includes('failed to fetch')) {
+      const netErr = new Error('Network error. Please check your connection and try again.');
+      netErr.code = 'NETWORK_ERROR';
+      throw netErr;
     }
     
     // Only log truly unexpected errors to console (not user-facing validation errors)

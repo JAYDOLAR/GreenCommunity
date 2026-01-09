@@ -15,6 +15,7 @@ export function UserProvider({ children }) {
   const [isClient, setIsClient] = useState(false);
   const [backendStatus, setBackendStatus] = useState('unknown'); // 'unknown' | 'checking' | 'connected' | 'offline' | 'error'
   const [hasInitialized, setHasInitialized] = useState(false);
+  const [isLocked, setIsLocked] = useState(false);
 
   // Function to update user after login
   const updateUser = (userData) => {
@@ -47,6 +48,7 @@ export function UserProvider({ children }) {
       const data = await authAPI.getCurrentUser();
       setUser(data.user);
       setBackendStatus('connected');
+      setIsLocked(false);
 
       // Update localStorage with fresh data
       if (data.user) {
@@ -55,9 +57,14 @@ export function UserProvider({ children }) {
 
       setIsLoading(false);
     } catch (error) {
-      console.warn('Failed to refresh user data:', error);
       setIsLoading(false);
       const msg = String(error?.message || '').toLowerCase();
+      if (error?.status === 423 || msg.includes('account is locked')) {
+        setIsLocked(true);
+        setBackendStatus('connected');
+        return;
+      }
+      console.warn('Failed to refresh user data:', error);
       if (msg.includes('network error') || msg.includes('temporarily unavailable') || msg.includes('service not found')) {
         setBackendStatus('offline');
       } else if (msg.includes('unauthorized') || msg.includes('invalid token') || msg.includes('invalid credentials') || msg.includes('401') || msg.includes('403')) {
@@ -148,6 +155,7 @@ export function UserProvider({ children }) {
         const data = await authAPI.getCurrentUser();
         setUser(data.user);
         setBackendStatus('connected');
+        setIsLocked(false);
 
         // Update localStorage with fresh data
         if (data.user) {
@@ -156,10 +164,22 @@ export function UserProvider({ children }) {
 
         setIsLoading(false);
       } catch (error) {
-        console.warn('User authentication failed:', error.message);
-
         // Handle different error types
         const msg = String(error?.message || '').toLowerCase();
+        if (error?.code === 'NETWORK_ERROR' || msg.includes('network error') || msg.includes('load failed') || msg.includes('failed to fetch')) {
+          // Do not clear local userCache immediately; mark backend offline and allow landing page to render
+          setBackendStatus('offline');
+          setIsLoading(false);
+          return;
+        }
+        if (error?.status === 423 || msg.includes('account is locked')) {
+          setIsLocked(true);
+          setUser(null);
+          setIsLoading(false);
+          setBackendStatus('connected');
+          return;
+        }
+        console.warn('User authentication failed:', error.message);
         if (msg.includes('invalid credentials') ||
           msg.includes('invalid token') ||
           msg.includes('token expired') ||
@@ -204,7 +224,7 @@ export function UserProvider({ children }) {
   }, [user, isClient, hasInitialized, handleOAuthSuccess]); // Use the stable function from hook
 
   return (
-    <UserContext.Provider value={{ user, updateUser, loginAndSetUser, refreshUser, clearUser, isLoading, backendStatus }}>
+    <UserContext.Provider value={{ user, updateUser, loginAndSetUser, refreshUser, clearUser, isLoading, backendStatus, isLocked }}>
       {children}
     </UserContext.Provider>
   );

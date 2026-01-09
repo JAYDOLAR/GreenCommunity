@@ -143,7 +143,7 @@ const ProjectView = ({ project, allProjects }) => {
                       <Users className="h-4 w-4 text-muted-foreground" />
                       <div>
                         <p className="text-xs text-muted-foreground">Contributors</p>
-                        <p className="text-sm font-medium">{project.contributors.toLocaleString()}</p>
+                        <p className="text-sm font-medium">{(project.contributors || 0).toLocaleString()}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">

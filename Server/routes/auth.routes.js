@@ -129,6 +129,11 @@ router.get('/google/callback',
                'unknown';
       };
       
+      // If account is locked/suspended, do not proceed to 2FA or login
+      if ((req.user.lockUntil && req.user.lockUntil > new Date()) || req.user.isLocked) {
+        return res.redirect(`${redirectUrl}/blocked`);
+      }
+
       // Check if user actually has 2FA enabled
       if (req.user.twoFactorEnabled) {
         // Check if this device is trusted

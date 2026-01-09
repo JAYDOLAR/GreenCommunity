@@ -3,9 +3,10 @@ import { useEffect, useState } from 'react';
 import { useUser } from '@/context/UserContext';
 import { useProtectedRoute } from '@/lib/useOptimizedNavigation';
 import { RedirectLoader, PageLoader } from '@/components/LoadingComponents';
+import BlockedAccount from '@/components/BlockedAccount';
 
 const AuthGuard = ({ children, redirectTo = '/login', intent = 'protected' }) => {
-    const { user, isLoading } = useUser();
+    const { user, isLoading, isLocked } = useUser();
     const { redirectToLogin } = useProtectedRoute();
     const [hasCheckedAuth, setHasCheckedAuth] = useState(false);
     const [shouldRedirect, setShouldRedirect] = useState(false);
@@ -31,6 +32,11 @@ const AuthGuard = ({ children, redirectTo = '/login', intent = 'protected' }) =>
     // Show loading while checking authentication
     if (isLoading || !hasCheckedAuth) {
         return <PageLoader message="Verifying authentication..." showLogo={true} />;
+    }
+
+    // Show blocked screen if account is locked
+    if (isLocked) {
+        return <BlockedAccount />;
     }
 
     // Show redirect loader if redirecting
