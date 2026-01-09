@@ -154,17 +154,28 @@ const UsersPage = () => {
   const fetchUsers = async () => {
     try {
       const adminToken = localStorage.getItem('adminToken');
+      console.log('Admin token:', adminToken ? 'exists' : 'missing');
+      
       const response = await fetch('/api/admin/users', {
         headers: {
           'Authorization': `Bearer ${adminToken}`
         }
       });
+      
+      console.log('Response status:', response.status);
       const data = await response.json();
-      if (data.users) {
+      console.log('Response data:', data);
+      
+      if (data.success && data.users) {
         setUsers(data.users);
+        console.log('Users set:', data.users.length, 'users');
+      } else {
+        console.error('API Error:', data.message || 'No users in response');
+        setUsers([]); // Ensure empty array if API fails
       }
     } catch (error) {
       console.error('Failed to fetch users:', error);
+      setUsers([]); // Ensure empty array if fetch fails
     }
   };
 
@@ -232,7 +243,7 @@ const UsersPage = () => {
   }, [showUserDetails]);
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 min-h-full">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -352,7 +363,26 @@ const UsersPage = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {filteredUsers.map((user) => (
+            {filteredUsers.length === 0 ? (
+              <div className="text-center py-8">
+                <Users className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">
+                  {users.length === 0 ? 'No Users Found' : 'No Matching Users'}
+                </h3>
+                <p className="text-muted-foreground mb-4">
+                  {users.length === 0 
+                    ? 'No users have registered yet, or there was an error loading user data.' 
+                    : 'Try adjusting your search criteria or filters.'}
+                </p>
+                {users.length === 0 && (
+                  <Button variant="outline" onClick={fetchUsers}>
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Retry Loading Users
+                  </Button>
+                )}
+              </div>
+            ) : (
+              filteredUsers.map((user) => (
               <div key={user.id} className="flex items-center gap-4 p-4 border rounded-lg hover:bg-accent/50 transition-colors relative">
                 <div className="w-10 h-10 bg-accent rounded-full flex items-center justify-center">
                   <img src={user.avatar} alt={user.name} className="w-8 h-8 rounded-full" />
@@ -493,7 +523,8 @@ const UsersPage = () => {
                   </Button>
                 </div>
               </div>
-            ))}
+              ))
+            )}
           </div>
         </CardContent>
       </Card>

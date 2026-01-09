@@ -3,6 +3,12 @@ import mongoose from 'mongoose';
 import { getUserModel } from '../models/User.model.js';
 import asyncHandler from '../utils/asyncHandler.js';
 
+// Import model functions for dashboard stats
+import { getUserPointsModel } from '../models/UserPoints.model.js';
+import { getEventModel } from '../models/Event.model.js';
+import { getChallengeModel } from '../models/Challenge.model.js';
+import { getGroupModel } from '../models/Group.model.js';
+
 /**
  * Admin login handler
  * This authenticates admins by checking their role in the database
@@ -229,63 +235,324 @@ export const deleteUser = asyncHandler(async (req, res) => {
 });
 
 /**
+ * Get dashboard statistics for admin overview
+ */
+export const getDashboardStats = asyncHandler(async (req, res) => {
+  try {
+    const User = await getUserModel();
+    const UserPoints = await getUserPointsModel();
+    const Event = await getEventModel();
+    const Challenge = await getChallengeModel();
+    const Group = await getGroupModel();
+    
+    // Time ranges for statistics
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    const lastWeek = new Date(today);
+    lastWeek.setDate(lastWeek.getDate() - 7);
+    
+    const lastMonth = new Date(today);
+    lastMonth.setMonth(lastMonth.getMonth() - 1);
+    
+    // User statistics
+    const totalUsers = await User.countDocuments();
+    const activeUsers = await User.countDocuments({ isEmailVerified: true });
+    const newUsersToday = await User.countDocuments({ 
+      createdAt: { $gte: yesterday } 
+    });
+    const newUsersThisWeek = await User.countDocuments({ 
+      createdAt: { $gte: lastWeek } 
+    });
+    const newUsersThisMonth = await User.countDocuments({ 
+      createdAt: { $gte: lastMonth } 
+    });
+    
+    // Community statistics
+    const totalChallenges = await Challenge.countDocuments();
+    const activeChallenges = await Challenge.countDocuments({ 
+      status: 'active',
+      startDate: { $lte: today },
+      endDate: { $gte: today }
+    });
+    const totalEvents = await Event.countDocuments();
+    const upcomingEvents = await Event.countDocuments({ 
+      date: { $gte: today } 
+    });
+    const totalGroups = await Group.countDocuments();
+    
+    // Points and engagement statistics
+    const totalPointsAwarded = await UserPoints.aggregate([
+      { 
+        $group: { 
+          _id: null, 
+          total: { $sum: '$points' } 
+        } 
+      }
+    ]);
+    
+    const activeUsersWithPoints = await UserPoints.distinct('userId');
+    
+    // User growth over time (last 30 days)
+    const userGrowthData = await User.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: lastMonth }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            date: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } }
+          },
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $sort: { "_id.date": 1 }
+      }
+    ]);
+    
+    // User role distribution
+    const userRoleDistribution = await User.aggregate([
+      {
+        $group: {
+          _id: "$role",
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+    
+    // Top users by points
+    const topUsers = await UserPoints.aggregate([
+      {
+        $group: {
+          _id: "$userId",
+          totalPoints: { $sum: "$points" }
+        }
+      },
+      {
+        $sort: { totalPoints: -1 }
+      },
+      {
+        $limit: 5
+      }
+    ]);
+    
+    // Get user details for top users
+    const topUserIds = topUsers.map(u => u._id);
+    const topUserDetails = await User.find({ 
+      _id: { $in: topUserIds } 
+    }).select('name email');
+    
+    const topUsersWithDetails = topUsers.map(pointsUser => {
+      const userDetail = topUserDetails.find(u => u._id.toString() === pointsUser._id.toString());
+      return {
+        userId: pointsUser._id,
+        name: userDetail?.name || 'Unknown User',
+        email: userDetail?.email || 'Unknown Email',
+        totalPoints: pointsUser.totalPoints
+      };
+    });
+    
+    // Recent activity summary
+    const recentActivity = {
+      newUsersToday,
+      newUsersThisWeek,
+      newUsersThisMonth,
+      activeChallenges,
+      upcomingEvents
+    };
+    
+    return res.status(200).json({
+      success: true,
+      stats: {
+        users: {
+          total: totalUsers,
+          active: activeUsers,
+          growth: {
+            today: newUsersToday,
+            week: newUsersThisWeek,
+            month: newUsersThisMonth
+          },
+          roleDistribution: userRoleDistribution
+        },
+        community: {
+          challenges: {
+            total: totalChallenges,
+            active: activeChallenges
+          },
+          events: {
+            total: totalEvents,
+            upcoming: upcomingEvents
+          },
+          groups: {
+            total: totalGroups
+          }
+        },
+        engagement: {
+          totalPointsAwarded: totalPointsAwarded[0]?.total || 0,
+          activeUsersWithPoints: activeUsersWithPoints.length,
+          topUsers: topUsersWithDetails
+        },
+        growth: userGrowthData,
+        recentActivity
+      },
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Error fetching dashboard stats:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error while fetching dashboard statistics',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+/**
  * Get all users (for admin dashboard)
- * This returns a paginated list of all users in the system
+ * This returns a paginated list of all users in the system with filtering
  */
 export const getUsers = asyncHandler(async (req, res) => {
   try {
-    // Get pagination parameters
+    // Get pagination and filter parameters
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
     const search = req.query.search || '';
+    const statusFilter = req.query.status || 'all';
+    const roleFilter = req.query.role || 'all';
+    const sortBy = req.query.sortBy || 'createdAt';
+    const sortOrder = req.query.sortOrder || 'desc';
 
     // Get user model
     const User = await getUserModel();
     
     // Build search query
-    const searchQuery = search 
-      ? { 
-          $or: [
-            { name: { $regex: search, $options: 'i' } },
-            { email: { $regex: search, $options: 'i' } }
-          ] 
-        } 
-      : {};
+    let searchQuery = {};
     
-    // Count total users
+    // Add text search
+    if (search) {
+      searchQuery.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } }
+      ];
+    }
+    
+    // Add status filter (assuming we'll add a status field to User model)
+    if (statusFilter !== 'all') {
+      // For now, we'll use isEmailVerified as a status indicator
+      if (statusFilter === 'active') {
+        searchQuery.isEmailVerified = true;
+      } else if (statusFilter === 'inactive') {
+        searchQuery.isEmailVerified = false;
+      }
+      // We can add more status types later when we add a proper status field
+    }
+    
+    // Add role filter
+    if (roleFilter !== 'all') {
+      searchQuery.role = roleFilter;
+    }
+    
+    // Build sort object
+    const sortObj = {};
+    sortObj[sortBy] = sortOrder === 'desc' ? -1 : 1;
+    
+    // Count total users matching the query
     const total = await User.countDocuments(searchQuery);
     
-    // Get users with pagination and sorting
+    // Get users with pagination, filtering, and sorting
     const users = await User.find(searchQuery)
-      .select('-password')
-      .sort({ createdAt: -1 })
+      .select('-password -passwordResetToken -passwordResetExpires -emailVerificationToken -emailVerificationExpires -trustedDevices')
+      .sort(sortObj)
       .skip(skip)
-      .limit(limit);
+      .limit(limit)
+      .lean(); // Use lean() for better performance
     
-    // Return paginated results
+    // Calculate statistics
+    const totalStats = await User.aggregate([
+      {
+        $group: {
+          _id: null,
+          totalUsers: { $sum: 1 },
+          activeUsers: { 
+            $sum: { $cond: [{ $eq: ['$isEmailVerified', true] }, 1, 0] } 
+          },
+          adminUsers: { 
+            $sum: { $cond: [{ $eq: ['$role', 'admin'] }, 1, 0] } 
+          },
+          moderatorUsers: { 
+            $sum: { $cond: [{ $eq: ['$role', 'moderator'] }, 1, 0] } 
+          },
+          regularUsers: { 
+            $sum: { $cond: [{ $eq: ['$role', 'user'] }, 1, 0] } 
+          }
+        }
+      }
+    ]);
+    
+    // Format users for admin display
+    const formattedUsers = users.map(user => ({
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      status: user.isEmailVerified ? 'active' : 'inactive', // Simplified status
+      isEmailVerified: user.isEmailVerified,
+      lastLogin: user.lastLogin || null,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+      // Add marketplace profile info if available
+      isSeller: user.marketplace_profile?.is_seller || false,
+      sellerStatus: user.marketplace_profile?.seller_status || null,
+      // Add basic profile info
+      location: user.profile?.location || null,
+      totalPoints: 0 // Will be populated from UserPoints if needed
+    }));
+    
+    // Get recent activity stats (last 30 days)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    const recentUsers = await User.countDocuments({
+      createdAt: { $gte: thirtyDaysAgo }
+    });
+    
+    // Return comprehensive results
     return res.status(200).json({
       success: true,
-      users: users.map(user => ({
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        isEmailVerified: user.isEmailVerified,
-        createdAt: user.createdAt
-      })),
+      users: formattedUsers,
       pagination: {
         page,
         limit,
         total,
         pages: Math.ceil(total / limit)
+      },
+      stats: {
+        total: totalStats[0]?.totalUsers || 0,
+        active: totalStats[0]?.activeUsers || 0,
+        admin: totalStats[0]?.adminUsers || 0,
+        moderator: totalStats[0]?.moderatorUsers || 0,
+        regular: totalStats[0]?.regularUsers || 0,
+        recentSignups: recentUsers
+      },
+      filters: {
+        search,
+        status: statusFilter,
+        role: roleFilter,
+        sortBy,
+        sortOrder
       }
     });
   } catch (error) {
     console.error('Error fetching users:', error);
     return res.status(500).json({
       success: false,
-      message: 'Server error while fetching users'
+      message: 'Server error while fetching users',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
