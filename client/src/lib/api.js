@@ -57,11 +57,22 @@ const apiRequest = async (endpoint, options = {}) => {
       const serverMsg = data.error || data.message;
       const details = data.details || data.errors;
       const errorCode = data.code; // Extract error code if available
+      
+      // Format error details
       const detailStr = details ? ` Details: ${JSON.stringify(details).slice(0,200)}` : '';
+      
+      // Create a friendly error message based on status code or server message
       const message = serverMsg || getFriendlyErrorMessage(response.status);
-      const err = new Error(`${message} (HTTP ${response.status}).${detailStr}`);
+      
+      // Special handling for conflict errors (409) to make them more user-friendly
+      const formattedMessage = response.status === 409 && message.includes('already') 
+        ? message // Just use the direct message for conflicts
+        : `${message} (HTTP ${response.status}).${detailStr}`;
+      
+      const err = new Error(formattedMessage);
       err.status = response.status;
       err.code = errorCode; // Add error code to the error object
+      err.originalData = data; // Store the original response data
       throw err;
     }
 
@@ -316,12 +327,72 @@ export const challengesAPI = {
     return apiRequest('/api/challenges');
   },
   complete: async (challengeId) => {
-    return apiRequest(`/api/challenges/complete/${challengeId}`, { method: 'POST' });
+    // Check if the challenge is from mock data (using numeric id) or from the server (using ObjectId)
+    if (typeof challengeId === 'number') {
+      console.log("Warning: Using a mock challenge ID. In production, this would connect to an actual challenge.");
+      return { success: true, message: "Challenge completed (mock)" };
+    }
+    
+    try {
+      return await apiRequest(`/api/challenges/complete/${challengeId}`, { method: 'POST' });
+    } catch (error) {
+      // Special handling for "already completed" errors
+      if (error?.status === 409 && error.message?.includes('already completed')) {
+        console.log(`Challenge ${challengeId} was already completed. Treating as success.`);
+        // Return a success response instead of throwing an error
+        return { 
+          success: true, 
+          alreadyCompleted: true, 
+          message: "Challenge was already completed" 
+        };
+      }
+      // Re-throw any other errors
+      throw error;
+    }
   },
   me: async () => {
     return apiRequest('/api/challenges/me');
   },
   leaderboard: async () => {
     return apiRequest('/api/challenges/leaderboard');
+  },
+  // New API calls for groups and events
+  groups: async () => {
+    return apiRequest('/api/community/groups');
+  },
+  joinGroup: async (groupId) => {
+    // Check if the group is from mock data (using numeric id) or from the server (using ObjectId)
+    if (typeof groupId === 'number') {
+      console.log("Warning: Using a mock group ID. In production, this would connect to an actual group.");
+      return { success: true, message: "Group joined (mock)" };
+    }
+    return apiRequest(`/api/community/groups/join/${groupId}`, { method: 'POST' });
+  },
+  leaveGroup: async (groupId) => {
+    // Check if the group is from mock data (using numeric id) or from the server (using ObjectId)
+    if (typeof groupId === 'number') {
+      console.log("Warning: Using a mock group ID. In production, this would connect to an actual group.");
+      return { success: true, message: "Group left (mock)" };
+    }
+    return apiRequest(`/api/community/groups/leave/${groupId}`, { method: 'POST' });
+  },
+  events: async () => {
+    return apiRequest('/api/community/events');
+  },
+  joinEvent: async (eventId) => {
+    // Check if the event is from mock data (using numeric id) or from the server (using ObjectId)
+    if (typeof eventId === 'number') {
+      console.log("Warning: Using a mock event ID. In production, this would connect to an actual event.");
+      return { success: true, message: "Event joined (mock)" };
+    }
+    return apiRequest(`/api/community/events/join/${eventId}`, { method: 'POST' });
+  },
+  leaveEvent: async (eventId) => {
+    // Check if the event is from mock data (using numeric id) or from the server (using ObjectId)
+    if (typeof eventId === 'number') {
+      console.log("Warning: Using a mock event ID. In production, this would connect to an actual event.");
+      return { success: true, message: "Event left (mock)" };
+    }
+    return apiRequest(`/api/community/events/leave/${eventId}`, { method: 'POST' });
   }
 };

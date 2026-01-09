@@ -46,9 +46,12 @@ export const getConnection = async (dbName) => {
   try {
     const connection = await mongoose.createConnection(process.env.MONGO_URI, {
       dbName: dbFullName,
-      maxPoolSize: 10,
+      maxPoolSize: 5, // Reduced from 10 to prevent pool exhaustion
+      minPoolSize: 1, // Maintain minimum connections
+      maxIdleTimeMS: 30000, // Close connections after 30 seconds of inactivity
       serverSelectionTimeoutMS: 5000,
       socketTimeoutMS: 45000,
+      // bufferMaxEntries option removed as it's deprecated in newer Mongoose versions
     });
 
     connections[dbFullName] = connection;
@@ -62,6 +65,10 @@ export const getConnection = async (dbName) => {
     connection.on('disconnected', () => {
       console.log(`🔌 MongoDB disconnected from ${dbFullName}`);
       delete connections[dbFullName];
+    });
+
+    connection.on('reconnected', () => {
+      console.log(`🔄 MongoDB reconnected to ${dbFullName}`);
     });
 
     return connection;
@@ -79,7 +86,9 @@ export const connectAllDatabases = async () => {
     // First, connect mongoose default connection to auth database
     await mongoose.connect(process.env.MONGO_URI, {
       dbName: DB_CONFIG.AUTH_DB,
-      maxPoolSize: 10,
+      maxPoolSize: 5, // Consistent with other connections
+      minPoolSize: 1,
+      maxIdleTimeMS: 30000,
       serverSelectionTimeoutMS: 5000,
       socketTimeoutMS: 45000,
     });

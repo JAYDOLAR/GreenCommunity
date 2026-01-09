@@ -8,6 +8,7 @@ const groupSchema = new mongoose.Schema({
   category: { type: String, trim: true },
   location: { type: String, trim: true },
   avatar: { type: String, trim: true },
+  iconClass: { type: String },
   active: { type: Boolean, default: true },
   posts: { type: Number, default: 0 },
   created_at: { type: Date, default: Date.now },

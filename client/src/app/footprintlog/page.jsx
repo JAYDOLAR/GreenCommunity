@@ -47,9 +47,12 @@ import AuthGuard from '@/components/AuthGuard';
 import ChatBot from '@/components/ChatBot';
 import Layout from '@/components/Layout';
 import { useFootprintLog } from '@/lib/useFootprintLog';
+import { usePreferences, useTranslation } from "@/context/PreferencesContext";
 import Link from 'next/link';
 
 const FootprintLog = () => {
+  const { t } = useTranslation(['footprint', 'common']);
+  
   // Use the custom hook for API operations
   const {
     logs,
@@ -463,8 +466,8 @@ const FootprintLog = () => {
       {/* Header */}
       <div className="flex justify-between items-start">
         <div className="space-y-2">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gradient">Carbon Footprint Log</h1>
-          <p className="text-sm sm:text-base text-muted-foreground">Monitor your environmental impact and make informed decisions for a greener lifestyle</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gradient">{t('footprint:carbon_footprint_log')}</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">{t('footprint:monitor_environmental_impact')}</p>
         </div>
         <div className="flex gap-2">
           <Link href="/CarbonCalculator">
@@ -474,7 +477,7 @@ const FootprintLog = () => {
               className="shrink-0"
             >
               <Calculator className="h-4 w-4 mr-2" />
-              Full Assessment
+              {t('footprint:full_assessment')}
             </Button>
           </Link>
           <Button
@@ -485,7 +488,7 @@ const FootprintLog = () => {
             className="shrink-0"
           >
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
+            {t('footprint:refresh')}
           </Button>
         </div>
       </div>
@@ -503,7 +506,7 @@ const FootprintLog = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <Card className="card-eco">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">This Week</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t('footprint:this_week')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-xl sm:text-2xl font-bold text-foreground">
@@ -518,29 +521,29 @@ const FootprintLog = () => {
 
         <Card className="card-gradient">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Entries</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t('footprint:total_entries')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-xl sm:text-2xl font-bold text-foreground">{logs.length}</div>
-            <div className="text-xs sm:text-sm text-muted-foreground mt-2">Activities logged</div>
+            <div className="text-xs sm:text-sm text-muted-foreground mt-2">{t('footprint:activities_logged')}</div>
           </CardContent>
         </Card>
 
         <Card className="card-gradient">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Average Daily</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t('footprint:average_daily')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-xl sm:text-2xl font-bold text-foreground">
               {averageDaily.toFixed(1)} <span className="text-xs sm:text-sm font-normal text-muted-foreground">kg CO₂</span>
             </div>
-            <div className="text-xs sm:text-sm text-muted-foreground mt-2">Per day this week</div>
+            <div className="text-xs sm:text-sm text-muted-foreground mt-2">{t('footprint:per_day_this_week')}</div>
           </CardContent>
         </Card>
 
         <Card className="card-gradient">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Emissions</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t('footprint:total_emissions')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-xl sm:text-2xl font-bold text-foreground">
@@ -555,20 +558,20 @@ const FootprintLog = () => {
         {/* Left Column - Activity Form */}
         <div className="lg:col-span-1">
           <Card className="card-gradient">
-            <CardHeader>
+            <CardHeader className="space-y-2">
               <CardTitle className="flex items-center gap-2">
                 <Plus className="h-5 w-5" />
-                Log New Activity
+                {t('footprint:log_new_activity')}
               </CardTitle>
-              <CardDescription>Record your daily activities and instantly calculate their environmental impact</CardDescription>
+              <CardDescription>{t('footprint:record_daily_activities')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3 sm:space-y-4">
               {/* Activity Type */}
               <div>
-                <Label className="text-sm sm:text-base">Activity Type</Label>
+                <Label className="text-sm sm:text-base">{t('footprint:activity_type')}</Label>
                 <Select value={activityType} onValueChange={setActivityType}>
                   <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Choose your activity type" />
+                    <SelectValue placeholder={t('footprint:choose_activity_type')} />
                   </SelectTrigger>
                   <SelectContent>
                     {/* Group activities by category */}
@@ -865,7 +868,7 @@ const FootprintLog = () => {
                 ) : (
                   <>
                     <Calculator className="h-4 w-4 mr-2" />
-                    Calculate Impact
+                    {t('footprint:calculate_impact')}
                   </>
                 )}
               </Button>
@@ -895,13 +898,15 @@ const FootprintLog = () => {
           <Card className="card-gradient">
             <CardHeader>
               <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Activity Timeline</CardTitle>
-                  <CardDescription>Your environmental impact journey - every activity counts</CardDescription>
+                <div className="space-y-2">
+                  <CardTitle className="flex items-center gap-2 text-lg sm:text-xl md:text-xl lg:text-2xl font-semibold text-muted-foreground group-hover:text-primary transition-colors">
+                    {t('footprint:activity_timeline')}
+                  </CardTitle>
+                  <CardDescription className="text-xs sm:text-sm md:text-sm lg:text-base">{t('footprint:environmental_impact_journey')}</CardDescription>
                 </div>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" className="group-hover:bg-primary/10 transition-colors">
                   <Filter className="h-4 w-4 mr-2" />
-                  Filter Activities
+                  {t('footprint:filter_activities')}
                 </Button>
               </div>
             </CardHeader>
@@ -909,12 +914,12 @@ const FootprintLog = () => {
               {loading && displayLogs.length === 0 ? (
                 <div className="text-center py-8">
                   <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-2 text-muted-foreground" />
-                  <p className="text-muted-foreground">Loading activities...</p>
+                  <p className="text-muted-foreground">{t('footprint:loading_activities')}</p>
                 </div>
               ) : displayLogs.length === 0 ? (
                 <div className="text-center py-8">
                   <Clock className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                  <p className="text-muted-foreground">Your journey starts here!</p>
+                  <p className="text-muted-foreground">{t('footprint:journey_starts_here')}</p>
                   <p className="text-sm text-muted-foreground mt-1">Log your first activity to begin tracking your environmental impact</p>
                 </div>
               ) : (

@@ -22,7 +22,7 @@ export const generateToken = (userId, userRole = 'user') => {
   };
 
   // Different expiration times based on token type
-  const expiresIn = userRole === 'temp-2fa' ? '10m' : '1d'; // 2FA tokens expire in 10 minutes
+  const expiresIn = userRole === 'temp-2fa' ? '15m' : '1d'; // Extended 2FA tokens to 15 minutes
 
   return jwt.sign(payload, process.env.JWT_SECRET, {
     expiresIn,

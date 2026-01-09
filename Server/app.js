@@ -18,6 +18,8 @@ import eventsRoutes from "./routes/events.routes.js";
 import avatarRoutes from "./routes/avatar.routes.js";
 import footprintLogRoutes from "./routes/footprintlog.routes.js";
 import projectsRoutes from "./routes/projects.routes.js";
+import communityRoutes from "./routes/community.routes.js";
+import adminRoutes from "./routes/admin.routes.js";
 import dotenv from "dotenv";
 import aiRoutes from "./routes/ai.routes.js";
 
@@ -120,6 +122,8 @@ async function createServer() {
   app.use("/api/events", eventsRoutes);
   app.use("/api/projects", projectsRoutes);
   app.use("/api/ai", aiRoutes);
+  app.use("/api/community", communityRoutes);
+  app.use("/api/admin", adminRoutes);
 
   // Global error handler for API
   app.use("/api", (err, req, res, next) => {

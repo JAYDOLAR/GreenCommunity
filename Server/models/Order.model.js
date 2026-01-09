@@ -446,6 +446,14 @@ orderSchema.statics.generateOrderNumber = function() {
 // Get order model with marketplace database connection
 const getOrderModel = async () => {
   const marketplaceConnection = await getConnection('MARKETPLACE_DB');
+  
+  // Import and use model registry utility
+  const { ensureModelRegistered } = await import('../utils/modelRegistry.js');
+  
+  // Ensure User and Product models are registered for populate operations
+  await ensureModelRegistered(marketplaceConnection, 'User', 'AUTH_DB');
+  await ensureModelRegistered(marketplaceConnection, 'Product', 'MARKETPLACE_DB');
+  
   return marketplaceConnection.model('Order', orderSchema);
 };
 

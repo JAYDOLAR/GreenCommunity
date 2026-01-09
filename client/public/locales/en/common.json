@@ -1,0 +1,13 @@
+{
+  "greeting_morning": "Good morning",
+  "greeting_afternoon": "Good afternoon",
+  "greeting_evening": "Good evening",
+  "welcome": "Welcome back!",
+  "save": "Save",
+  "cancel": "Cancel",
+  "edit": "Edit",
+  "delete": "Delete",
+  "loading": "Loading...",
+  "error": "Error",
+  "success": "Success"
+}

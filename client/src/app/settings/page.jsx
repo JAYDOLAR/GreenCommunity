@@ -31,8 +31,7 @@ import {
   Leaf,
   Recycle
 } from 'lucide-react';
-import { usePreferences } from "@/context/PreferencesContext";
-import { useTranslation } from "@/context/PreferencesContext";
+import { usePreferences, useTranslation } from "@/context/PreferencesContext";
 import { authAPI } from '@/lib/api';
 import { useUser } from '@/context/UserContext';
 import toast from 'react-hot-toast';
@@ -44,7 +43,7 @@ import Layout from '@/components/Layout';
 import TrustedDevicesManager from '@/components/TrustedDevicesManager';
 
 const Settings = () => {
-  const { t } = useTranslation();
+  const { t } = useTranslation(['preferences', 'common']);
   const { user, updateUser, refreshUser, isLoading: userLoading } = useUser();
   const [activeTab, setActiveTab] = useState('profile');
   const [isLoading, setIsLoading] = useState(true);
@@ -356,15 +355,15 @@ const Settings = () => {
   return (
     <div className="p-6 space-y-6 bg-gradient-to-b from-background to-accent/5 min-h-screen">
       <div className="space-y-2">
-        <h1 className="text-3xl font-bold text-gradient">{t('Settings')}</h1>
-        <p className="text-muted-foreground">{t('Manage Account Preferences')}</p>
+        <h1 className="text-3xl font-bold text-gradient">{t('navigation:settings')}</h1>
+        <p className="text-muted-foreground">{t('preferences:preferences')}</p>
       </div>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="profile">{t('Profile')}</TabsTrigger>
-          <TabsTrigger value="notifications">{t('Notifications')}</TabsTrigger>
-          <TabsTrigger value="preferences">{t('preferences')}</TabsTrigger>
-          <TabsTrigger value="data">{t('Data privacy')}</TabsTrigger>
+          <TabsTrigger value="profile">Profile</TabsTrigger>
+          <TabsTrigger value="notifications">Notifications</TabsTrigger>
+          <TabsTrigger value="preferences">{t('preferences:preferences')}</TabsTrigger>
+          <TabsTrigger value="data">Data & Privacy</TabsTrigger>
         </TabsList>
         <TabsContent value="profile" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -448,18 +447,18 @@ const Settings = () => {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="location">{t('location')}</Label>
+                      <Label htmlFor="location">{t('preferences:location')}</Label>
                       <Input
                         id="location"
                         value={profileData.location}
                         onChange={(e) => handleProfileUpdate('location', e.target.value)}
                         className="mt-1"
-                        placeholder={t('City State Country')}
+                        placeholder="City, State, Country"
                       />
                     </div>
                   </div>
                   <div>
-                    <Label htmlFor="bio">{t('bio')}</Label>
+                    <Label htmlFor="bio">{t('preferences:bio')}</Label>
                     <Input
                       id="bio"
                       value={profileData.bio}
@@ -493,7 +492,7 @@ const Settings = () => {
                     ) : (
                       <Save className="h-4 w-4 mr-2" />
                     )}
-                    {isSaving ? t('Saving...') : t('Save Changes')}
+                    {isSaving ? 'Saving...' : t('common:save')}  
                   </Button>
                 </CardContent>
               </Card>
@@ -532,7 +531,7 @@ const Settings = () => {
               </Card>
               <Card className="card-gradient">
                 <CardHeader>
-                  <CardTitle>{t('achievements')}</CardTitle>
+                  <CardTitle>{t('preferences:achievements')}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-3 gap-2">
@@ -621,7 +620,7 @@ const Settings = () => {
                 ) : (
                   <Save className="h-4 w-4 mr-2" />
                 )}
-                {isSaving ? t('Saving...') : t('Save Notification Settings')}
+                {isSaving ? 'Saving...' : t('common:save')}
               </Button>
             </CardContent>
           </Card>
@@ -639,53 +638,53 @@ const Settings = () => {
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <Label>{t('theme')}</Label>
+                  <Label>{t('preferences:theme')}</Label>
                   <Select value={preferences.theme} onValueChange={(value) => handlePreferenceChange('theme', value)}>
                     <SelectTrigger className="mt-1">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="light">{t('light')}</SelectItem>
-                      <SelectItem value="dark">{t('dark')}</SelectItem>
-                      <SelectItem value="system">{t('system')}</SelectItem>
+                      <SelectItem value="light">{t('preferences:light')}</SelectItem>
+                      <SelectItem value="dark">{t('preferences:dark')}</SelectItem>
+                      <SelectItem value="system">{t('preferences:system')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label>{t('language')}</Label>
+                  <Label>{t('preferences:language')}</Label>
                   <Select value={preferences.language} onValueChange={(value) => handlePreferenceChange('language', value)}>
                     <SelectTrigger className="mt-1">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="en">{t('english')}</SelectItem>
-                      <SelectItem value="hi">{t('hindi')}</SelectItem>
-                      <SelectItem value="gu">{t('gujarati')}</SelectItem>
+                      <SelectItem value="en">English</SelectItem>
+                      <SelectItem value="hi">हिन्दी</SelectItem>
+                      <SelectItem value="gu">ગુજરાતી</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label>{t('currency')}</Label>
+                  <Label>{t('preferences:currency')}</Label>
                   <Select value={preferences.currency} onValueChange={(value) => handlePreferenceChange('currency', value)}>
                     <SelectTrigger className="mt-1">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="usd">{t('usd')}</SelectItem>
-                      <SelectItem value="eur">{t('eur')}</SelectItem>
-                      <SelectItem value="inr">{t('inr')}</SelectItem>
+                      <SelectItem value="usd">USD ($)</SelectItem>
+                      <SelectItem value="eur">EUR (€)</SelectItem>
+                      <SelectItem value="inr">INR (₹)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label>{t('measurement_units')}</Label>
+                  <Label>{t('preferences:units')}</Label>
                   <Select value={preferences.units} onValueChange={(value) => handlePreferenceChange('units', value)}>
                     <SelectTrigger className="mt-1">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="metric">{t('metric')}</SelectItem>
-                      <SelectItem value="imperial">{t('imperial')}</SelectItem>
+                      <SelectItem value="metric">{t('preferences:metric')}</SelectItem>
+                      <SelectItem value="imperial">{t('preferences:imperial')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -701,9 +700,9 @@ const Settings = () => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="public">{t('public')}</SelectItem>
-                        <SelectItem value="friends">{t('friends_only')}</SelectItem>
-                        <SelectItem value="private">{t('private')}</SelectItem>
+                        <SelectItem value="public">{t('preferences:public')}</SelectItem>
+                        <SelectItem value="friends">{t('preferences:friends_only')}</SelectItem>
+                        <SelectItem value="private">{t('preferences:private')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -723,7 +722,7 @@ const Settings = () => {
               </div>
               <Button className="btn-hero" onClick={saveAppPreferences}>
                 <Save className="h-4 w-4 mr-2" />
-                {t('Save Preferences')}
+                {t('preferences:save_preferences')}
               </Button>
             </CardContent>
           </Card>

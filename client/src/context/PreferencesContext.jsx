@@ -1,7 +1,8 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { TRANSLATIONS, getTranslation } from '@/config/languageConfig';
+import { useTranslation, Trans } from 'react-i18next';
+import I18nProvider from '@/components/I18nProvider';
 
 const defaultPreferences = {
   theme: "light",
@@ -16,7 +17,7 @@ const PreferencesContext = createContext({
   setPreferences: () => { },
 });
 
-export function PreferencesProvider({ children }) {
+function PreferencesProviderInner({ children }) {
   const [preferences, setPreferences] = useState(() => {
     if (typeof window !== "undefined") {
       const stored = localStorage.getItem("preferences");
@@ -25,11 +26,20 @@ export function PreferencesProvider({ children }) {
     return defaultPreferences;
   });
 
+  const { i18n } = useTranslation();
+
   useEffect(() => {
     if (typeof window !== "undefined") {
       localStorage.setItem("preferences", JSON.stringify(preferences));
     }
   }, [preferences]);
+
+  // Language switching with i18next
+  useEffect(() => {
+    if (i18n && i18n.changeLanguage) {
+      i18n.changeLanguage(preferences.language);
+    }
+  }, [preferences.language, i18n]);
 
   // Theme switching
   useEffect(() => {
@@ -51,16 +61,19 @@ export function PreferencesProvider({ children }) {
   );
 }
 
+export function PreferencesProvider({ children }) {
+  return (
+    <I18nProvider>
+      <PreferencesProviderInner>
+        {children}
+      </PreferencesProviderInner>
+    </I18nProvider>
+  );
+}
+
 export function usePreferences() {
   return useContext(PreferencesContext);
 }
 
-// Use the translations from configuration
-export const translations = TRANSLATIONS;
-
-export function useTranslation() {
-  const { preferences } = usePreferences();
-  const lang = preferences.language || 'en';
-  const t = (key) => getTranslation(key, lang);
-  return { t };
-} 
+// Re-export react-i18next hooks for easy access
+export { useTranslation, Trans } from 'react-i18next'; 

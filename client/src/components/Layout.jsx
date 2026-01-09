@@ -14,10 +14,12 @@ import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover
 import { useMediaQuery } from 'react-responsive';
 import { useOptimizedNavigation } from '@/lib/useOptimizedNavigation';
 import { SIDEBAR_ITEMS } from '@/config/navigationConfig';
+import { useTranslation } from '@/context/PreferencesContext';
 
 const sidebarItems = SIDEBAR_ITEMS;
 
 export default function Layout({ children }) {
+  const { t } = useTranslation(['navigation', 'common']);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const { user, clearUser } = useUser();
@@ -209,7 +211,7 @@ export default function Layout({ children }) {
                     style={{ fontWeight: 500, letterSpacing: '0.01em' }}
                   >
                     <Icon className="h-3 w-3 md:h-4 md:w-4 lg:h-4 lg:w-4" />
-                    {item.name}
+                    {t(item.name)}
                   </button>
                 );
               })}
@@ -322,7 +324,7 @@ export default function Layout({ children }) {
                           style={{ fontWeight: 500, letterSpacing: '0.01em' }}
                         >
                           <Icon className="h-4 w-4 md:h-5 md:w-5" />
-                          {item.name}
+                          {t(item.name)}
                         </button>
                       );
                     })}

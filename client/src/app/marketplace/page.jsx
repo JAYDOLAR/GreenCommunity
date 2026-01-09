@@ -17,11 +17,13 @@ import AuthGuard from '@/components/AuthGuard';
 import Layout from '@/components/Layout';
 import { MARKETPLACE_CATEGORIES, USD_TO_INR } from '@/config/marketplaceConfig';
 import { marketplaceApi } from '@/lib/marketplaceApi';
+import { useTranslation } from 'react-i18next';
 
 // Shared data and logic
 const categories = MARKETPLACE_CATEGORIES;
 
 function MobileMarketplaceView() {
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [products, setProducts] = useState([]);
@@ -62,8 +64,8 @@ function MobileMarketplaceView() {
       <div className="flex items-center justify-between gap-2">
         {/* Heading and description instead of logo */}
         <div className="flex flex-col flex-1">
-          <h1 className="text-base sm:text-lg font-bold text-foreground leading-tight">Eco Marketplace</h1>
-          <span className="text-xs text-muted-foreground">Discover sustainable products that make a difference</span>
+          <h1 className="text-base sm:text-lg font-bold text-foreground leading-tight">{t('marketplace:eco_marketplace')}</h1>
+          <span className="text-xs text-muted-foreground">{t('marketplace:discover_sustainable_products')}</span>
         </div>
       </div>
       {/* Search and Filters */}
@@ -104,7 +106,7 @@ function MobileMarketplaceView() {
               onClick={() => handleProductClick(product.id)}
             >
               {product.featured && (
-                <Badge className="absolute top-1 sm:top-2 left-1 sm:left-2 z-10 bg-success text-white text-[10px] sm:text-xs">Featured</Badge>
+                <Badge className="absolute top-1 sm:top-2 left-1 sm:left-2 z-10 bg-success text-white text-[10px] sm:text-xs pointer-events-none">Featured</Badge>
               )}
               <img src={product.image} alt={product.name} className="w-14 h-14 sm:w-16 sm:h-16 object-cover rounded" />
               <div className="flex-1 space-y-1">
@@ -181,8 +183,8 @@ function TabletMarketplaceView() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-foreground">Eco Marketplace</h1>
-          <p className="text-muted-foreground text-xs sm:text-sm">Discover sustainable products</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground">{t('marketplace:eco_marketplace')}</h1>
+          <p className="text-muted-foreground text-xs sm:text-sm">{t('marketplace:discover_sustainable_products')}</p>
         </div>
       </div>
       {/* Search and Filters */}
@@ -294,6 +296,7 @@ function TabletMarketplaceView() {
 }
 
 function DesktopMarketplaceView() {
+  const { t } = useTranslation();
   const [viewMode, setViewMode] = useState('grid');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -334,8 +337,8 @@ function DesktopMarketplaceView() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gradient">Eco Marketplace</h1>
-          <p className="text-muted-foreground">Discover sustainable products that make a difference</p>
+          <h1 className="text-3xl font-bold text-gradient">{t('marketplace:eco_marketplace')}</h1>
+          <p className="text-muted-foreground">{t('marketplace:discover_sustainable_products')}</p>
         </div>
       </div>
       {/* Search and Filters */}
@@ -378,7 +381,7 @@ function DesktopMarketplaceView() {
               onClick={() => handleProductClick(product.id)}
             >
               {product.featured && (
-                <Badge className="absolute top-3 left-3 z-10 bg-success text-white">Featured</Badge>
+                <Badge className="absolute top-3 left-3 z-10 bg-success text-white pointer-events-none">Featured</Badge>
               )}
               <div className={viewMode === 'list' ? 'w-48 shrink-0' : ''}>
                 <div className="relative aspect-square overflow-hidden rounded-t-lg">

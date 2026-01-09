@@ -42,27 +42,17 @@ import { Calendar as CustomCalendar } from '@/components/ui/calendar';
 import Link from 'next/link';
 import { useFootprintLog } from '@/lib/useFootprintLog';
 import ReactMarkdown from 'react-markdown';
+import ProtectedLayout from '@/components/ProtectedLayout';
+import AuthGuard from '@/components/AuthGuard';
+import ChatBot from '@/components/ChatBot';
+import Layout from '@/components/Layout';
 
-const translations = {
-  en: {
-    welcome: "Welcome back!",
-    emissions: "Your emissions by category this month",
-    achievements: "Your eco-friendly milestones",
-    // ... add more as needed
-  },
-  hi: {
-    welcome: "वापसी पर स्वागत है!",
-    emissions: "इस महीने श्रेणी के अनुसार आपके उत्सर्जन",
-    achievements: "आपकी पर्यावरण-अनुकूल उपलब्धियाँ",
-    // ...
-  },
-  gu: {
-    welcome: "પાછા આવવા માટે સ્વાગત છે!",
-    emissions: "આ મહિને કેટેગરી પ્રમાણે તમારા ઉત્સર્જન",
-    achievements: "તમારી પર્યાવરણ-મૈત્રીપૂર્ણ સિદ્ધિઓ",
-    // ...
-  },
-};
+const Dashboard = () => {
+  const { t } = useTranslation(['dashboard', 'common']);
+  const { preferences } = usePreferences();
+  const { user, isLoading } = useUser();
+  const [greetingKey, setGreetingKey] = useState('greeting_morning'); // Default fallback
+  const [date, setDate] = useState(new Date());
 
 const currencySymbols = {
   usd: "$",
@@ -75,26 +65,15 @@ const unitLabels = {
   imperial: { distance: "mi", weight: "lb" },
 };
 
+const currency = currencySymbols[preferences.currency] || "$";
+const units = unitLabels[preferences.units] || unitLabels.metric;
+
 const getGreetingKey = () => {
   const hour = new Date().getHours();
   if (hour < 12) return 'greeting_morning';
   if (hour < 18) return 'greeting_afternoon';
   return 'greeting_evening';
 };
-
-import ProtectedLayout from '@/components/ProtectedLayout';
-import AuthGuard from '@/components/AuthGuard';
-import ChatBot from '@/components/ChatBot';
-import Layout from '@/components/Layout';
-
-const Dashboard = () => {
-  const { user, isLoading } = useUser();
-  const [greetingKey, setGreetingKey] = useState('greeting_morning'); // Default fallback
-  const { preferences } = usePreferences();
-  const { t } = useTranslation();
-  const currency = currencySymbols[preferences.currency] || "$";
-  const units = unitLabels[preferences.units] || unitLabels.metric;
-  const [date, setDate] = useState(new Date());
 
   // Footprint log integration - Real API data replacing mock data
   const {
@@ -208,7 +187,7 @@ const Dashboard = () => {
       {/* Enhanced Header */}
       <div className="space-y-1 sm:space-y-2 md:space-y-2 animate-fade-in">
         <div>
-          <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-3xl xl:text-4xl font-bold text-gradient mb-1">{t(greetingKey)}, {name}!</h1>
+          <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-3xl xl:text-4xl font-bold text-gradient mb-1">{t(`common:${greetingKey}`)}, {name}!</h1>
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-2">
             <p className="text-sm sm:text-base md:text-lg lg:text-lg xl:text-xl text-muted-foreground">Here's your environmental impact overview</p>
           </div>
@@ -223,7 +202,7 @@ const Dashboard = () => {
             <CardHeader className="pb-2">
               <CardTitle className="text-xs sm:text-sm md:text-sm lg:text-base font-semibold text-muted-foreground flex items-center gap-2 group-hover:text-primary transition-colors">
                 <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 md:h-5 md:w-5 lg:h-6 lg:w-6" />
-                Monthly Footprint
+                {t('dashboard:monthly_footprint')}
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4 md:p-6 flex-1 flex flex-col justify-between">
@@ -240,7 +219,7 @@ const Dashboard = () => {
                   )}
                   <span className={`text-xs sm:text-xs md:text-sm lg:text-sm font-semibold ${isAboveTarget ? 'text-warning' : 'text-success'}`}>
                     {targetFootprint > 0 ? (
-                      `${Math.abs(((currentFootprint - targetFootprint) / targetFootprint) * 100).toFixed(1)}% ${isAboveTarget ? 'above' : 'below'} target`
+                      `${Math.abs(((currentFootprint - targetFootprint) / targetFootprint) * 100).toFixed(1)}% ${isAboveTarget ? t('dashboard:above_target') : t('dashboard:below_target')}`
                     ) : (
                       'No target set'
                     )}
@@ -263,14 +242,14 @@ const Dashboard = () => {
             <CardHeader className="pb-2">
               <CardTitle className="text-xs sm:text-sm md:text-sm lg:text-base font-semibold text-muted-foreground flex items-center gap-2 group-hover:text-primary transition-colors">
                 <Calendar className="h-4 w-4 sm:h-5 sm:w-5 md:h-5 md:w-5 lg:h-6 lg:w-6" />
-                This Week
+                {t('dashboard:this_week')}
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4 md:p-6 flex-1 flex flex-col justify-between">
               <div className="space-y-3">
                 <div className="text-xl sm:text-2xl md:text-2xl lg:text-3xl xl:text-3xl font-bold text-foreground">
                   <AnimatedCounter end={weeklyEmissions} decimals={1} />
-                  <span className="text-xs sm:text-sm md:text-sm lg:text-base font-normal text-muted-foreground ml-1">kg CO₂</span>
+                  <span className="text-xs sm:text-sm md:text-sm lg:text-base font-normal text-muted-foreground ml-1">{t('dashboard:kg_co2')}</span>
                 </div>
                 <div className="flex items-center gap-2 min-h-[1.5rem]">
                   {weeklyTrend === 'up' ? (
@@ -279,11 +258,11 @@ const Dashboard = () => {
                     <TrendingDown className="h-3 w-3 sm:h-4 sm:w-4 md:h-4 md:w-4 lg:h-5 lg:w-5 text-success animate-bounce" />
                   )}
                   <span className={`text-xs sm:text-xs md:text-sm lg:text-sm font-semibold ${weeklyTrend === 'up' ? 'text-warning' : 'text-success'}`}>
-                    {trendPercentage.toFixed(1)}% {weeklyTrend === 'up' ? 'above' : 'below'} monthly average
+                    {trendPercentage.toFixed(1)}% {weeklyTrend === 'up' ? t('dashboard:above_monthly_average') : t('dashboard:below_monthly_average')}
                   </span>
                 </div>
                 <div className="text-xs sm:text-xs md:text-sm lg:text-sm text-muted-foreground min-h-[1.5rem]">
-                  Daily average: {(weeklyEmissions / 7).toFixed(1)} kg CO₂
+                  {t('dashboard:daily_average')}: {(weeklyEmissions / 7).toFixed(1)} {t('dashboard:kg_co2')}
                 </div>
               </div>
               <div className="mt-4">
@@ -299,7 +278,7 @@ const Dashboard = () => {
             <CardHeader className="pb-2">
               <CardTitle className="text-xs sm:text-sm md:text-sm lg:text-base font-semibold text-muted-foreground flex items-center gap-2 group-hover:text-primary transition-colors">
                 <Target className="h-4 w-4 sm:h-5 sm:w-5 md:h-5 md:w-5 lg:h-6 lg:w-6" />
-                Goal Progress
+                {t('dashboard:goal_progress')}
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4 md:p-6 flex-1 flex flex-col justify-between">
@@ -308,10 +287,10 @@ const Dashboard = () => {
                   <AnimatedCounter end={goalProgress} />%
                 </div>
                 <div className="text-xs sm:text-xs md:text-sm lg:text-sm text-muted-foreground min-h-[1.5rem]">
-                  Target: {targetFootprint} tons/month
+                  {t('dashboard:target')}: {targetFootprint} {t('dashboard:tons_month')}
                 </div>
                 <div className="text-xs sm:text-xs md:text-sm lg:text-sm text-muted-foreground min-h-[1.5rem]">
-                  Current: {currentFootprint.toFixed(1)} tons
+                  {t('dashboard:current')}: {currentFootprint.toFixed(1)} tons
                 </div>
               </div>
               <ProfessionalProgress value={goalProgress} className="mt-4" />
@@ -325,7 +304,7 @@ const Dashboard = () => {
             <CardHeader className="pb-2">
               <CardTitle className="text-xs sm:text-sm md:text-sm lg:text-base font-semibold text-muted-foreground flex items-center gap-2 group-hover:text-success transition-colors">
                 <Leaf className="h-4 w-4 sm:h-5 sm:w-5 md:h-5 md:w-5 lg:h-6 lg:w-6" />
-                Offset Credits
+                {t('dashboard:offset_credits')}
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4 md:p-6 flex-1 flex flex-col justify-between">
@@ -335,11 +314,11 @@ const Dashboard = () => {
                   <span className="text-xs sm:text-sm md:text-sm lg:text-base font-normal text-muted-foreground ml-1">tons</span>
                 </div>
                 <div className="text-xs sm:text-xs md:text-sm lg:text-sm text-muted-foreground min-h-[1.5rem]">
-                  Carbon offset purchased
+                  {t('dashboard:carbon_offset_purchased')}
                 </div>
                 <div className="min-h-[1.5rem]">
                   <Badge variant="secondary" className="bg-success/15 text-success border-success/30 font-semibold animate-pulse-eco text-xs sm:text-xs md:text-sm">
-                    50% offset this month
+                    50% {t('dashboard:offset_this_month')}
                   </Badge>
                 </div>
               </div>
@@ -355,8 +334,8 @@ const Dashboard = () => {
           <div className="animate-slide-up" style={{ animationDelay: '0.5s' }}>
             <Card className="card-premium hover-lift">
               <CardHeader className="p-2 md:p-4">
-                <CardTitle className="flex items-center gap-2 text-lg sm:text-xl md:text-xl lg:text-2xl">{t('emissions')}</CardTitle>
-                <CardDescription className="text-xs sm:text-sm md:text-sm lg:text-base">Your emissions by category this month</CardDescription>
+                <CardTitle className="flex items-center gap-2 text-lg sm:text-xl md:text-xl lg:text-2xl font-semibold text-muted-foreground group-hover:text-primary transition-colors">{t('dashboard:emissions')}</CardTitle>
+                <CardDescription className="text-xs sm:text-sm md:text-sm lg:text-base">{t('dashboard:emissions_by_category')}</CardDescription>
               </CardHeader>
               <CardContent className="p-4 md:p-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 md:gap-4">
@@ -405,11 +384,11 @@ const Dashboard = () => {
           <div className="animate-slide-up" style={{ animationDelay: '0.6s' }}>
             <Card className="card-floating hover-lift">
               <CardHeader className="p-4 md:p-6">
-                <CardTitle className="flex items-center gap-2 text-lg sm:text-xl md:text-xl lg:text-2xl">
+                <CardTitle className="flex items-center gap-2 text-lg sm:text-xl md:text-xl lg:text-2xl font-semibold text-muted-foreground group-hover:text-primary transition-colors">
                   <Calendar className="h-5 w-5 sm:h-6 sm:w-6 md:h-6 md:w-6 lg:h-7 lg:w-7 text-primary" />
-                  Recent Activities
+                  {t('dashboard:recent_activities')}
                 </CardTitle>
-                <CardDescription className="text-xs sm:text-sm md:text-sm lg:text-base">Your latest carbon footprint entries</CardDescription>
+                <CardDescription className="text-xs sm:text-sm md:text-sm lg:text-base">{t('dashboard:latest_carbon_footprint_entries')}</CardDescription>
               </CardHeader>
               <CardContent className="p-4 md:p-6">
                 {footprintLoading ? (
@@ -456,7 +435,7 @@ const Dashboard = () => {
                       <div className="pt-4 border-t">
                         <Link href="/footprintlog">
                           <Button variant="outline" className="w-full">
-                            View All Activities
+                            {t('dashboard:view_all_activities')}
                             <ArrowRight className="h-4 w-4 ml-2" />
                           </Button>
                         </Link>
@@ -472,8 +451,8 @@ const Dashboard = () => {
           <div className="animate-slide-up" style={{ animationDelay: '0.8s' }}>
             <Card className="card-floating hover-lift">
               <CardHeader className="p-4 md:p-6">
-                <CardTitle className="flex items-center gap-2 text-xl md:text-2xl">{t('achievements')}</CardTitle>
-                <CardDescription className="text-sm md:text-base">Your eco-friendly milestones</CardDescription>
+                <CardTitle className="flex items-center gap-2 text-xl md:text-2xl font-semibold text-muted-foreground group-hover:text-primary transition-colors">{t('dashboard:achievements')}</CardTitle>
+                <CardDescription className="text-sm md:text-base">{t('dashboard:eco_friendly_milestones')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4 md:space-y-5 p-4 md:p-6">
                 {achievements.map((achievement, index) => {
@@ -521,31 +500,31 @@ const Dashboard = () => {
           <div className="animate-slide-up" style={{ animationDelay: '0.7s' }}>
             <Card className="card-premium hover-glow">
               <CardHeader className="p-4 md:p-6">
-                <CardTitle className="flex items-center gap-2 text-xl md:text-2xl">
+                <CardTitle className="flex items-center gap-2 text-xl md:text-2xl font-semibold text-muted-foreground group-hover:text-primary transition-colors">
                   <Zap className="h-6 w-6 md:h-7 md:w-7 text-primary animate-pulse-eco" />
-                  Quick Actions
+                  {t('dashboard:quick_actions')}
                 </CardTitle>
-                <CardDescription className="text-sm md:text-base">Track your impact today</CardDescription>
+                <CardDescription className="text-sm md:text-base">{t('dashboard:track_your_impact_today')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3 sm:space-y-4 md:space-y-4 p-3 md:p-4">
                 <Link href="/footprintlog" className="block">
                   <Button className="w-full justify-start h-12 sm:h-14 md:h-16 text-base sm:text-lg md:text-xl font-semibold btn-professional group">
                     <Plus className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 mr-2 sm:mr-3 group-hover:scale-110 transition-transform" />
-                    Log Activity
+                    {t('dashboard:log_activity')}
                     <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 ml-auto group-hover:translate-x-1 transition-transform" />
                   </Button>
                 </Link>
                 <Link href="/projects" className="block">
                   <Button className="w-full justify-start h-12 sm:h-14 md:h-16 text-base sm:text-lg md:text-xl font-semibold btn-professional group">
                     <Zap className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 mr-2 sm:mr-3 group-hover:scale-110 transition-transform" />
-                    Offset Emissions
+                    {t('dashboard:offset_emissions')}
                     <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 ml-auto group-hover:translate-x-1 transition-transform" />
                   </Button>
                 </Link>
                 <Link href="/community" className="block">
                   <Button className="w-full justify-start h-12 sm:h-14 md:h-16 text-base sm:text-lg md:text-xl font-semibold btn-professional group">
                     <Users className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 mr-2 sm:mr-3 group-hover:scale-110 transition-transform" />
-                    Join Challenge
+                    {t('dashboard:join_challenge')}
                     <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 ml-auto group-hover:translate-x-1 transition-transform" />
                   </Button>
                 </Link>
@@ -560,9 +539,9 @@ const Dashboard = () => {
                   <span className="inline-flex items-center justify-center h-8 w-8 sm:h-10 sm:w-10 md:h-10 md:w-10 rounded-full bg-gradient-to-br from-green-400 to-green-600 shadow-md mr-2">
                     <Calendar className="h-5 w-5 sm:h-6 sm:w-6 md:h-5 md:w-5 text-white" />
                   </span>
-                  <span className="bg-gradient-to-r from-green-600 to-green-400 bg-clip-text text-transparent font-extrabold">Streak Calendar</span>
+                  <span className="bg-gradient-to-r from-green-600 to-green-400 bg-clip-text text-transparent font-extrabold">{t('dashboard:streak_calendar')}</span>
                 </CardTitle>
-                <CardDescription className="text-sm sm:text-base md:text-base text-gray-600 mt-1">Your activity streak this month</CardDescription>
+                <CardDescription className="text-sm sm:text-base md:text-base text-gray-600 mt-1">{t('dashboard:your_activity_streak')} {t('dashboard:this_month')}</CardDescription>
               </CardHeader>
               <CardContent className="px-2 py-4 sm:px-4 sm:py-6 md:px-4 md:py-6 lg:px-6 lg:py-8">
                 <div className="flex justify-center items-center">
@@ -582,9 +561,9 @@ const Dashboard = () => {
             <Card className="card-premium hover-glow border-2 border-primary/20 relative overflow-hidden">
               <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-primary opacity-10 rounded-full -translate-y-10 translate-x-10" />
               <CardHeader className="p-4 md:p-6">
-                <CardTitle className="text-xl md:text-2xl flex items-center gap-2">
+                <CardTitle className="text-xl md:text-2xl flex items-center gap-2 font-semibold text-muted-foreground group-hover:text-primary transition-colors">
                   <Lightbulb className="h-6 w-6 md:h-8 md:w-8 animate-pulse text-yellow-500" />
-                  Eco Tip of the Day
+                  {t('dashboard:eco_tip_of_the_day')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-4 md:p-6">

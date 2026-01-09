@@ -1,0 +1,13 @@
+{
+  "greeting_morning": "સુપ્રભાત",
+  "greeting_afternoon": "શુભ બપોર",
+  "greeting_evening": "શુભ સાંજ",
+  "welcome": "પાછા ફરવા બદલ સ્વાગત છે!",
+  "save": "સેવ કરો",
+  "cancel": "રદ કરો",
+  "edit": "એડિટ કરો",
+  "delete": "ડિલીટ કરો",
+  "loading": "લોડ થઈ રહ્યું છે...",
+  "error": "ભૂલ",
+  "success": "સફળતા"
+}

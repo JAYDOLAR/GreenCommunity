@@ -10,6 +10,7 @@ const challengeSchema = new mongoose.Schema({
   reward: { type: String },
   progress: { type: Number, min: 0, max: 100, default: 0 },
   image: { type: String },
+  iconClass: { type: String },
   category: { type: String },
   featured: { type: Boolean, default: false },
   points: { type: Number, default: 0 },

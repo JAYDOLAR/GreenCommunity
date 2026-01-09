@@ -466,12 +466,11 @@ productSchema.statics.searchProducts = function(searchOptions = {}) {
 const getProductModel = async () => {
   const marketplaceConnection = await getConnection('MARKETPLACE_DB');
   
-  // Ensure User model is also registered on this connection for populate to work
-  if (!marketplaceConnection.models.User) {
-    const User = await import('./User.model.js');
-    const userSchema = User.default.schema;
-    marketplaceConnection.model('User', userSchema);
-  }
+  // Import and use model registry utility
+  const { ensureModelRegistered } = await import('../utils/modelRegistry.js');
+  
+  // Ensure User model is registered for populate operations
+  await ensureModelRegistered(marketplaceConnection, 'User', 'AUTH_DB');
   
   return marketplaceConnection.model('Product', productSchema);
 };

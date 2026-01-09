@@ -467,10 +467,10 @@ const Projects = () => {
           zoom={2}
           minZoom={1}
           maxZoom={18}
-          zoomControl={false}
-          scrollWheelZoom={false}
-          doubleClickZoom={false}
-          dragging={false}
+          zoomControl={true}
+          scrollWheelZoom={true}
+          doubleClickZoom={true}
+          dragging={true}
           style={{ height: '100%', width: '100%' }}
           className="z-0"
           whenCreated={() => {

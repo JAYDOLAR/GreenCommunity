@@ -1,23 +1,38 @@
 import { getChallengeModel } from '../models/Challenge.model.js';
 import { getUserPointsModel } from '../models/UserPoints.model.js';
 import { getUserChallengeModel } from '../models/UserChallenge.model.js';
+import { getUserModel } from '../models/User.model.js';
+import mongoose from 'mongoose';
 
 export const listChallenges = async (req, res) => {
   try {
     const Challenge = await getChallengeModel();
     const challenges = await Challenge.find({ active: true }).sort({ created_at: -1 });
+    
     // Include completion info if authenticated
     try {
       const userId = req.user?._id;
       if (userId) {
         const UserChallenge = await getUserChallengeModel();
-        const completed = await UserChallenge.find({ userId }).select('challengeId');
-        const set = new Set(completed.map(c => String(c.challengeId)));
-        return res.json(challenges.map(c => ({ ...c.toObject(), completed: set.has(String(c._id)) })));
+        const completed = await UserChallenge.find({ userId }).select('challengeId completedAt');
+        const completedMap = new Map();
+        completed.forEach(c => {
+          completedMap.set(String(c.challengeId), c.completedAt);
+        });
+        
+        return res.json(challenges.map(c => ({ 
+          ...c.toObject(), 
+          completed: completedMap.has(String(c._id)),
+          completedAt: completedMap.get(String(c._id))
+        })));
       }
-    } catch {}
+    } catch (err) {
+      console.error('Error getting user completions:', err);
+    }
+    
     res.json(challenges);
   } catch (error) {
+    console.error('Error listing challenges:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -25,11 +40,27 @@ export const listChallenges = async (req, res) => {
 export const completeChallenge = async (req, res) => {
   try {
     const { id } = req.params;
+    
+    // Validate ObjectId format with more detailed error
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+      console.error(`Invalid challenge ID format: ${id}`);
+      return res.status(400).json({ 
+        error: 'Invalid challenge ID format',
+        details: `The provided ID "${id}" is not a valid MongoDB ObjectId`
+      });
+    }
+    
     const Challenge = await getChallengeModel();
     const UserPoints = await getUserPointsModel();
     const UserChallenge = await getUserChallengeModel();
 
-    const challenge = await Challenge.findById(id);
+    // Find and update the challenge with atomic increment of participants
+    const challenge = await Challenge.findByIdAndUpdate(
+      id,
+      { $inc: { participants: 1 } }, // Increment participants count
+      { new: true } // Return updated document
+    );
+    
     if (!challenge || !challenge.active) {
       return res.status(404).json({ error: 'Challenge not found' });
     }
@@ -38,13 +69,27 @@ export const completeChallenge = async (req, res) => {
     // Prevent duplicate completion
     const exists = await UserChallenge.findOne({ userId, challengeId: id });
     if (exists) {
-      return res.status(409).json({ error: 'Challenge already completed' });
+      // Return a more helpful error with completion time
+      return res.status(409).json({ 
+        error: 'Challenge already completed',
+        details: {
+          completedAt: exists.completedAt,
+          userId: userId,
+          challengeId: id
+        }
+      });
     }
+    
+    // Update user points and add to history
     const pointsDoc = await UserPoints.findOneAndUpdate(
       { userId },
       {
         $inc: { totalPoints: challenge.points },
-        $push: { history: { challengeId: challenge._id, points: challenge.points, title: challenge.title } }
+        $push: { history: { 
+          challengeId: challenge._id, 
+          points: challenge.points, 
+          title: challenge.title 
+        }}
       },
       { upsert: true, new: true }
     );
@@ -61,13 +106,60 @@ export const completeChallenge = async (req, res) => {
 export const getLeaderboard = async (req, res) => {
   try {
     const UserPoints = await getUserPointsModel();
+    const User = await getUserModel();
+    
+    // Get the top entries from COMMUNITY_DB
     const top = await UserPoints.find({})
       .sort({ totalPoints: -1 })
       .limit(20)
-      .select('userId totalPoints')
-      .populate({ path: 'userId', select: 'name email profile.avatar.url' });
-    res.json(top);
+      .select('userId totalPoints history');
+    
+    // Get all user IDs from the leaderboard entries
+    const userIds = top.map(entry => entry.userId).filter(Boolean);
+    
+    // Fetch user data from AUTH_DB separately
+    const users = await User.find({ _id: { $in: userIds } })
+      .select('name email profile.avatar_url')
+      .lean();
+    
+    // Create a map for quick user lookup
+    const userMap = new Map();
+    users.forEach(user => {
+      userMap.set(user._id.toString(), user);
+    });
+    
+    // Combine UserPoints data with User data
+    const leaderboardData = top.map((entry, index) => {
+      const entryObject = entry.toObject ? entry.toObject() : { ...entry };
+      const userId = entryObject.userId ? entryObject.userId.toString() : null;
+      const user = userMap.get(userId);
+      
+      if (user) {
+        // Transform the user data to match the expected client format
+        entryObject.userId = {
+          name: user.name,
+          email: user.email,
+          profile: {
+            avatar: {
+              url: user.profile?.avatar_url
+            }
+          }
+        };
+      } else {
+        // User not found - create placeholder
+        console.log(`Warning: User not found for UserPoints entry ${entryObject._id}, userId: ${userId}`);
+        entryObject.userId = {
+          name: `User ${entryObject._id.toString().slice(-4)}`,
+          email: `user-${entryObject._id.toString().slice(-4)}@example.com`
+        };
+      }
+      
+      return entryObject;
+    });
+    
+    res.json(leaderboardData);
   } catch (error) {
+    console.error('Leaderboard error:', error);
     res.status(500).json({ error: error.message });
   }
 };

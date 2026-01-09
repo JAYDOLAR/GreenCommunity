@@ -5,22 +5,22 @@
 import { LayoutDashboard, FileText, ShoppingCart, TreePine, Users, Settings } from 'lucide-react';
 
 export const SIDEBAR_ITEMS = [
-    { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-    { name: 'Footprint Log', path: '/footprintlog', icon: FileText },
-    { name: 'Marketplace', path: '/marketplace', icon: ShoppingCart },
-    { name: 'Projects', path: '/projects', icon: TreePine },
-    { name: 'Community', path: '/community', icon: Users },
-    { name: 'Settings', path: '/settings', icon: Settings },
+    { name: 'navigation:dashboard', path: '/dashboard', icon: LayoutDashboard },
+    { name: 'navigation:footprint_log', path: '/footprintlog', icon: FileText },
+    { name: 'navigation:marketplace', path: '/marketplace', icon: ShoppingCart },
+    { name: 'navigation:projects', path: '/projects', icon: TreePine },
+    { name: 'navigation:community', path: '/community', icon: Users },
+    { name: 'navigation:settings', path: '/settings', icon: Settings },
 ];
 
 // Simple sidebar items for basic components
 export const SIMPLE_SIDEBAR_ITEMS = [
-    { name: "Dashboard", path: "/" },
-    { name: "Footprint Log", path: "/footprint" },
-    { name: "Marketplace", path: "/marketplace" },
-    { name: "Projects", path: "/projects" },
-    { name: "Community", path: "/community" },
-    { name: "Settings", path: "/settings" },
+    { name: "navigation:dashboard", path: "/" },
+    { name: "navigation:footprint_log", path: "/footprint" },
+    { name: "navigation:marketplace", path: "/marketplace" },
+    { name: "navigation:projects", path: "/projects" },
+    { name: "navigation:community", path: "/community" },
+    { name: "navigation:settings", path: "/settings" },
 ];
 
 // Admin navigation items

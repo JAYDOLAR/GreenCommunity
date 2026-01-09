@@ -1,0 +1,10 @@
+{
+  "preferences": "Preferences",
+  "theme": "Theme",
+  "language": "Language",
+  "currency": "Currency",
+  "units": "Measurement Units",
+  "privacy": "Profile Visibility",
+  "save_preferences": "Save Preferences",
+  "profile_private": "Your profile is private and cannot be viewed by others."
+}

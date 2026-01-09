@@ -10,6 +10,8 @@ const eventSchema = new mongoose.Schema({
   maxAttendees: { type: Number, default: 0 },
   organizer: { type: String, trim: true },
   description: { type: String, trim: true },
+  avatar: { type: String, trim: true },
+  iconClass: { type: String },
   created_at: { type: Date, default: Date.now },
   updated_at: { type: Date, default: Date.now }
 }, {

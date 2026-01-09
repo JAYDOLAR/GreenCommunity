@@ -105,7 +105,12 @@ const UsersPage = () => {
     setIsLoading(true);
     try {
       // Fetch fresh data from API before exporting
-      const response = await fetch('/api/admin/users');
+      const adminToken = localStorage.getItem('adminToken');
+      const response = await fetch('/api/admin/users', {
+        headers: {
+          'Authorization': `Bearer ${adminToken}`
+        }
+      });
       const data = await response.json();
       
       if (data.users && data.users.length > 0) {
@@ -148,7 +153,12 @@ const UsersPage = () => {
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch('/api/admin/users');
+      const adminToken = localStorage.getItem('adminToken');
+      const response = await fetch('/api/admin/users', {
+        headers: {
+          'Authorization': `Bearer ${adminToken}`
+        }
+      });
       const data = await response.json();
       if (data.users) {
         setUsers(data.users);
@@ -160,10 +170,12 @@ const UsersPage = () => {
 
   const updateUser = async (userData) => {
     try {
+      const adminToken = localStorage.getItem('adminToken');
       const response = await fetch('/api/admin/users', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${adminToken}`
         },
         body: JSON.stringify(userData),
       });
@@ -179,8 +191,12 @@ const UsersPage = () => {
 
   const deleteUser = async (userId) => {
     try {
+      const adminToken = localStorage.getItem('adminToken');
       const response = await fetch(`/api/admin/users?id=${userId}`, {
         method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${adminToken}`
+        },
       });
       const data = await response.json();
       if (data.success) {

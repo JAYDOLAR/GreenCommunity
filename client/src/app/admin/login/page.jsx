@@ -101,6 +101,10 @@ export default function AdminLoginPage() {
         localStorage.setItem('adminAuthenticated', 'true');
         localStorage.setItem('adminEmail', email);
         localStorage.setItem('adminUser', JSON.stringify(data.user));
+        // Store the authentication token
+        if (data.token) {
+          localStorage.setItem('adminToken', data.token);
+        }
         
         // Small delay to ensure session is stored before redirect
         setTimeout(() => {
