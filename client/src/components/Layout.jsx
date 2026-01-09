@@ -15,6 +15,7 @@ import { useMediaQuery } from 'react-responsive';
 import { useOptimizedNavigation } from '@/lib/useOptimizedNavigation';
 import { SIDEBAR_ITEMS } from '@/config/navigationConfig';
 import { useTranslation } from '@/context/PreferencesContext';
+import { ThemeToggle } from './ThemeToggle';
 
 const sidebarItems = SIDEBAR_ITEMS;
 
@@ -114,7 +115,7 @@ export default function Layout({ children }) {
     <div className="min-h-screen bg-background relative">
       <FloatingParticles />
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-border/30 shadow-sm">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border/30 shadow-sm supports-[backdrop-filter]:bg-background/80">
         <div className="flex items-center justify-between px-4 sm:px-6 md:px-8 h-16 md:h-20 relative">
           {/* Logo and Navigation */}
           {isMobile || isTablet ? (
@@ -133,7 +134,8 @@ export default function Layout({ children }) {
                 />
               </div>
               {/* User Avatar for mobile/tablet - positioned on right with proper spacing */}
-              <div className="flex items-center ml-auto">
+              <div className="flex items-center gap-2 ml-auto">
+                <ThemeToggle />
                 <Popover>
                   <PopoverTrigger asChild>
                     <button className="focus:outline-none">
@@ -220,6 +222,7 @@ export default function Layout({ children }) {
           {/* User Info and Profile (desktop only) */}
           {!isMobile && !isTablet && (
             <div className="flex items-center gap-1 md:gap-2 lg:gap-2">
+              <ThemeToggle />
               <div className="hidden lg:flex flex-col items-end">
                 <span className="text-xs md:text-sm font-semibold text-foreground">{name}</span>
                 <div className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -295,8 +298,8 @@ export default function Layout({ children }) {
                 {sidebarOpen && (
                   <div className="fixed inset-0 z-50 bg-black/40" onClick={() => setSidebarOpen(false)}></div>
                 )}
-                <div className={`fixed top-0 left-0 z-50 h-full w-64 md:w-80 bg-white shadow-lg transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 flex flex-col`}>
-                  <div className="flex items-center justify-between p-4 md:p-6 border-b">
+                <div className={`fixed top-0 left-0 z-50 h-full w-64 md:w-80 bg-background border-r border-border shadow-lg transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 flex flex-col`}>
+                  <div className="flex items-center justify-between p-4 md:p-6 border-b border-border">
                     <img
                       src="/logo.png"
                       alt="GreenCommunity Logo"
@@ -329,7 +332,7 @@ export default function Layout({ children }) {
                       );
                     })}
                   </nav>
-                  <div className="mt-auto p-4 md:p-6 border-t">
+                  <div className="mt-auto p-4 md:p-6 border-t border-border">
                     <Button
                       variant="destructive"
                       className="w-full flex items-center gap-2 text-sm md:text-base bg-red-600 hover:bg-red-700 text-white"

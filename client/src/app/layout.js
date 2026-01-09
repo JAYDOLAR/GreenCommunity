@@ -7,6 +7,7 @@ import { PreferencesProvider } from "@/context/PreferencesContext";
 import { AnimationProvider } from "@/context/AnimationContext";
 import LenisProvider from "@/components/LenisProvider";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import { ThemeProvider } from "@/components/ThemeProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -34,15 +35,17 @@ export default function RootLayout({ children }) {
         suppressHydrationWarning={true}
       >
         <ErrorBoundary>
-          <LenisProvider>
-            <PreferencesProvider>
-              <AnimationProvider>
-                <UserProvider>
-                  <AuthLayoutWrapper>{children}</AuthLayoutWrapper>
-                </UserProvider>
-              </AnimationProvider>
-            </PreferencesProvider>
-          </LenisProvider>
+          <ThemeProvider>
+            <LenisProvider>
+              <PreferencesProvider>
+                <AnimationProvider>
+                  <UserProvider>
+                    <AuthLayoutWrapper>{children}</AuthLayoutWrapper>
+                  </UserProvider>
+                </AnimationProvider>
+              </PreferencesProvider>
+            </LenisProvider>
+          </ThemeProvider>
         </ErrorBoundary>
       </body>
     </html>
