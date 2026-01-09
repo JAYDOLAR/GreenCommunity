@@ -76,25 +76,25 @@ const LandingPage = () => {
 
   const testimonials = [
     {
-      name: "Sarah Chen",
+      name: "Bhavya Sonigra",
       role: "Founder of EcoTech Solutions",
       badge: "Carbon Neutral Certified",
       quote: "GreenCommunity helped our small business reduce carbon emissions by 40% in just six months. The actionable insights were game-changing.",
-      avatar: "/woman.png"
+      avatar: "/bhavya.jpeg"
     },
     {
-      name: "Michael Rodriguez",
+      name: "Jay Dolar",
       role: "Community Member",
       badge: "Top Project Contributor",
       quote: "I never realized how much impact small changes could make until I used their calculator. Now our entire family is on a sustainability journey.",
-      avatar: "/user.png"
+      avatar: "/dolar.jpeg"
     },
     {
-      name: "Dr. Priya Patel",
+      name: "Chirag Marvaniya",
       role: "Environmental Consultant",
       badge: "Urban Garden Innovator",
       quote: "The offset marketplace connected us with amazing reforestation projects. We're not just reducing emissions, we're actively restoring nature.",
-      avatar: "/user-icon.png"
+      avatar: "/chiko.jpeg"
     }
   ];
 
