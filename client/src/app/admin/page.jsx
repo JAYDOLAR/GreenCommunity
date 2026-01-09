@@ -45,10 +45,17 @@ const AdminDashboard = () => {
 
   const fetchRealTimeData = async () => {
     try {
-      const response = await fetch('/api/admin/dashboard-stats');
+      const adminToken = localStorage.getItem('adminToken');
+      const response = await fetch('/api/admin/dashboard/stats', {
+        headers: {
+          'Authorization': `Bearer ${adminToken}`
+        }
+      });
       const data = await response.json();
-      if (data.stats) {
+      if (data.success && data.stats) {
         setDashboardStats(data.stats);
+      } else {
+        console.error('Dashboard stats API error:', data.message);
       }
     } catch (error) {
       console.error('Failed to fetch dashboard stats:', error);
@@ -205,7 +212,7 @@ const AdminDashboard = () => {
   if (!mounted) return null;
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 min-h-full">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

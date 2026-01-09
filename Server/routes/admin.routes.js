@@ -1,5 +1,5 @@
 import express from 'express';
-import { adminLogin, adminVerify, getUsers, updateUser, deleteUser } from '../controllers/admin.controller.js';
+import { adminLogin, adminVerify, getUsers, updateUser, deleteUser, getDashboardStats } from '../controllers/admin.controller.js';
 import { authenticate } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -19,6 +19,9 @@ const requireAdmin = (req, res, next) => {
 // Admin authentication routes
 router.post('/auth', adminLogin);
 router.get('/verify', authenticate, adminVerify);
+
+// Admin dashboard routes
+router.get('/dashboard/stats', authenticate, requireAdmin, getDashboardStats);
 
 // Admin user management routes
 router.get('/users', authenticate, requireAdmin, getUsers);
