@@ -144,6 +144,7 @@ const ProjectView = ({ project, allProjects }) => {
                       <div>
                         <p className="text-xs text-muted-foreground">Contributors</p>
                         <p className="text-sm font-medium">{(project.contributors || 0).toLocaleString()}</p>
+                        <p className="text-sm font-medium">{(project.contributors || 0).toLocaleString()}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
