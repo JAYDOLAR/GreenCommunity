@@ -82,7 +82,6 @@ const FootprintLog = () => {
     loading,
     error,
     createLog,
-    deleteLog,
     updateLog,
     calculateEmissions,
     calculateEmissionsWithAPI,
@@ -99,6 +98,14 @@ const FootprintLog = () => {
   const [showResult, setShowResult] = useState(false);
   const [isCalculating, setIsCalculating] = useState(false);
   const [editingLog, setEditingLog] = useState(null);
+
+  // Check if a date is valid (today or in the past)
+  const isDateValid = (date) => {
+    if (!date) return false;
+    const today = new Date();
+    today.setHours(23, 59, 59, 999); // Set to end of today
+    return date <= today;
+  };
 
   // Additional details based on activity type
   const [fuelType, setFuelType] = useState("");
@@ -118,7 +125,7 @@ const FootprintLog = () => {
   const getActivityConstraints = (activityType) => {
     const constraints = {
       // Transportation (per day)
-      "transport-car": { min: 0, max: 1000, unit: "km", message: "Daily car travel should be between 0-1000 km" },
+  "transport-car": { min: 0, max: 1000, unit: "km", message: "Daily car travel should be between 0-1000 km" },
       "transport-bus": { min: 0, max: 500, unit: "km", message: "Daily bus travel should be between 0-500 km" },
       "transport-train": { min: 0, max: 2000, unit: "km", message: "Daily train travel should be between 0-2000 km" },
       "transport-subway": { min: 0, max: 100, unit: "km", message: "Daily subway travel should be between 0-100 km" },
@@ -126,6 +133,8 @@ const FootprintLog = () => {
       "transport-motorcycle": { min: 0, max: 800, unit: "km", message: "Daily motorcycle travel should be between 0-800 km" },
       "transport-flight": { min: 0, max: 20000, unit: "km", message: "Flight distance should be between 0-20,000 km" },
       "transport-ferry": { min: 0, max: 1000, unit: "km", message: "Ferry travel should be between 0-1000 km" },
+      "transport-bicycle": { min: 0, max: 160, unit: "km", message: "Daily bicycle travel should be between 0-160 km" },
+      "transport-walking": { min: 0, max: 32, unit: "km", message: "Daily walking distance should be between 0-32 km" },
       
       // Energy (per day)
       "energy-electricity": { min: 0, max: 100, unit: "kWh", message: "Daily electricity usage should be between 0-100 kWh" },
@@ -252,7 +261,7 @@ const FootprintLog = () => {
     // Create contextual labels based on activity category and unit
     switch (selectedActivity.category) {
       case "Transportation":
-        if (unit === "km") return "Distance";
+        if (unit === "km") return "Distance (km)";
         if (unit === "kg") return "Weight";
         if (unit === "liters") return "Volume";
         return "Quantity";
@@ -302,7 +311,10 @@ const FootprintLog = () => {
 
     switch (selectedActivity.category) {
       case "Transportation":
-        return unit === "km" ? "Enter distance" : unit === "kg" ? "Enter weight" : unit === "liters" ? "Enter volume" : "Enter quantity";
+        if (unit === "km") return "Enter distance (km)";
+        if (unit === "kg") return "Enter weight";
+        if (unit === "liters") return "Enter volume";
+        return "Enter quantity";
 
       case "Energy":
         if (unit === "kWh") return "Enter kWh used";
@@ -603,17 +615,6 @@ const FootprintLog = () => {
     }
   };
 
-  // Handle delete log
-  const handleDeleteLog = async (logId) => {
-    if (window.confirm("Are you sure you want to delete this activity?")) {
-      try {
-        await deleteLog(logId);
-      } catch (error) {
-        console.error("Failed to delete log:", error);
-      }
-    }
-  };
-
   // Format log for display
   const formatLogForDisplay = (log) => {
     // Comprehensive icon map matching dashboard
@@ -725,13 +726,17 @@ const FootprintLog = () => {
       formattedDate = format(new Date(), "yyyy-MM-dd");
     }
 
+    // Get the correct unit from the activity type config
+    const activityConfig = activityTypes.find(type => type.value === log.activityType);
+    const correctUnit = activityConfig?.unit || log.details?.unit || "units";
+    
     return {
       id: log._id,
       date: formattedDate,
       activity: log.activity,
       type: log.category || log.activityType,
       amount: log.details?.quantity || log.quantity || 0,
-      unit: log.details?.unit || "units",
+      unit: correctUnit,
       co2: log.emission || 0,
       icon: findBestMatch(log.activityType),
       rawLog: log,
@@ -1346,12 +1351,20 @@ const FootprintLog = () => {
                     <Calendar
                       mode="single"
                       selected={selectedDate}
-                      onSelect={setSelectedDate}
+                      onSelect={(date) => {
+                        if (isDateValid(date)) {
+                          setSelectedDate(date);
+                        }
+                      }}
+                      disabled={(date) => !isDateValid(date)}
                       initialFocus
                       className="pointer-events-auto"
                     />
                   </PopoverContent>
                 </Popover>
+                <p className="text-xs text-muted-foreground mt-1">
+                  You can only log activities for today or past dates
+                </p>
               </div>
 
               {/* Calculate Button */}
@@ -1412,6 +1425,10 @@ const FootprintLog = () => {
                   <CardDescription className="text-xs sm:text-sm md:text-sm lg:text-base">
                     {t("footprint:environmental_impact_journey")}
                   </CardDescription>
+                  <p className="text-xs text-muted-foreground bg-blue-50 dark:bg-blue-950 p-2 rounded-md border">
+                    <AlertTriangle className="h-3 w-3 inline mr-1" />
+                    Once logged, activities become permanent records and cannot be deleted
+                  </p>
                 </div>
                 <Button
                   variant="outline"
@@ -1479,15 +1496,9 @@ const FootprintLog = () => {
                           </div>
                         </div>
 
+                        {/* Delete functionality removed - logs are permanent once added */}
                         <div className="opacity-0 group-hover:opacity-100 transition-opacity flex flex-col gap-1">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDeleteLog(entry.id)}
-                            className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
+                          {/* Delete button removed to prevent log deletion */}
                         </div>
                       </div>
                     );

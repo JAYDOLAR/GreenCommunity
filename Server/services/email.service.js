@@ -342,6 +342,81 @@ class EmailService {
 
     return await this.transporter.sendMail(mailOptions);
   }
+
+  /**
+   * Send user data export email
+   * @param {string} email - User email
+   * @param {object} userData - Complete user data
+   */
+  async sendDataExport(email, userData) {
+    try {
+      // Convert user data to JSON for attachment
+      const dataJson = JSON.stringify(userData, null, 2);
+      
+      const mailOptions = {
+        to: email,
+        subject: 'Your GreenCommunity Data Export',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="text-align: center; margin-bottom: 30px;">
+              <h1 style="color: #4CAF50; margin: 0;">GreenCommunity</h1>
+              <p style="color: #666; margin: 5px 0 0 0;">Data Export</p>
+            </div>
+            
+            <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+              <h2 style="color: #333; margin: 0 0 15px 0;">Your Data Export is Ready</h2>
+              <p style="color: #666; margin: 0 0 15px 0;">
+                We've compiled all your data from GreenCommunity as requested. This includes:
+              </p>
+              <ul style="color: #666; margin: 0; padding-left: 20px;">
+                <li>Profile information</li>
+                <li>Carbon footprint logs</li>
+                <li>Order history</li>
+                <li>Challenge participation</li>
+                <li>Points and achievements</li>
+                <li>Chat sessions</li>
+                <li>Settings and preferences</li>
+              </ul>
+            </div>
+            
+            <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
+              <p style="margin: 0; color: #856404; font-size: 14px;">
+                <strong>Important:</strong> Your data is attached as a JSON file. Please store it securely as it contains personal information.
+              </p>
+            </div>
+            
+            <div style="text-align: center; margin: 30px 0;">
+              <p style="color: #666; margin: 0;">
+                If you have any questions about your data export, please contact our support team.
+              </p>
+            </div>
+            
+            <div style="border-top: 1px solid #ddd; padding-top: 20px; text-align: center;">
+              <p style="color: #999; font-size: 12px; margin: 0;">
+                This email was sent because you requested a data export from your GreenCommunity account.
+              </p>
+              <p style="color: #999; font-size: 12px; margin: 5px 0 0 0;">
+                © ${new Date().getFullYear()} GreenCommunity. All rights reserved.
+              </p>
+            </div>
+          </div>
+        `,
+        attachments: [
+          {
+            filename: `greencommunity-data-export-${new Date().toISOString().split('T')[0]}.json`,
+            content: dataJson,
+            contentType: 'application/json'
+          }
+        ]
+      };
+
+      await this.transporter.sendMail(mailOptions);
+      return { success: true, message: 'Data export email sent successfully' };
+    } catch (error) {
+      console.error('Error sending data export email:', error);
+      return { success: false, message: error.message };
+    }
+  }
 }
 
 export default new EmailService();

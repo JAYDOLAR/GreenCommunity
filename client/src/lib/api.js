@@ -331,6 +331,18 @@ export const authAPI = {
       method: 'DELETE',
     });
   },
+
+  exportUserData: async () => {
+    return apiRequest('/api/auth/export-data', {
+      method: 'POST',
+    });
+  },
+
+  deleteUserAccount: async () => {
+    return apiRequest('/api/auth/delete-account', {
+      method: 'DELETE',
+    });
+  },
 };
 
 // Export the base API request function for other uses

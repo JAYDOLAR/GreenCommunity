@@ -1148,3 +1148,126 @@ export const getUserStreak = asyncHandler(async (req, res) => {
     });
   }
 });
+
+// Export User Data
+export const exportUserData = asyncHandler(async (req, res) => {
+  try {
+    const User = await getUserModel();
+    const user = await User.findById(req.user._id);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Initialize other models to collect all user data
+    await initializeUserInfoModel();
+    
+    // Import all required models dynamically to avoid circular dependencies
+    const { FootprintLog } = await import('../models/FootprintLog.model.js');
+    const { Order } = await import('../models/Order.model.js');
+    const { UserChallenge } = await import('../models/UserChallenge.model.js');
+    const { UserPoints } = await import('../models/UserPoints.model.js');
+    const { ChatSession } = await import('../models/ChatSession.model.js');
+
+    // Collect all user data from different collections
+    const userData = {
+      profile: {
+        name: user.name,
+        email: user.email,
+        avatar: user.avatar,
+        bio: user.bio,
+        dateJoined: user.createdAt,
+        lastLogin: user.lastLogin,
+        isEmailVerified: user.isEmailVerified,
+        twoFactorEnabled: user.twoFactorEnabled
+      },
+      userInfo: await UserInfo.findOne({ userId: req.user._id }),
+      footprintLogs: await FootprintLog.find({ userId: req.user._id }),
+      orders: await Order.find({ userId: req.user._id }),
+      challenges: await UserChallenge.find({ userId: req.user._id }),
+      points: await UserPoints.findOne({ userId: req.user._id }),
+      chatSessions: await ChatSession.find({ userId: req.user._id }),
+      settings: {
+        notifications: user.notificationPreferences,
+        privacy: user.privacySettings,
+        preferences: user.preferences
+      }
+    };
+
+    // Send the data via email
+    const exportResult = await emailService.sendDataExport(user.email, userData);
+    
+    if (exportResult.success) {
+      res.status(200).json({
+        success: true,
+        message: 'Your data export has been prepared and sent to your email address.'
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        message: 'Failed to send data export email. Please try again later.'
+      });
+    }
+  } catch (error) {
+    console.error('Error exporting user data:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error exporting user data' 
+    });
+  }
+});
+
+// Delete User Account
+export const deleteUserAccount = asyncHandler(async (req, res) => {
+  try {
+    const User = await getUserModel();
+    const user = await User.findById(req.user._id);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Initialize models
+    await initializeUserInfoModel();
+    
+    // Import all required models dynamically
+    const { FootprintLog } = await import('../models/FootprintLog.model.js');
+    const { Order } = await import('../models/Order.model.js');
+    const { UserChallenge } = await import('../models/UserChallenge.model.js');
+    const { UserPoints } = await import('../models/UserPoints.model.js');
+    const { ChatSession } = await import('../models/ChatSession.model.js');
+
+    // Delete all user data from different collections
+    await Promise.all([
+      User.findByIdAndDelete(req.user._id),
+      UserInfo.deleteMany({ userId: req.user._id }),
+      FootprintLog.deleteMany({ userId: req.user._id }),
+      Order.deleteMany({ userId: req.user._id }),
+      UserChallenge.deleteMany({ userId: req.user._id }),
+      UserPoints.deleteMany({ userId: req.user._id }),
+      ChatSession.deleteMany({ userId: req.user._id })
+    ]);
+
+    // Delete user avatar from cloudinary if it exists
+    if (user.avatar && user.avatar.includes('cloudinary')) {
+      try {
+        const publicId = user.avatar.split('/').pop().split('.')[0];
+        await deleteImage(publicId);
+      } catch (avatarError) {
+        console.error('Error deleting user avatar:', avatarError);
+        // Continue with account deletion even if avatar deletion fails
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Your account and all associated data have been permanently deleted.'
+    });
+  } catch (error) {
+    console.error('Error deleting user account:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error deleting user account' 
+    });
+  }
+});

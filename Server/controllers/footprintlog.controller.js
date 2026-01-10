@@ -17,7 +17,7 @@ function calculateFallbackEmission(activityData) {
 
   // Simple fallback emission factors (kg CO2e per unit)
   const fallbackFactors = {
-    // Transportation (per mile)
+    // Transportation (per km)
     "transport-car": 0.4,
     "transport-bus": 0.15,
     "transport-train": 0.12,

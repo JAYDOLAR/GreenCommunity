@@ -29,7 +29,9 @@ import {
   removeTrustedDevice,
   clearAllTrustedDevices,
   generateToken,
-  getUserStreak
+  getUserStreak,
+  exportUserData,
+  deleteUserAccount
 } from '../controllers/auth.controller.js';
 import { 
   validateRegister, 
@@ -95,6 +97,10 @@ router.get('/settings', authenticate, getUserSettings);
 router.post('/update-profile', authenticate, updateProfile);
 router.post('/update-notifications', authenticate, updateNotificationPreferences);
 router.post('/update-preferences', authenticate, updateAppPreferences);
+
+// Data Management Routes
+router.post('/export-data', authenticate, exportUserData);
+router.delete('/delete-account', authenticate, deleteUserAccount);
 
 // Two-Factor Authentication Routes
 router.post('/2fa/generate', authenticate, generate2FASecret);

@@ -291,8 +291,13 @@ const Settings = () => {
     }
   };
 
-  const exportData = () => {
-    alert('Your data export has been prepared and will be sent to your email.');
+  const exportData = async () => {
+    try {
+      const response = await authAPI.exportUserData();
+      toast.success('Your data export has been prepared and sent to your email.');
+    } catch (error) {
+      toast.error('Failed to export data. Please try again.');
+    }
   };
 
   const handle2FASetup = async () => {
@@ -337,9 +342,18 @@ const Settings = () => {
     }
   };
 
-  const deleteAccount = () => {
-    if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
-      alert('Account deletion process initiated. You will receive an email with further instructions.');
+  const deleteAccount = async () => {
+    if (confirm('Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently deleted.')) {
+      try {
+        const response = await authAPI.deleteUserAccount();
+        toast.success('Your account has been permanently deleted.');
+        // Redirect to home page after successful deletion
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 2000);
+      } catch (error) {
+        toast.error('Failed to delete account. Please try again.');
+      }
     }
   };
 
@@ -783,14 +797,6 @@ const Settings = () => {
                     {t('Enable 2FA')}
                   </Button>
                 )}
-                <Button variant="outline" className="justify-start">
-                  <Mail className="h-4 w-4 mr-2" />
-                  {t('Login Notifications')}
-                </Button>
-                <Button variant="outline" className="justify-start">
-                  <Calendar className="h-4 w-4 mr-2" />
-                  {t('Session Management')}
-                </Button>
               </div>
               {showChangePassword && (
                 <form className="mt-4 space-y-3" onSubmit={submitPasswordChange}>
