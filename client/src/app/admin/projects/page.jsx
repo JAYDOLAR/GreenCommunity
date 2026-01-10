@@ -44,55 +44,11 @@ const ProjectsPage = () => {
   const [selectedProject, setSelectedProject] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [editingProject, setEditingProject] = useState({});
-<<<<<<< Updated upstream
-  const [projects, setProjects] = useState([
-    // Fallback data to prevent empty state errors
-    {
-      id: 1,
-      name: 'Sundarbans Mangrove Restoration',
-      location: 'West Bengal, India',
-      type: 'forestry',
-      status: 'active',
-      description: 'Large-scale mangrove restoration project in the Sundarbans, protecting vital ecosystems.',
-      co2Removed: 142000,
-      totalFunding: 165000000,
-      currentFunding: 123750000,
-      contributors: 15230,
-      created_at: new Date().toISOString(),
-      featured: false,
-      verified: true,
-      image: '/tree1.jpg',
-      expectedCompletion: '2025-12-31',
-      teamSize: 25,
-      carbonOffsetTarget: 150000
-    },
-    {
-      id: 2,
-      name: 'Solar Power Expansion',
-      location: 'Rajasthan, India',
-      type: 'renewable',
-      status: 'pending',
-      description: 'Installing solar panels for renewable energy generation across Rajasthan.',
-      co2Removed: 98000,
-      totalFunding: 430000000,
-      currentFunding: 280000000,
-      contributors: 9250,
-      created_at: new Date().toISOString(),
-      featured: true,
-      verified: true,
-      image: '/tree2.jpg',
-      expectedCompletion: '2026-06-30',
-      teamSize: 40,
-      carbonOffsetTarget: 100000
-    }
-  ]);
-=======
   const [projects, setProjects] = useState([]);
   const [syncingId, setSyncingId] = useState(null);
   // Removed blockchain registration UI (now automatic in backend)
   const [saving, setSaving] = useState(false);
   // Registration flow moved to Add Project page
->>>>>>> Stashed changes
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -509,13 +465,11 @@ const ProjectsPage = () => {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  {/* Blockchain status badge */}
-                  {project.blockchain?.projectId ? (
+                  {/* Blockchain status badge (hidden when off-chain) */}
+                  {project.blockchain?.projectId && (
                     <Badge className="bg-emerald-600 text-white flex items-center gap-1">
                       <Cpu className="h-3 w-3" />ID #{project.blockchain.projectId}
                     </Badge>
-                  ) : (
-                    <Badge className="bg-gray-300 text-gray-700">Off-chain</Badge>
                   )}
                   <Select value={project.status} onValueChange={(value) => handleStatusChange(project.id, value)}>
                     <SelectTrigger className="w-32">

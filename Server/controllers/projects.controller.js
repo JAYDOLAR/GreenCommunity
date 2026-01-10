@@ -343,6 +343,83 @@ export const getProjectsByRegion = asyncHandler(async (req, res) => {
   }
 });
 
+// Get nearby working/active projects
+export const getNearbyWorkingProjects = asyncHandler(async (req, res) => {
+  try {
+    const Project = await getProjectModel();
+    
+    const {
+      lat,
+      lng,
+      radius = 100, // default 100km radius
+      limit = 50,
+      status = 'active'
+    } = req.query;
+    
+    // Build filter for working projects
+    const filter = {
+      status: status,
+      coordinates: { $exists: true, $ne: null },
+      $or: [
+        { 'verification.status': 'approved' },
+        { verified: true },
+        { status: 'active' }
+      ]
+    };
+    
+    let projects;
+    
+    // Add geospatial filtering if coordinates provided
+    if (lat && lng) {
+      projects = await Project.aggregate([
+        {
+          $geoNear: {
+            near: {
+              type: 'Point',
+              coordinates: [parseFloat(lng), parseFloat(lat)]
+            },
+            distanceField: 'distance',
+            maxDistance: parseFloat(radius) * 1000, // convert km to meters
+            spherical: true,
+            query: filter
+          }
+        },
+        {
+          $limit: parseInt(limit)
+        },
+        {
+          $addFields: {
+            distanceKm: { $round: [{ $divide: ['$distance', 1000] }, 1] }
+          }
+        }
+      ]);
+    } else {
+      // If no coordinates provided, get all working projects
+      projects = await Project.find(filter)
+        .sort({ created_at: -1 })
+        .limit(parseInt(limit))
+        .lean();
+    }
+    
+    res.json({
+      success: true,
+      data: {
+        projects,
+        count: projects.length,
+        searchRadius: radius,
+        center: lat && lng ? { lat: parseFloat(lat), lng: parseFloat(lng) } : null
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching nearby working projects:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch nearby working projects',
+      error: error.message
+    });
+  }
+});
+
 // Get project statistics
 export const getProjectStats = asyncHandler(async (req, res) => {
   try {

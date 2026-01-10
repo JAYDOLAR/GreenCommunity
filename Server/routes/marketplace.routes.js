@@ -13,7 +13,8 @@ import {
   searchProducts,
   getSustainableProducts,
   toggleFeatured,
-  getMarketplaceStats
+  getMarketplaceStats,
+  getNearbyVendors
 } from '../controllers/marketplace.controller.js';
 
 import {
@@ -138,6 +139,16 @@ router.get('/seller/:sellerId/products',
   validateSellerId,
   validateProductQuery, 
   getSellerProducts
+);
+
+/**
+ * @route   GET /api/marketplace/nearby-vendors
+ * @desc    Get nearby vendors with location coordinates
+ * @access  Public
+ * @query   lat, lng, radius, limit
+ */
+router.get('/nearby-vendors', 
+  getNearbyVendors
 );
 
 // Protected routes (authentication required)

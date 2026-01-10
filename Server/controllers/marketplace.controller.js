@@ -485,6 +485,76 @@ export const toggleFeatured = asyncHandler(async (req, res) => {
   });
 });
 
+// Get nearby vendors with location coordinates
+export const getNearbyVendors = asyncHandler(async (req, res) => {
+  const Product = await getProductModel();
+  
+  const {
+    lat,
+    lng,
+    radius = 50, // default 50km radius
+    limit = 20
+  } = req.query;
+
+  // Build vendor aggregation pipeline
+  const pipeline = [
+    {
+      $match: {
+        status: 'active',
+        'seller_location.coordinates': { $exists: true, $ne: null }
+      }
+    },
+    {
+      $group: {
+        _id: '$seller_id',
+        vendorName: { $first: '$seller_name' },
+        location: { $first: '$seller_location' },
+        coordinates: { $first: '$seller_location.coordinates' },
+        address: { $first: '$seller_location.address' },
+        city: { $first: '$seller_location.city' },
+        vendorType: { $first: '$seller_location.vendor_type' },
+        productCount: { $sum: 1 },
+        categories: { $addToSet: '$category' },
+        avgEcoRating: { $avg: '$sustainability.eco_rating' },
+        totalProductsInStock: {
+          $sum: {
+            $cond: [{ $gt: ['$inventory.stock_quantity', 0] }, 1, 0]
+          }
+        }
+      }
+    }
+  ];
+
+  // Add geospatial filtering if coordinates provided
+  if (lat && lng) {
+    pipeline.splice(1, 0, {
+      $geoNear: {
+        near: {
+          type: 'Point',
+          coordinates: [parseFloat(lng), parseFloat(lat)]
+        },
+        distanceField: 'distance',
+        maxDistance: parseFloat(radius) * 1000, // convert km to meters
+        spherical: true
+      }
+    });
+  }
+
+  pipeline.push({ $limit: parseInt(limit) });
+
+  const vendors = await Product.aggregate(pipeline);
+
+  res.status(200).json({
+    success: true,
+    data: {
+      vendors,
+      count: vendors.length,
+      searchRadius: radius,
+      center: lat && lng ? { lat: parseFloat(lat), lng: parseFloat(lng) } : null
+    }
+  });
+});
+
 // Get marketplace statistics (admin only)
 export const getMarketplaceStats = asyncHandler(async (req, res) => {
   if (req.user.role !== 'admin') {

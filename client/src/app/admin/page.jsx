@@ -45,34 +45,52 @@ const AdminDashboard = () => {
 
   const fetchRealTimeData = async () => {
     try {
-      const adminToken = localStorage.getItem('adminToken');
-      if (!adminToken) {
-        console.warn('No admin token found');
-        return;
-      }
-      
-      const response = await fetch('/api/admin/dashboard/stats', {
-        headers: {
-          'Authorization': `Bearer ${adminToken}`
-        }
+      const adminToken = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null;
+      const API_BASE = process.env.NEXT_PUBLIC_SERVER_URL || '';
+      const url = `${API_BASE}/api/admin/dashboard/stats`;
+
+      const headers = {};
+      if (adminToken) headers['Authorization'] = `Bearer ${adminToken}`;
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers,
+        credentials: 'include' // allow cookie-based auth fallback
       });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+
+      if (response.status === 401 || response.status === 403) {
+        console.warn('Admin auth failed with status', response.status);
+        // Clear stale tokens
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('adminToken');
+          localStorage.removeItem('adminAuthenticated');
+        }
+        // Redirect to login
+        setTimeout(() => {
+          if (typeof window !== 'undefined') {
+            window.location.href = '/admin/login?reason=auth';
+          }
+        }, 300);
+        return; // stop further processing
       }
-      
-      const data = await response.json();
+
+      if (!response.ok) {
+        // Non-auth error
+        const text = await response.text();
+        throw new Error(`Dashboard stats fetch failed (${response.status}): ${text?.slice(0,200)}`);
+      }
+
+      const data = await response.json().catch(() => ({}));
       if (data.success && data.stats) {
         setDashboardStats(prevStats => ({
           ...prevStats,
           ...data.stats
         }));
       } else {
-        console.error('Dashboard stats API error:', data.message);
+        console.error('Dashboard stats API response malformed:', data);
       }
     } catch (error) {
       console.error('Failed to fetch dashboard stats:', error);
-      // Set default values to prevent division by zero
       setDashboardStats(prevStats => ({
         ...prevStats,
         totalUsers: prevStats.totalUsers || 1,

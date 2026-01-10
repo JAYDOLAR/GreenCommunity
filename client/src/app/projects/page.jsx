@@ -28,7 +28,14 @@ import {
   List,
   CheckCircle,
   ArrowRight,
-  Globe
+  Globe,
+  Store,
+  Settings,
+  Eye,
+  EyeOff,
+  Factory,
+  Building2,
+  CalendarDays
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
@@ -55,22 +62,31 @@ const Popup = dynamic(() => import('react-leaflet').then(mod => mod.Popup), {
   loading: () => null
 });
 
-// Import Leaflet CSS only on client side using useEffect
-const useLeafletCSS = () => {
+// Import Leaflet CSS and fix default icons only on client side
+const useLeafletSetup = () => {
   React.useEffect(() => {
     if (typeof window !== 'undefined') {
       try {
         import('leaflet/dist/leaflet.css');
+        
+        // Fix default icon issue
+        const L = require('leaflet');
+        delete L.Icon.Default.prototype._getIconUrl;
+        L.Icon.Default.mergeOptions({
+          iconRetinaUrl: require('leaflet/dist/images/marker-icon-2x.png'),
+          iconUrl: require('leaflet/dist/images/marker-icon.png'),
+          shadowUrl: require('leaflet/dist/images/marker-shadow.png'),
+        });
       } catch (error) {
-        console.warn('Failed to load Leaflet CSS:', error);
+        console.warn('Failed to load Leaflet setup:', error);
       }
     }
   }, []);
 };
 
 const Projects = () => {
-  // Load Leaflet CSS
-  useLeafletCSS();
+  // Load Leaflet setup
+  useLeafletSetup();
   const { preferences } = usePreferences();
   const carbonUnit = preferences?.carbonUnits || 'kg';
   const formatCO2 = (tonsValue) => carbonUnit === 'kg' ? `${(tonsValue * 1000).toLocaleString()} kg CO₂` : `${tonsValue.toLocaleString()} tons CO₂`;
@@ -351,10 +367,175 @@ const Projects = () => {
     const [mapError, setMapError] = useState(false);
     const [mapLoaded, setMapLoaded] = useState(false);
     const [hoveredProject, setHoveredProject] = useState(null);
+    const [vendors, setVendors] = useState([]);
+    const [workingProjects, setWorkingProjects] = useState([]);
+    const [events, setEvents] = useState([]);
+    const [showVendors, setShowVendors] = useState(true);
+    const [showWorkingProjects, setShowWorkingProjects] = useState(true);
+    const [showCarbonProjects, setShowCarbonProjects] = useState(true);
+    const [showEvents, setShowEvents] = useState(true);
+    const [vendorIcons, setVendorIcons] = useState({});
+    const [workingProjectIcons, setWorkingProjectIcons] = useState({});
+    const [eventIcons, setEventIcons] = useState({});
+
+    // Fetch vendors, working projects, and events
+    useEffect(() => {
+      const fetchNearbyData = async () => {
+        try {
+          // Fetch nearby vendors
+          const vendorsRes = await fetch('/api/marketplace/nearby-vendors?limit=50');
+          if (vendorsRes.ok) {
+            const vendorsData = await vendorsRes.json();
+            if (vendorsData.success) {
+              setVendors(vendorsData.data.vendors || []);
+            }
+          }
+
+          // Fetch nearby working projects  
+          const workingRes = await fetch('/api/projects/nearby-working?limit=50');
+          if (workingRes.ok) {
+            const workingData = await workingRes.json();
+            if (workingData.success) {
+              setWorkingProjects(workingData.data.projects || []);
+            }
+          }
+
+          // Fetch nearby events
+          const eventsRes = await fetch('/api/events/nearby?limit=50');
+          if (eventsRes.ok) {
+            const eventsData = await eventsRes.json();
+            if (eventsData.success) {
+              setEvents(eventsData.data.events || []);
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching nearby data:', error);
+        }
+      };
+
+      fetchNearbyData();
+    }, []);
+
+    // Load vendor, working project, and event icons
+    useEffect(() => {
+      const loadAdditionalIcons = async () => {
+        if (typeof window === 'undefined') return;
+
+        try {
+          const L = await import('leaflet');
+          
+          // Vendor icons
+          const vendorIconsObj = {};
+          vendorIconsObj['vendor'] = L.divIcon({
+            html: `
+              <div style="
+                background-color: #F97316;
+                width: 30px;
+                height: 30px;
+                border-radius: 50%;
+                border: 3px solid white;
+                box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-weight: bold;
+                font-size: 12px;
+              ">
+                🏪
+              </div>
+            `,
+            className: 'custom-div-icon',
+            iconSize: [30, 30],
+            iconAnchor: [15, 15],
+            popupAnchor: [0, -15]
+          });
+
+          setVendorIcons(vendorIconsObj);
+
+          // Working project icons
+          const workingIconsObj = {};
+          workingIconsObj['working'] = L.divIcon({
+            html: `
+              <div style="
+                background-color: #8B5CF6;
+                width: 30px;
+                height: 30px;
+                border-radius: 50%;
+                border: 3px solid white;
+                box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-weight: bold;
+                font-size: 12px;
+              ">
+                🏗️
+              </div>
+            `,
+            className: 'custom-div-icon',
+            iconSize: [30, 30],
+            iconAnchor: [15, 15],
+            popupAnchor: [0, -15]
+          });
+
+          setWorkingProjectIcons(workingIconsObj);
+
+          // Event icons
+          const eventIconsObj = {};
+          eventIconsObj['event'] = L.divIcon({
+            html: `
+              <div style="
+                background-color: #EC4899;
+                width: 30px;
+                height: 30px;
+                border-radius: 50%;
+                border: 3px solid white;
+                box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-weight: bold;
+                font-size: 12px;
+              ">
+                📅
+              </div>
+            `,
+            className: 'custom-div-icon',
+            iconSize: [30, 30],
+            iconAnchor: [15, 15],
+            popupAnchor: [0, -15]
+          });
+
+          setEventIcons(eventIconsObj);
+        } catch (error) {
+          console.error('Error loading additional icons:', error);
+        }
+      };
+
+      loadAdditionalIcons();
+    }, []);
 
     // Get custom icon from state
     const getCustomIcon = (type) => {
       return customIcons[type] || customIcons['default'] || null;
+    };
+
+    // Handle vendor click
+    const handleVendorClick = (vendor) => {
+      router.push('/marketplace');
+    };
+
+    // Handle working project click
+    const handleWorkingProjectClick = (project) => {
+      router.push(`/projects/${project.id || project._id}`);
+    };
+
+    // Handle event click
+    const handleEventClick = (event) => {
+      router.push('/community');
     };
 
     // Fallback map view when Leaflet fails
@@ -448,7 +629,8 @@ const Projects = () => {
             attribution=""
           />
 
-          {Object.keys(customIcons).length > 0 && filteredMapProjects.map((project, index) => {
+          {/* Carbon offset projects markers */}
+          {showCarbonProjects && Object.keys(customIcons).length > 0 && filteredMapProjects.map((project, index) => {
             const [lng, lat] = project.coordinates;
             const customIcon = getCustomIcon(project.type);
 
@@ -457,7 +639,7 @@ const Projects = () => {
 
             return (
               <Marker
-                key={project.id || project._id || index}
+                key={`carbon-${project.id || project._id || index}`}
                 position={[lat, lng]}
                 icon={customIcon}
                 eventHandlers={{
@@ -484,13 +666,13 @@ const Projects = () => {
                         <div className="text-green-600 font-medium text-sm">
                           {(project.co2Removed || 0).toLocaleString()} tons CO₂
                         </div>
-                        <Badge className="text-xs">
-                          {projectTypes.find(t => t.value === project.type)?.label || project.type}
+                        <Badge className="text-xs bg-green-100 text-green-800">
+                          Carbon Offset
                         </Badge>
                       </div>
                       <div className="flex items-center justify-between text-xs text-gray-500">
-                        <span>{project.contributors.toLocaleString()} contributors</span>
-                        <span>{project.timeRemaining} remaining</span>
+                        <span>{(project.contributors || 0).toLocaleString()} contributors</span>
+                        <span>{project.timeRemaining || 'Ongoing'}</span>
                       </div>
                     </div>
                     <div className="text-xs text-gray-500 border-t pt-2">
@@ -501,22 +683,261 @@ const Projects = () => {
               </Marker>
             );
           })}
+
+          {/* Vendor markers */}
+          {showVendors && Object.keys(vendorIcons).length > 0 && vendors.map((vendor, index) => {
+            if (!vendor.coordinates) return null;
+            const [lng, lat] = vendor.coordinates;
+
+            return (
+              <Marker
+                key={`vendor-${vendor._id || index}`}
+                position={[lat, lng]}
+                icon={vendorIcons['vendor']}
+                eventHandlers={{
+                  click: () => handleVendorClick(vendor),
+                  mouseover: (e) => {
+                    e.target.openPopup();
+                  },
+                  mouseout: (e) => {
+                    e.target.closePopup();
+                  },
+                }}
+              >
+                <Popup autoPan={false} closeButton={false}>
+                  <div className="p-3 min-w-[250px] cursor-pointer hover:bg-gray-50 transition-colors" onClick={() => handleVendorClick(vendor)}>
+                    <div className="font-semibold text-orange-600 mb-2 text-base">{vendor.vendorName || 'Eco Vendor'}</div>
+                    <div className="text-gray-600 mb-3 text-sm flex items-center gap-1">
+                      <Store className="h-3 w-3" />
+                      {vendor.address || vendor.city || 'Local Vendor'}
+                    </div>
+                    <div className="space-y-2 mb-3">
+                      <div className="flex items-center justify-between">
+                        <div className="text-orange-600 font-medium text-sm">
+                          {vendor.productCount || 0} products
+                        </div>
+                        <Badge className="text-xs bg-orange-100 text-orange-800">
+                          Vendor
+                        </Badge>
+                      </div>
+                      <div className="flex items-center justify-between text-xs text-gray-500">
+                        <span>{vendor.totalProductsInStock || 0} in stock</span>
+                        <span>⭐ {(vendor.avgEcoRating || 0).toFixed(1)}</span>
+                      </div>
+                    </div>
+                    <div className="text-xs text-gray-500 border-t pt-2">
+                      Click to visit marketplace →
+                    </div>
+                  </div>
+                </Popup>
+              </Marker>
+            );
+          })}
+
+          {/* Working project markers */}
+          {showWorkingProjects && Object.keys(workingProjectIcons).length > 0 && workingProjects.map((project, index) => {
+            if (!project.coordinates) return null;
+            const [lng, lat] = project.coordinates;
+
+            return (
+              <Marker
+                key={`working-${project.id || project._id || index}`}
+                position={[lat, lng]}
+                icon={workingProjectIcons['working']}
+                eventHandlers={{
+                  click: () => handleWorkingProjectClick(project),
+                  mouseover: (e) => {
+                    e.target.openPopup();
+                  },
+                  mouseout: (e) => {
+                    e.target.closePopup();
+                  },
+                }}
+              >
+                <Popup autoPan={false} closeButton={false}>
+                  <div className="p-3 min-w-[250px] cursor-pointer hover:bg-gray-50 transition-colors" onClick={() => handleWorkingProjectClick(project)}>
+                    <div className="font-semibold text-purple-600 mb-2 text-base">{project.name}</div>
+                    <div className="text-gray-600 mb-3 text-sm flex items-center gap-1">
+                      <Factory className="h-3 w-3" />
+                      {project.location}
+                    </div>
+                    <div className="space-y-2 mb-3">
+                      <div className="flex items-center justify-between">
+                        <div className="text-purple-600 font-medium text-sm">
+                          {project.status || 'Active'}
+                        </div>
+                        <Badge className="text-xs bg-purple-100 text-purple-800">
+                          Working Project
+                        </Badge>
+                      </div>
+                      <div className="flex items-center justify-between text-xs text-gray-500">
+                        <span>{project.type || 'Development'}</span>
+                        {project.distanceKm && <span>{project.distanceKm}km away</span>}
+                      </div>
+                    </div>
+                    <div className="text-xs text-gray-500 border-t pt-2">
+                      Click to view project details →
+                    </div>
+                  </div>
+                </Popup>
+              </Marker>
+            );
+          })}
+
+          {/* Event markers */}
+          {showEvents && Object.keys(eventIcons).length > 0 && events.map((event, index) => {
+            if (!event.coordinates) return null;
+            const [lng, lat] = event.coordinates;
+
+            return (
+              <Marker
+                key={`event-${event._id || index}`}
+                position={[lat, lng]}
+                icon={eventIcons['event']}
+                eventHandlers={{
+                  click: () => handleEventClick(event),
+                  mouseover: (e) => {
+                    e.target.openPopup();
+                  },
+                  mouseout: (e) => {
+                    e.target.closePopup();
+                  },
+                }}
+              >
+                <Popup autoPan={false} closeButton={false}>
+                  <div className="p-3 min-w-[250px] cursor-pointer hover:bg-gray-50 transition-colors" onClick={() => handleEventClick(event)}>
+                    <div className="font-semibold text-pink-600 mb-2 text-base">{event.title}</div>
+                    <div className="text-gray-600 mb-3 text-sm flex items-center gap-1">
+                      <CalendarDays className="h-3 w-3" />
+                      {event.location}
+                    </div>
+                    <div className="space-y-2 mb-3">
+                      <div className="flex items-center justify-between">
+                        <div className="text-pink-600 font-medium text-sm">
+                          {new Date(event.date).toLocaleDateString()}
+                        </div>
+                        <Badge className="text-xs bg-pink-100 text-pink-800">
+                          Event
+                        </Badge>
+                      </div>
+                      <div className="flex items-center justify-between text-xs text-gray-500">
+                        <span>{event.type || 'Community Event'}</span>
+                        <span>{event.attendees || 0} attending</span>
+                      </div>
+                    </div>
+                    <div className="text-xs text-gray-500 border-t pt-2">
+                      Click to view community →
+                    </div>
+                  </div>
+                </Popup>
+              </Marker>
+            );
+          })}
         </MapContainer>
 
         {/* Map Controls */}
         <div className="absolute top-4 right-4 flex flex-col gap-2 z-30">
-          {/* Removed List View button */}
+          <div className="bg-white/95 backdrop-blur-sm rounded-lg p-3 border-2 border-gray-200 shadow-xl">
+            <div className="text-xs font-semibold text-gray-700 mb-2">Toggle Layers</div>
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  checked={showCarbonProjects}
+                  onChange={(e) => setShowCarbonProjects(e.target.checked)}
+                  className="w-3 h-3"
+                />
+                <div className="flex items-center gap-1 text-xs">
+                  <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                  Carbon Projects
+                </div>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  checked={showVendors}
+                  onChange={(e) => setShowVendors(e.target.checked)}
+                  className="w-3 h-3"
+                />
+                <div className="flex items-center gap-1 text-xs">
+                  <div className="w-3 h-3 rounded-full bg-orange-500"></div>
+                  Vendors
+                </div>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  checked={showWorkingProjects}
+                  onChange={(e) => setShowWorkingProjects(e.target.checked)}
+                  className="w-3 h-3"
+                />
+                <div className="flex items-center gap-1 text-xs">
+                  <div className="w-3 h-3 rounded-full bg-purple-500"></div>
+                  Working Projects
+                </div>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  checked={showEvents}
+                  onChange={(e) => setShowEvents(e.target.checked)}
+                  className="w-3 h-3"
+                />
+                <div className="flex items-center gap-1 text-xs">
+                  <div className="w-3 h-3 rounded-full bg-pink-500"></div>
+                  Events
+                </div>
+              </label>
+            </div>
+          </div>
         </div>
 
-
-
-        {/* Map Title */}
+        {/* Map Title and Statistics */}
         <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-sm rounded-lg p-4 border-2 border-gray-200 shadow-xl z-30">
           <div className="flex items-center gap-3">
             <Globe className="h-7 w-7 text-primary" />
             <div>
-              <div className="font-semibold text-lg">Global Projects</div>
-              <div className="text-sm text-gray-600">{filteredMapProjects.length} active projects</div>
+              <div className="font-semibold text-lg">Eco Map</div>
+              <div className="text-sm text-gray-600">
+                {showCarbonProjects && `${filteredMapProjects.length} carbon projects`}
+                {showCarbonProjects && (showVendors || showWorkingProjects || showEvents) && ' • '}
+                {showVendors && `${vendors.length} vendors`}
+                {showVendors && (showWorkingProjects || showEvents) && ' • '}
+                {showWorkingProjects && `${workingProjects.length} working`}
+                {showWorkingProjects && showEvents && ' • '}
+                {showEvents && `${events.length} events`}
+              </div>
+            </div>
+          </div>
+          
+          {/* Legend */}
+          <div className="mt-3 pt-3 border-t border-gray-200">
+            <div className="text-xs font-semibold text-gray-700 mb-2">Legend</div>
+            <div className="grid grid-cols-1 gap-1 text-xs">
+              {showCarbonProjects && (
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                  <span>CO₂ Offset Projects</span>
+                </div>
+              )}
+              {showVendors && (
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-orange-500"></div>
+                  <span>Eco-Friendly Vendors</span>
+                </div>
+              )}
+              {showWorkingProjects && (
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-purple-500"></div>
+                  <span>Active Developments</span>
+                </div>
+              )}
+              {showEvents && (
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-pink-500"></div>
+                  <span>Community Events</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -724,7 +1145,14 @@ const Projects = () => {
                               <Heart className="h-4 w-4 mr-2" />
                               Contribute
                             </Button>
-                            <Button variant="outline" className="text-xs sm:text-base px-3 sm:px-5 py-2 sm:py-3">
+                            <Button
+                              variant="outline"
+                              className="text-xs sm:text-base px-3 sm:px-5 py-2 sm:py-3"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleProjectClick(project.id || project._id);
+                              }}
+                            >
                               Learn More
                               <ArrowRight className="h-4 w-4 ml-2" />
                             </Button>

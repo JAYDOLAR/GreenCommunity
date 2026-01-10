@@ -6,7 +6,8 @@ import {
   getProjectsByRegion,
   getProjectStats,
   approveAndRegisterProject,
-  grantFiatPurchaseController
+  grantFiatPurchaseController,
+  getNearbyWorkingProjects
 } from '../controllers/projects.controller.js';
 import { submitProjectForVerification, markProjectInReview, rejectProject, quoteCryptoPurchase, getRetireCalldata, retireCreditsUser } from '../controllers/projects.controller.js';
 import { authenticateAdmin, authenticate } from '../middleware/auth.js';
@@ -27,6 +28,7 @@ router.get('/', getProjects);
 router.get('/featured', getFeaturedProjects);
 router.get('/stats', getProjectStats);
 router.get('/region/:region', getProjectsByRegion);
+router.get('/nearby-working', getNearbyWorkingProjects);
 router.get('/:id', getProjectById);
 
 // Admin blockchain actions
