@@ -1467,13 +1467,12 @@ const FootprintLog = () => {
                     return (
                       <div
                         key={entry.id}
-                        className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 p-3 sm:p-4 border border-border/50 rounded-lg hover:bg-accent/20 transition-colors hover-lift group"
+                        className="flex flex-row items-center min-h-[120px] p-3 sm:p-4 border border-border/50 rounded-lg hover:bg-accent/20 transition-colors hover-lift group"
                       >
                         <div className="flex items-center gap-3 w-full sm:w-auto">
                           <div className="p-2 sm:p-3 bg-accent/20 rounded-lg">
                             <Icon className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                           </div>
-
                           <div className="flex-1 sm:flex-none">
                             <div className="font-medium text-foreground text-sm sm:text-base">
                               {entry.activity}
@@ -1484,20 +1483,13 @@ const FootprintLog = () => {
                           </div>
                         </div>
 
-                        <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-2 sm:gap-0">
-                          <Badge
-                            variant="secondary"
-                            className="text-xs capitalize"
-                          >
-                            {entry.type}
-                          </Badge>
-                          <div className="text-right">
-                            <div className="text-base sm:text-lg font-bold text-foreground">
-                              {entry.co2.toFixed(2)} kg
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              CO₂
-                            </div>
+                        {/* CO2 value centered vertically */}
+                        <div className="flex flex-col items-center justify-center ml-auto min-w-[70px]">
+                          <div className="text-base sm:text-lg font-bold text-foreground">
+                            {entry.co2.toFixed(2)} kg
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            CO₂
                           </div>
                         </div>
 

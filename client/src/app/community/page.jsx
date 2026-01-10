@@ -295,10 +295,7 @@ const Community = () => {
           <h1 className="text-xl sm:text-3xl font-bold text-gradient">Community Hub</h1>
           <p className="text-sm sm:text-base text-muted-foreground">Connect, compete, and create positive environmental impact together</p>
         </div>
-        <Button className="btn-hero text-xs sm:text-base px-3 sm:px-5 py-2 sm:py-3">
-          <Plus className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
-          Start a Challenge
-        </Button>
+        {/* Start a Challenge button removed */}
       </div>
 
       {/* Search */}
