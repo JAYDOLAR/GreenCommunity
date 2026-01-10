@@ -56,7 +56,7 @@ const ProfessionalProgress = ({
           </span>
         </div>
       )}
-      <div className="relative">
+      <div className="relative overflow-hidden">
         <Progress 
           value={(animatedValue / max) * 100} 
           className="h-3 progress-eco relative overflow-hidden"
@@ -67,6 +67,7 @@ const ProfessionalProgress = ({
           style={{
             width: '30%',
             animation: 'shimmer 2s infinite',
+            overflow: 'hidden',
           }}
         />
       </div>

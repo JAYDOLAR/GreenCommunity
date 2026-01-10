@@ -127,7 +127,7 @@
 
 @keyframes progress-bar {
   0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
+  100% { transform: translateX(200%); }
 }
 
 @keyframes shimmer {
@@ -168,16 +168,18 @@
 .animate-progress-bar {
   position: relative;
   overflow: hidden;
+  border-radius: inherit; /* Inherit the border radius from parent */
 }
 .animate-progress-bar::after {
   content: '';
   position: absolute;
-  left: 0;
+  left: -100%;
   top: 0;
   height: 100%;
   width: 100%;
   background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
   animation: progress-bar 1.2s linear infinite;
+  border-radius: inherit; /* Inherit the border radius from parent */
 }
 
 @layer base {
@@ -297,6 +299,23 @@
   /* Progress styling */
   .progress-eco .progress-bar {
     background: linear-gradient(90deg, var(--primary), var(--accent-foreground));
+  }
+
+  /* Card overflow prevention */
+  .card, [data-card], .bg-card, .card-content, .card-header {
+    overflow: hidden;
+  }
+
+  /* Progress container overflow prevention */
+  [data-radix-progress-root], .progress-container {
+    overflow: hidden;
+    border-radius: inherit;
+  }
+
+  /* Ensure shimmer effects don't escape */
+  .animate-progress-bar, .progress-eco {
+    overflow: hidden;
+    position: relative;
   }
 
   /* Success color */

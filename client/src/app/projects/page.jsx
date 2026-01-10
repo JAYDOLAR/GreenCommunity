@@ -88,11 +88,14 @@ const Projects = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRegion, setSelectedRegion] = useState('all');
   const [selectedType, setSelectedType] = useState('all');
-  const [contributionAmount, setContributionAmount] = useState([50]);
+  const [contributionAmount, setContributionAmount] = useState([4150]); // in INR (~$50)
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [hoveredProject, setHoveredProject] = useState(null);
   const [projects, setProjects] = useState([]);
+  const [customIcons, setCustomIcons] = useState({});
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedProject, setSelectedProject] = useState(null);
   const router = useRouter();
 
   // Add error boundary
@@ -103,6 +106,101 @@ const Projects = () => {
       setError(err);
       console.error('Projects page error:', err);
     }
+  }, []);
+
+  // Close dialog when route changes or user navigates
+  useEffect(() => {
+    const handleRouteChange = () => {
+      setDialogOpen(false);
+      setSelectedProject(null);
+    };
+
+    const handleNavigationStart = () => {
+      setDialogOpen(false);
+      setSelectedProject(null);
+    };
+
+    // Listen for browser navigation
+    window.addEventListener('popstate', handleRouteChange);
+    // Listen for programmatic navigation from sidebar/navbar
+    window.addEventListener('navigation-starting', handleNavigationStart);
+    
+    return () => {
+      window.removeEventListener('popstate', handleRouteChange);
+      window.removeEventListener('navigation-starting', handleNavigationStart);
+    };
+  }, []);
+
+  // Close dialog when user clicks outside or presses escape
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setDialogOpen(false);
+        setSelectedProject(null);
+      }
+    };
+
+    if (dialogOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+      return () => document.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [dialogOpen]);
+
+  // Load custom icons for map markers
+  useEffect(() => {
+    const loadIcons = async () => {
+      if (typeof window === 'undefined') return;
+
+      try {
+        const L = await import('leaflet');
+        
+        const getMarkerColor = (type) => {
+          switch (type) {
+            case 'forestry': return '#10B981';
+            case 'renewable': return '#3B82F6';
+            case 'water': return '#06B6D4';
+            case 'agriculture': return '#F59E0B';
+            default: return '#10B981';
+          }
+        };
+
+        const types = ['forestry', 'renewable', 'water', 'agriculture', 'default'];
+        const icons = {};
+
+        types.forEach(type => {
+          icons[type] = L.divIcon({
+            html: `
+              <div style="
+                background-color: ${getMarkerColor(type)};
+                width: 30px;
+                height: 30px;
+                border-radius: 50%;
+                border: 3px solid white;
+                box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-weight: bold;
+                font-size: 12px;
+              ">
+                ${type === 'forestry' ? '🌲' : type === 'renewable' ? '⚡' : type === 'water' ? '💧' : type === 'agriculture' ? '🌾' : '🌱'}
+              </div>
+            `,
+            className: 'custom-div-icon',
+            iconSize: [30, 30],
+            iconAnchor: [15, 15],
+            popupAnchor: [0, -15]
+          });
+        });
+
+        setCustomIcons(icons);
+      } catch (error) {
+        console.error('Error loading leaflet icons:', error);
+      }
+    };
+
+    loadIcons();
   }, []);
 
   if (error) {
@@ -196,6 +294,11 @@ const Projects = () => {
   });
 
   const handleProjectClick = (projectId) => {
+    // Close dialog if open before navigating
+    if (dialogOpen) {
+      setDialogOpen(false);
+      setSelectedProject(null);
+    }
     router.push(`/projects/${projectId}`);
   };
 
@@ -249,54 +352,9 @@ const Projects = () => {
     const [mapLoaded, setMapLoaded] = useState(false);
     const [hoveredProject, setHoveredProject] = useState(null);
 
-    // Custom marker icon
-    const createCustomIcon = (type) => {
-      if (typeof window === 'undefined') return null;
-
-      try {
-        const L = require('leaflet');
-
-        const getMarkerColor = (type) => {
-          switch (type) {
-            case 'forestry': return '#10B981';
-            case 'renewable': return '#3B82F6';
-            case 'water': return '#06B6D4';
-            case 'agriculture': return '#F59E0B';
-            default: return '#10B981';
-          }
-        };
-
-        return L.divIcon({
-          html: `
-            <div style="
-              width: 20px; 
-              height: 20px; 
-              background-color: ${getMarkerColor(type)}; 
-              border: 3px solid white; 
-              border-radius: 50%; 
-              box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-              position: relative;
-            ">
-              <div style="
-                width: 8px; 
-                height: 8px; 
-                background-color: white; 
-                border-radius: 50%; 
-                position: absolute; 
-                top: 6px; 
-                left: 6px;
-              "></div>
-            </div>
-          `,
-          className: 'custom-marker',
-          iconSize: [20, 20],
-          iconAnchor: [10, 10]
-        });
-      } catch (error) {
-        console.error('Error creating custom icon:', error);
-        setMapError(true);
-        return null;
-      }
+    // Get custom icon from state
+    const getCustomIcon = (type) => {
+      return customIcons[type] || customIcons['default'] || null;
     };
 
     // Fallback map view when Leaflet fails
@@ -390,9 +448,12 @@ const Projects = () => {
             attribution=""
           />
 
-          {filteredMapProjects.map((project, index) => {
+          {Object.keys(customIcons).length > 0 && filteredMapProjects.map((project, index) => {
             const [lng, lat] = project.coordinates;
-            const customIcon = createCustomIcon(project.type);
+            const customIcon = getCustomIcon(project.type);
+
+            // Only render marker if we have a valid icon
+            if (!customIcon) return null;
 
             return (
               <Marker
@@ -649,68 +710,20 @@ const Projects = () => {
 
                           {/* Action Button */}
                           <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-2">
-                            <Dialog>
-                              <DialogTrigger asChild>
-                                <Button
-                                  className="btn-hero text-xs sm:text-base px-3 sm:px-5 py-2 sm:py-3"
-                                  onClick={(e) => {
-                                    e.stopPropagation(); // Prevent navigation
-                                    setContributionAmount([50]); // Reset to default
-                                    setIsLoading(false);
-                                  }}
-                                >
-                                  <Heart className="h-4 w-4 mr-2" />
-                                  Contribute
-                                </Button>
-                              </DialogTrigger>
-                              <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
-                                <DialogHeader>
-                                  <DialogTitle className="text-lg sm:text-xl">Support {project.name}</DialogTitle>
-                                  <DialogDescription className="text-sm">
-                                    Choose your contribution amount to help offset carbon emissions
-                                  </DialogDescription>
-                                </DialogHeader>
-                                <div className="space-y-4 py-4">
-                                  <div>
-                                    <Label className="text-xs sm:text-sm">Contribution Amount: ₹{(contributionAmount[0] * 83).toLocaleString()}</Label>
-                                    <Slider
-                                      value={contributionAmount}
-                                      onValueChange={setContributionAmount}
-                                      max={50000}
-                                      min={1000}
-                                      step={1000}
-                                      className="mt-2"
-                                    />
-                                  </div>
-                                  <div className="p-3 sm:p-4 bg-primary/10 rounded-lg">
-                                    <div className="text-center">
-                                      <div className="text-xs sm:text-sm text-muted-foreground">Your Impact</div>
-                                      <div className="text-xl sm:text-2xl font-bold text-primary">
-                                        {carbonUnit === 'kg' ? `${(calculateImpact(contributionAmount[0]) * 1000).toFixed(2)} kg CO₂` : `${calculateImpact(contributionAmount[0])} tons CO₂`}
-                                      </div>
-                                      <div className="text-xs sm:text-sm text-muted-foreground">will be offset</div>
-                                    </div>
-                                  </div>
-                                </div>
-                                <DialogFooter className="flex flex-col sm:flex-row gap-2">
-                                  <Button
-                                    className="w-full btn-hero text-xs sm:text-base px-3 sm:px-5 py-2 sm:py-3"
-                                    onClick={() => {
-                                      setIsLoading(true);
-                                      try {
-                                        router.push(`/payment?project=${encodeURIComponent(project.name)}&amount=${contributionAmount[0] * 83}`);
-                                      } catch (error) {
-                                        console.error('Navigation error:', error);
-                                        setIsLoading(false);
-                                      }
-                                    }}
-                                    disabled={isLoading}
-                                  >
-                                    {isLoading ? 'Processing...' : `Contribute ₹${(contributionAmount[0] * 83).toLocaleString()}`}
-                                  </Button>
-                                </DialogFooter>
-                              </DialogContent>
-                            </Dialog>
+                            <Button
+                              className="btn-hero text-xs sm:text-base px-3 sm:px-5 py-2 sm:py-3"
+                              onClick={(e) => {
+                                e.stopPropagation(); // Prevent navigation
+                                e.preventDefault(); // Prevent default behavior
+                                setSelectedProject(project);
+                                setContributionAmount([4150]); // Reset to default ₹4150 (~$50)
+                                setIsLoading(false);
+                                setDialogOpen(true);
+                              }}
+                            >
+                              <Heart className="h-4 w-4 mr-2" />
+                              Contribute
+                            </Button>
                             <Button variant="outline" className="text-xs sm:text-base px-3 sm:px-5 py-2 sm:py-3">
                               Learn More
                               <ArrowRight className="h-4 w-4 ml-2" />
@@ -732,6 +745,90 @@ const Projects = () => {
             <p className="text-muted-foreground text-xs sm:text-base">Try adjusting your search or filters</p>
           </div>
         )}
+
+        {/* Contribution Dialog */}
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogContent 
+            className="sm:max-w-md max-h-[90vh] overflow-y-auto z-[9999]"
+            onPointerDownOutside={(e) => {
+              e.preventDefault();
+              setDialogOpen(false);
+            }}
+            onEscapeKeyDown={(e) => {
+              e.preventDefault();
+              setDialogOpen(false);
+            }}
+          >
+            <DialogHeader>
+              <DialogTitle className="text-lg sm:text-xl">Support {selectedProject?.name}</DialogTitle>
+              <DialogDescription className="text-sm">
+                Choose your contribution amount to help offset carbon emissions
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div>
+                <Label className="text-xs sm:text-sm">Contribution Amount: ₹{contributionAmount[0].toLocaleString()}</Label>
+                <Slider
+                  value={contributionAmount}
+                  onValueChange={setContributionAmount}
+                  max={100000}
+                  min={1000}
+                  step={500}
+                  className="mt-2"
+                />
+                <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                  <span>₹1,000</span>
+                  <span>₹1,00,000</span>
+                </div>
+                
+                {/* Preset amounts */}
+                <div className="grid grid-cols-3 gap-2 mt-3">
+                  {[2500, 5000, 10000].map((amount) => (
+                    <Button
+                      key={amount}
+                      variant="outline"
+                      size="sm"
+                      className="text-xs"
+                      onClick={() => setContributionAmount([amount])}
+                    >
+                      ₹{amount.toLocaleString()}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+              <div className="p-3 sm:p-4 bg-primary/10 rounded-lg">
+                <div className="text-center">
+                  <div className="text-xs sm:text-sm text-muted-foreground">Your Impact</div>
+                  <div className="text-xl sm:text-2xl font-bold text-primary">
+                    {formatImpact(contributionAmount[0] * 0.00036)}
+                  </div>
+                  <div className="text-xs sm:text-sm text-muted-foreground">will be offset</div>
+                </div>
+              </div>
+            </div>
+            <DialogFooter className="flex flex-col sm:flex-row gap-2">
+              <Button
+                className="w-full btn-hero text-xs sm:text-base px-3 sm:px-5 py-2 sm:py-3"
+                onClick={() => {
+                  setIsLoading(true);
+                  try {
+                    const projectName = selectedProject?.name;
+                    setDialogOpen(false); // Close dialog before navigation
+                    router.push(`/payment?project=${encodeURIComponent(projectName)}&amount=${contributionAmount[0]}`);
+                  } catch (error) {
+                    console.error('Navigation error:', error);
+                    setIsLoading(false);
+                    setDialogOpen(false); // Close dialog on error too
+                  }
+                }}
+                disabled={isLoading}
+              >
+                {isLoading ? 'Processing...' : `Contribute ₹${contributionAmount[0].toLocaleString()}`}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         <ChatBot />
       </div>
     );

@@ -52,7 +52,6 @@ const SettingsPage = () => {
   });
 
   const [appearanceSettings, setAppearanceSettings] = useState({
-    theme: 'light',
     primaryColor: '#10b981',
     accentColor: '#059669',
     logoUrl: '/logo.png',
@@ -368,20 +367,6 @@ const SettingsPage = () => {
             <CardDescription>Customize platform appearance</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="theme">Theme</Label>
-              <Select value={appearanceSettings.theme} onValueChange={(value) => handleAppearanceSettingChange('theme', value)}>
-                <SelectTrigger className="mt-1">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="light">Light</SelectItem>
-                  <SelectItem value="dark">Dark</SelectItem>
-                  <SelectItem value="auto">Auto (System)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="primaryColor">Primary Color</Label>

@@ -1,5 +1,5 @@
 import { getFootprintLogModel } from "../models/FootprintLog.model.js";
-import "../models/User.model.js"; // Ensure User model is registered
+import { getUserModel } from "../models/User.model.js";
 import * as ipcc from "../lib/ipccEmissionCalculator.js";
 
 // Fallback emission calculation for when IPCC calculation fails
@@ -103,6 +103,19 @@ export async function createLog(req, res) {
       emission,
       calculation,
     });
+
+    // Update user streak after successful log creation
+    try {
+      const User = await getUserModel();
+      const user = await User.findById(req.user._id);
+      if (user) {
+        await user.updateStreak(new Date());
+      }
+    } catch (streakError) {
+      console.error("Error updating streak:", streakError.message);
+      // Don't fail the log creation if streak update fails
+    }
+
     res.status(201).json({
       success: true,
       log: log.toObject(),

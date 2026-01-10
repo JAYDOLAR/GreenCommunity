@@ -50,6 +50,16 @@ import {
   RefreshCw,
   CheckCircle,
   AlertTriangle,
+  Plane,
+  Zap,
+  Bike,
+  Fuel,
+  Flame,
+  ShoppingCart,
+  Factory,
+  Droplets,
+  Bus,
+  Milk,
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -104,6 +114,118 @@ const FootprintLog = () => {
   // Search state for activity type dropdown
   const [activitySearch, setActivitySearch] = useState("");
 
+  // Validation constraints for different activity types
+  const getActivityConstraints = (activityType) => {
+    const constraints = {
+      // Transportation (per day)
+      "transport-car": { min: 0, max: 1000, unit: "km", message: "Daily car travel should be between 0-1000 km" },
+      "transport-bus": { min: 0, max: 500, unit: "km", message: "Daily bus travel should be between 0-500 km" },
+      "transport-train": { min: 0, max: 2000, unit: "km", message: "Daily train travel should be between 0-2000 km" },
+      "transport-subway": { min: 0, max: 100, unit: "km", message: "Daily subway travel should be between 0-100 km" },
+      "transport-taxi": { min: 0, max: 200, unit: "km", message: "Daily taxi travel should be between 0-200 km" },
+      "transport-motorcycle": { min: 0, max: 800, unit: "km", message: "Daily motorcycle travel should be between 0-800 km" },
+      "transport-flight": { min: 0, max: 20000, unit: "km", message: "Flight distance should be between 0-20,000 km" },
+      "transport-ferry": { min: 0, max: 1000, unit: "km", message: "Ferry travel should be between 0-1000 km" },
+      
+      // Energy (per day)
+      "energy-electricity": { min: 0, max: 100, unit: "kWh", message: "Daily electricity usage should be between 0-100 kWh" },
+      "energy-gas": { min: 0, max: 20, unit: "therms", message: "Daily gas usage should be between 0-20 therms" },
+      "energy-heating-oil": { min: 0, max: 190, unit: "liters", message: "Daily heating oil should be between 0-190 liters" },
+      "energy-propane": { min: 0, max: 115, unit: "liters", message: "Daily propane usage should be between 0-115 liters" },
+      "energy-coal": { min: 0, max: 90, unit: "kg", message: "Daily coal usage should be between 0-90 kg" },
+      "energy-wood": { min: 0, max: 23, unit: "kg", message: "Daily wood usage should be between 0-23 kg" },
+      
+      // Food (per day)
+      "food-beef": { min: 0, max: 2.3, unit: "kg", message: "Daily beef consumption should be between 0-2.3 kg" },
+      "food-pork": { min: 0, max: 1.4, unit: "kg", message: "Daily pork consumption should be between 0-1.4 kg" },
+      "food-chicken": { min: 0, max: 0.9, unit: "kg", message: "Daily chicken consumption should be between 0-0.9 kg" },
+      "food-fish": { min: 0, max: 0.9, unit: "kg", message: "Daily fish consumption should be between 0-0.9 kg" },
+      "food-dairy": { min: 0, max: 3, unit: "servings", message: "Daily dairy should be between 0-3 servings" },
+      "food-eggs": { min: 0, max: 12, unit: "eggs", message: "Daily eggs should be between 0-12 eggs" },
+      "food-rice": { min: 0, max: 2, unit: "cups", message: "Daily rice should be between 0-2 cups" },
+      "food-vegetables": { min: 0, max: 10, unit: "servings", message: "Daily vegetables should be between 0-10 servings" },
+      "food-fruits": { min: 0, max: 10, unit: "servings", message: "Daily fruits should be between 0-10 servings" },
+      
+      // Waste (per day)
+      "waste-general": { min: 0, max: 9, unit: "kg", message: "Daily general waste should be between 0-9 kg" },
+      "waste-recycling": { min: 0, max: 4.5, unit: "kg", message: "Daily recycling should be between 0-4.5 kg" },
+      "waste-compost": { min: 0, max: 4.5, unit: "kg", message: "Daily compost should be between 0-4.5 kg" },
+      
+      // Water (per day)
+      "water-usage": { min: 0, max: 1900, unit: "liters", message: "Daily water usage should be between 0-1900 liters" },
+      "water-shower": { min: 0, max: 60, unit: "minutes", message: "Daily shower time should be between 0-60 minutes" },
+      "water-dishwasher": { min: 0, max: 5, unit: "loads", message: "Daily dishwasher loads should be between 0-5" },
+      "water-laundry": { min: 0, max: 3, unit: "loads", message: "Daily laundry loads should be between 0-3" },
+      
+      // Shopping (reasonable daily amounts)
+      "shopping-clothing": { min: 0, max: 10, unit: "items", message: "Daily clothing items should be between 0-10" },
+      "shopping-electronics": { min: 0, max: 3, unit: "items", message: "Daily electronics should be between 0-3 items" },
+      "shopping-books": { min: 0, max: 20, unit: "books", message: "Daily books should be between 0-20" },
+      "shopping-furniture": { min: 0, max: 5, unit: "items", message: "Daily furniture items should be between 0-5" },
+    };
+    
+    return constraints[activityType] || { min: 0, max: 1000, unit: "", message: "Please enter a reasonable value" };
+  };
+
+  // Validate quantity based on activity type
+  const validateQuantity = (activityType, quantity) => {
+    const constraints = getActivityConstraints(activityType);
+    const numQuantity = parseFloat(quantity);
+    
+    if (isNaN(numQuantity)) {
+      return { valid: false, message: "Please enter a valid number" };
+    }
+    
+    if (numQuantity < constraints.min) {
+      return { valid: false, message: `Minimum value is ${constraints.min} ${constraints.unit}` };
+    }
+    
+    if (numQuantity > constraints.max) {
+      return { valid: false, message: constraints.message };
+    }
+    
+    return { valid: true, message: "" };
+  };
+
+  // Validate daily aggregate for activity type
+  const validateDailyAggregate = (activityType, newQuantity, targetDate = selectedDate) => {
+    const constraints = getActivityConstraints(activityType);
+    const newNumQuantity = parseFloat(newQuantity);
+    
+    if (isNaN(newNumQuantity)) {
+      return { valid: false, message: "Please enter a valid number" };
+    }
+
+    // Get the base activity type (e.g., "transport-car" -> "transport-car")
+    const baseActivityType = activityType;
+    
+    // Filter logs for the same day and same activity type
+    const targetDateStr = targetDate.toDateString();
+    const sameDayLogs = logs.filter(log => {
+      const logDate = new Date(log.selectedDate || log.createdAt);
+      return logDate.toDateString() === targetDateStr && log.activityType === baseActivityType;
+    });
+
+    // Calculate current total for this activity type on this day
+    const currentDayTotal = sameDayLogs.reduce((total, log) => {
+      return total + (parseFloat(log.quantity) || 0);
+    }, 0);
+
+    // Check if adding the new quantity would exceed daily limit
+    const newDayTotal = currentDayTotal + newNumQuantity;
+    const dailyLimit = constraints.max;
+
+    if (newDayTotal > dailyLimit) {
+      const remaining = Math.max(0, dailyLimit - currentDayTotal);
+      return { 
+        valid: false, 
+        message: `Daily limit exceeded! You've already logged ${currentDayTotal.toFixed(1)} ${constraints.unit} of ${activityType.replace(/-/g, ' ')} today. Maximum daily limit is ${dailyLimit} ${constraints.unit}. You can add up to ${remaining.toFixed(1)} ${constraints.unit} more.`
+      };
+    }
+
+    return { valid: true, message: "" };
+  };
+
   // Import activity types and options from configuration
   const activityTypes = ACTIVITY_TYPES;
   const fuelTypes = FUEL_TYPES;
@@ -130,7 +252,9 @@ const FootprintLog = () => {
     // Create contextual labels based on activity category and unit
     switch (selectedActivity.category) {
       case "Transportation":
-        if (unit === "miles") return "Distance";
+        if (unit === "km") return "Distance";
+        if (unit === "kg") return "Weight";
+        if (unit === "liters") return "Volume";
         return "Quantity";
 
       case "Energy":
@@ -178,7 +302,7 @@ const FootprintLog = () => {
 
     switch (selectedActivity.category) {
       case "Transportation":
-        return unit === "miles" ? "Enter distance" : "Enter quantity";
+        return unit === "km" ? "Enter distance" : unit === "kg" ? "Enter weight" : unit === "liters" ? "Enter volume" : "Enter quantity";
 
       case "Energy":
         if (unit === "kWh") return "Enter kWh used";
@@ -235,6 +359,33 @@ const FootprintLog = () => {
       (type) => type.value === activityType
     );
     if (selectedActivity && quantity) {
+      // Validate quantity before proceeding
+      const validation = validateQuantity(activityType, quantity);
+      if (!validation.valid) {
+        toast.error(
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4" />
+            {validation.message}
+          </div>
+        );
+        return;
+      }
+
+      // Validate daily aggregate
+      const dailyValidation = validateDailyAggregate(activityType, quantity, selectedDate);
+      if (!dailyValidation.valid) {
+        toast.error(
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4" />
+            <div>
+              <div className="font-semibold">Daily Limit Exceeded</div>
+              <div className="text-sm">{dailyValidation.message}</div>
+            </div>
+          </div>
+        );
+        return;
+      }
+
       setIsCalculating(true);
       try {
         const activityData = {
@@ -316,6 +467,33 @@ const FootprintLog = () => {
         <div className="flex items-center gap-2">
           <AlertTriangle className="h-4 w-4" />
           Please fill in all required fields to calculate impact
+        </div>
+      );
+      return;
+    }
+
+    // Validate quantity before proceeding
+    const validation = validateQuantity(activityType, quantity);
+    if (!validation.valid) {
+      toast.error(
+        <div className="flex items-center gap-2">
+          <AlertTriangle className="h-4 w-4" />
+          {validation.message}
+        </div>
+      );
+      return;
+    }
+
+    // Validate daily aggregate
+    const dailyValidation = validateDailyAggregate(activityType, quantity, selectedDate);
+    if (!dailyValidation.valid) {
+      toast.error(
+        <div className="flex items-center gap-2">
+          <AlertTriangle className="h-4 w-4" />
+          <div>
+            <div className="font-semibold">Daily Limit Exceeded</div>
+            <div className="text-sm">{dailyValidation.message}</div>
+          </div>
         </div>
       );
       return;
@@ -438,13 +616,94 @@ const FootprintLog = () => {
 
   // Format log for display
   const formatLogForDisplay = (log) => {
-    // Map activity types to icons
+    // Comprehensive icon map matching dashboard
     const iconMap = {
       transport: Car,
-      energy: Home,
+      car: Car,
+      bus: Bus,
+      motorcycle: Bike,
+      bike: Bike,
+      flight: Plane,
+      plane: Plane,
+      energy: Zap,
+      electricity: Zap,
+      home: Home,
+      housing: Home,
       food: Utensils,
+      dairy: Milk,
       waste: Trash2,
+      shopping: ShoppingCart,
       other: Clock,
+      fuel: Fuel,
+      heating: Flame,
+      manufacturing: Factory,
+      water: Droplets,
+      "water usage": Droplets,
+      // Specific activity types
+      "transport-car": Car,
+      "transport-bus": Bus,
+      "transport-train": Bike,
+      "transport-subway": Bike,
+      "transport-taxi": Car,
+      "transport-motorcycle": Bike,
+      "transport-flight": Plane,
+      "transport-ferry": Bus,
+      "transport-bicycle": Bike,
+      "transport-walking": Clock,
+      "energy-electricity": Zap,
+      "energy-gas": Flame,
+      "energy-heating-oil": Fuel,
+      "energy-propane": Fuel,
+      "energy-coal": Factory,
+      "energy-wood": Flame,
+      "food-beef": Utensils,
+      "food-pork": Utensils,
+      "food-chicken": Utensils,
+      "food-fish": Utensils,
+      "food-dairy": Milk,
+      "food-eggs": Utensils,
+      "food-rice": Utensils,
+      "food-vegetables": Utensils,
+      "food-fruits": Utensils,
+      "waste-general": Trash2,
+      "waste-recycling": Trash2,
+      "waste-compost": Trash2,
+      "water-usage": Droplets,
+      "water-shower": Droplets,
+      "water-dishwasher": Droplets,
+      "water-laundry": Droplets,
+      "shopping-clothing": ShoppingCart,
+      "shopping-electronics": ShoppingCart,
+      "shopping-books": ShoppingCart,
+      "shopping-furniture": ShoppingCart,
+    };
+
+    // Function to find the best matching icon
+    const findBestMatch = (key) => {
+      if (!key) return Clock;
+      
+      const normalizedKey = key.toLowerCase();
+      
+      // Direct match
+      if (iconMap[normalizedKey]) return iconMap[normalizedKey];
+      
+      // Specific pattern matches
+      if (normalizedKey.includes('dairy') || normalizedKey.includes('milk')) return Milk;
+      if (normalizedKey.includes('motor') || normalizedKey.includes('bike')) return Bike;
+      if (normalizedKey.includes('bus') || normalizedKey.includes('public transport')) return Bus;
+      if (normalizedKey.includes('water') || normalizedKey.includes('h2o')) return Droplets;
+      if (normalizedKey.includes('electric') || normalizedKey.includes('power')) return Zap;
+      if (normalizedKey.includes('car') || normalizedKey.includes('vehicle')) return Car;
+      if (normalizedKey.includes('flight') || normalizedKey.includes('airplane')) return Plane;
+      if (normalizedKey.includes('home') || normalizedKey.includes('house')) return Home;
+      if (normalizedKey.includes('food') || normalizedKey.includes('eat')) return Utensils;
+      if (normalizedKey.includes('waste') || normalizedKey.includes('trash')) return Trash2;
+      if (normalizedKey.includes('shop')) return ShoppingCart;
+      if (normalizedKey.includes('fuel') || normalizedKey.includes('gas')) return Fuel;
+      if (normalizedKey.includes('heat')) return Flame;
+      
+      // Default fallback
+      return Clock;
     };
 
     // Handle date formatting with validation
@@ -474,7 +733,7 @@ const FootprintLog = () => {
       amount: log.details?.quantity || log.quantity || 0,
       unit: log.details?.unit || "units",
       co2: log.emission || 0,
-      icon: iconMap[log.activityType] || Clock,
+      icon: findBestMatch(log.activityType),
       rawLog: log,
     };
   };
@@ -649,7 +908,9 @@ const FootprintLog = () => {
                       placeholder={t("footprint:choose_activity_type")}
                     />
                   </SelectTrigger>
-                  <SelectContent className="max-h-80 overflow-y-auto p-0">
+                  <SelectContent 
+                    className="max-h-96 overflow-hidden p-0 focus:outline-none"
+                  >
                     {/* Search box (does not close the select) */}
                     <div className="sticky top-0 z-10 bg-popover p-2 pb-2 border-b border-border">
                       <Input
@@ -697,8 +958,25 @@ const FootprintLog = () => {
                       ];
                       return (
                         <div
-                          className="pr-1 max-h-72 overflow-auto overscroll-contain scroll-py-2"
-                          style={{ WebkitOverflowScrolling: "touch" }}
+                          className="overflow-y-auto overscroll-contain scroll-py-2 flex-1"
+                          style={{ 
+                            WebkitOverflowScrolling: "touch",
+                            maxHeight: "calc(24rem - 80px)" // Subtract search box height
+                          }}
+                          onWheel={(e) => {
+                            // Prevent page scroll when dropdown is scrolling
+                            e.stopPropagation();
+                            const target = e.currentTarget;
+                            const { scrollTop, scrollHeight, clientHeight } = target;
+                            
+                            // Only prevent default if we're not at the boundaries
+                            if (
+                              (e.deltaY < 0 && scrollTop > 0) || // Scrolling up and not at top
+                              (e.deltaY > 0 && scrollTop < scrollHeight - clientHeight) // Scrolling down and not at bottom
+                            ) {
+                              e.preventDefault();
+                            }
+                          }}
                         >
                           {filtered.length === 0 && (
                             <div className="px-3 py-4 text-xs text-muted-foreground">
@@ -758,8 +1036,51 @@ const FootprintLog = () => {
                       placeholder={getQuantityPlaceholder()}
                       value={quantity}
                       onChange={(e) => setQuantity(e.target.value)}
-                      className="mt-1"
+                      className={cn(
+                        "mt-1",
+                        quantity && activityType && !validateQuantity(activityType, quantity).valid 
+                          ? "border-red-500 focus:border-red-500" 
+                          : ""
+                      )}
                     />
+                    {activityType && (
+                      <div className="space-y-1 mt-1">
+                        <p className="text-xs text-gray-500">
+                          Max: {getActivityConstraints(activityType).max} {getActivityConstraints(activityType).unit}
+                        </p>
+                        {(() => {
+                          // Calculate daily usage for this activity type
+                          const targetDateStr = selectedDate.toDateString();
+                          const sameDayLogs = logs.filter(log => {
+                            const logDate = new Date(log.selectedDate || log.createdAt);
+                            return logDate.toDateString() === targetDateStr && log.activityType === activityType;
+                          });
+                          const dailyUsed = sameDayLogs.reduce((total, log) => total + (parseFloat(log.quantity) || 0), 0);
+                          const constraints = getActivityConstraints(activityType);
+                          const remaining = Math.max(0, constraints.max - dailyUsed);
+                          
+                          if (dailyUsed > 0) {
+                            return (
+                              <p className="text-xs text-blue-600">
+                                Today's usage: {dailyUsed.toFixed(1)} {constraints.unit} 
+                                ({remaining.toFixed(1)} {constraints.unit} remaining)
+                              </p>
+                            );
+                          }
+                          return null;
+                        })()}
+                        {quantity && !validateQuantity(activityType, quantity).valid && (
+                          <p className="text-xs text-red-500">
+                            {validateQuantity(activityType, quantity).message}
+                          </p>
+                        )}
+                        {quantity && validateQuantity(activityType, quantity).valid && !validateDailyAggregate(activityType, quantity, selectedDate).valid && (
+                          <p className="text-xs text-red-500">
+                            {validateDailyAggregate(activityType, quantity, selectedDate).message}
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <div>
                     <Label className="text-sm sm:text-base">Unit</Label>
@@ -1151,7 +1472,7 @@ const FootprintLog = () => {
                             {entry.type}
                           </Badge>
                           <div className="text-base sm:text-lg font-bold text-foreground">
-                            +{entry.co2.toFixed(2)} kg
+                            {entry.co2.toFixed(2)} kg
                           </div>
                           <div className="text-xs text-muted-foreground">
                             CO₂

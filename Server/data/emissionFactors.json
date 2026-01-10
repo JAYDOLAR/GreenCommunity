@@ -47,37 +47,37 @@
         "notes": "CO2 only; add ~+7–15% for CH4/N2O/WTT if you choose to model full CO2e."
     },
     {
-        "id": "fuel_propane_gallon",
+        "id": "fuel_propane_liter",
         "category": "energy",
         "subtype": "propane_LPG",
-        "units": "kgCO2_per_gallon",
-        "value": 5.74,
+        "units": "kgCO2_per_liter",
+        "value": 1.516,
         "region": "Global",
         "source": "US EIA CO2 coefficients by fuel",
         "source_url": "https://www.eia.gov/environment/emissions/co2_vol_mass.php",
-        "notes": "Propane/LPG combustion CO2. Per-kg ~3.0 kgCO2/kg."
+        "notes": "Propane/LPG combustion CO2. Per-kg ~3.0 kgCO2/kg. 5.74 kgCO2/gal ÷ 3.785 L/gal = 1.516 kgCO2/L."
     },
     {
-        "id": "fuel_heating_oil_gallon",
+        "id": "fuel_heating_oil_liter",
         "category": "energy",
         "subtype": "heating_oil",
-        "units": "kgCO2_per_gallon",
-        "value": 10.21,
+        "units": "kgCO2_per_liter",
+        "value": 2.697,
         "region": "Global",
         "source": "US EIA CO2 coefficients by fuel",
         "source_url": "https://www.eia.gov/environment/emissions/co2_vol_mass.php",
-        "notes": "Useful for backup generators/boilers where used."
+        "notes": "Useful for backup generators/boilers where used. 10.21 kgCO2/gal ÷ 3.785 L/gal = 2.697 kgCO2/L."
     },
     {
-        "id": "fuel_coal_lb",
+        "id": "fuel_coal_kg",
         "category": "energy",
         "subtype": "coal_generic",
-        "units": "kgCO2_per_lb",
-        "value": 1.10,
+        "units": "kgCO2_per_kg",
+        "value": 2.42,
         "region": "Global",
         "source": "US EIA CO2 coefficients by fuel",
         "source_url": "https://www.eia.gov/environment/emissions/co2_vol_mass.php",
-        "notes": "≈2.42 kgCO2 per kg coal (bituminous-ish average)."
+        "notes": "Converted from 1.10 kgCO2/lb. Bituminous coal average for India."
     },
     {
         "id": "fuel_wood_cord",
@@ -91,70 +91,70 @@
         "notes": "Biogenic CO2 often reported as 0; CH4/N2O exist but small and context-specific. Keep as 0 unless you add a wood stove non-CO2 factor."
     },
     {
-        "id": "transport_bus_pmi_in_delhi",
+        "id": "transport_bus_pkm_in_delhi",
         "category": "transportation",
         "subtype": "bus",
-        "units": "kgCO2_per_passenger_mile",
-        "value": 0.04743,
+        "units": "kgCO2_per_passenger_km",
+        "value": 0.02948,
         "region": "IN_Delhi",
         "source": "TERI: Emission intensities per passenger-km, Delhi",
         "source_url": "https://teriin.org/sites/default/transport/Per_passenger_emission_in_Delhi_Different_Modes.pdf",
-        "notes": "29.48 gCO2/pkm × 1.609 = 0.04743 kgCO2/p-mi."
+        "notes": "29.48 gCO2/pkm = 0.02948 kgCO2/pkm. Direct metric conversion for India."
     },
     {
-        "id": "transport_car_pmi_in_delhi",
+        "id": "transport_car_pkm_in_delhi",
         "category": "transportation",
         "subtype": "car_private",
-        "units": "kgCO2_per_passenger_mile",
-        "value": 0.14116,
+        "units": "kgCO2_per_passenger_km",
+        "value": 0.08773,
         "region": "IN_Delhi",
         "source": "TERI: Emission intensities per passenger-km, Delhi",
         "source_url": "https://teriin.org/sites/default/transport/Per_passenger_emission_in_Delhi_Different_Modes.pdf",
-        "notes": "87.73 gCO2/pkm × 1.609."
+        "notes": "87.73 gCO2/pkm = 0.08773 kgCO2/pkm. Direct metric for India."
     },
     {
-        "id": "transport_taxi_pmi_in_delhi",
+        "id": "transport_taxi_pkm_in_delhi",
         "category": "transportation",
         "subtype": "taxi_rideshare",
-        "units": "kgCO2_per_passenger_mile",
-        "value": 0.15862,
+        "units": "kgCO2_per_passenger_km",
+        "value": 0.09858,
         "region": "IN_Delhi",
         "source": "TERI: Emission intensities per passenger-km, Delhi",
         "source_url": "https://teriin.org/sites/default/transport/Per_passenger_emission_in_Delhi_Different_Modes.pdf",
-        "notes": "98.58 gCO2/pkm × 1.609."
+        "notes": "98.58 gCO2/pkm = 0.09858 kgCO2/pkm. Direct metric for India."
     },
     {
-        "id": "transport_auto_pmi_in_delhi",
+        "id": "transport_auto_pkm_in_delhi",
         "category": "transportation",
         "subtype": "auto_rickshaw",
-        "units": "kgCO2_per_passenger_mile",
-        "value": 0.10314,
+        "units": "kgCO2_per_passenger_km",
+        "value": 0.06410,
         "region": "IN_Delhi",
         "source": "TERI: Emission intensities per passenger-km, Delhi",
         "source_url": "https://teriin.org/sites/default/transport/Per_passenger_emission_in_Delhi_Different_Modes.pdf",
-        "notes": "64.10 gCO2/pkm × 1.609."
+        "notes": "64.10 gCO2/pkm = 0.06410 kgCO2/pkm. Auto-rickshaw metric for India."
     },
     {
-        "id": "transport_two_wheeler_pmi_in_delhi",
+        "id": "transport_two_wheeler_pkm_in_delhi",
         "category": "transportation",
         "subtype": "motorcycle_two_wheeler",
-        "units": "kgCO2_per_passenger_mile",
-        "value": 0.04745,
+        "units": "kgCO2_per_passenger_km",
+        "value": 0.02949,
         "region": "IN_Delhi",
         "source": "TERI: Emission intensities per passenger-km, Delhi",
         "source_url": "https://teriin.org/sites/default/transport/Per_passenger_emission_in_Delhi_Different_Modes.pdf",
-        "notes": "Assumes 1.4 occupancy → 29.49 gCO2/pkm × 1.609."
+        "notes": "29.49 gCO2/pkm = 0.02949 kgCO2/pkm. Two-wheeler metric for India (1.4 occupancy)."
     },
     {
-        "id": "transport_metro_pmi_in_delhi",
+        "id": "transport_metro_pkm_in_delhi",
         "category": "transportation",
         "subtype": "metro_subway",
-        "units": "kgCO2_per_passenger_mile",
-        "value": 0.04722,
+        "units": "kgCO2_per_passenger_km",
+        "value": 0.02935,
         "region": "IN_Delhi",
         "source": "TERI (Delhi Metro) + DMRC comms",
         "source_url": "https://teriin.org/sites/default/transport/Per_passenger_emission_in_Delhi_Different_Modes.pdf",
-        "notes": "Back-calculated per PKM ≈29.35 g; ×1.609."
+        "notes": "29.35 gCO2/pkm = 0.02935 kgCO2/pkm from TERI Delhi Metro data."
     },
     {
         "id": "flight_shorthaul_economy_defra2024",
@@ -179,15 +179,15 @@
         "notes": "Apply class multipliers as above. Treat domestic as short-haul unless you model a distinct factor."
     },
     {
-        "id": "water_supply_kg_per_gallon_in",
+        "id": "water_supply_per_liter_in",
         "category": "water",
         "subtype": "treatment_pumping",
-        "units": "kgCO2e_per_gallon",
-        "value": 0.00424,
+        "units": "kgCO2e_per_liter",
+        "value": 0.00112,
         "region": "IN",
         "source": "IIT Roorkee (Dehradun water systems study)",
         "source_url": "https://www.iitr.ac.in/rwc2020/pdf/papers/RWC_157_Medha.pdf",
-        "notes": "Study finds ~0.00112 kgCO2e/L → ×3.785 = 0.00424 kgCO2e/US gallon."
+        "notes": "Study finds ~0.00112 kgCO2e/L for Indian water treatment and pumping systems."
     },
     {
         "id": "water_shower_per_min_assumed8L",
@@ -234,59 +234,59 @@
         "notes": "Crude average credit across materials; best practice is to split by material (paper, metal, glass, plastic) with distinct credits."
     },
     {
-        "id": "food_beef_per_lb",
+        "id": "food_beef_per_kg",
         "category": "food",
         "subtype": "beef",
-        "units": "kgCO2e_per_lb",
-        "value": 12.25,
+        "units": "kgCO2e_per_kg",
+        "value": 27.0,
         "region": "Global",
         "source": "Poore & Nemecek 2018; Our World in Data synthesis",
         "source_url": "https://ourworldindata.org/environmental-impacts-of-food",
-        "notes": "27 kgCO2e/kg → ÷2.20462."
+        "notes": "27 kgCO2e/kg direct from study. Includes methane from cattle."
     },
     {
-        "id": "food_pork_per_lb",
+        "id": "food_pork_per_kg",
         "category": "food",
         "subtype": "pork",
-        "units": "kgCO2e_per_lb",
-        "value": 5.49,
+        "units": "kgCO2e_per_kg",
+        "value": 12.1,
         "region": "Global",
         "source": "Poore & Nemecek 2018",
         "source_url": "https://ourworldindata.org/environmental-impacts-of-food",
-        "notes": "12.1 kgCO2e/kg → ÷2.20462."
+        "notes": "12.1 kgCO2e/kg direct from study."
     },
     {
-        "id": "food_chicken_per_lb",
+        "id": "food_chicken_per_kg",
         "category": "food",
         "subtype": "chicken",
-        "units": "kgCO2e_per_lb",
-        "value": 3.13,
+        "units": "kgCO2e_per_kg",
+        "value": 6.9,
         "region": "Global",
         "source": "Poore & Nemecek 2018",
         "source_url": "https://ourworldindata.org/environmental-impacts-of-food",
-        "notes": "6.9 kgCO2e/kg → ÷2.20462."
+        "notes": "6.9 kgCO2e/kg direct from study."
     },
     {
-        "id": "food_fish_per_lb",
+        "id": "food_fish_per_kg",
         "category": "food",
         "subtype": "fish_seafood",
-        "units": "kgCO2e_per_lb",
-        "value": 2.45,
+        "units": "kgCO2e_per_kg",
+        "value": 5.4,
         "region": "Global",
         "source": "Poore & Nemecek 2018",
         "source_url": "https://ourworldindata.org/environmental-impacts-of-food",
-        "notes": "5.4 kgCO2e/kg → ÷2.20462. Wild vs farmed varies widely."
+        "notes": "5.4 kgCO2e/kg direct from study. Wild vs farmed varies widely."
     },
     {
-        "id": "food_dairy_mixed_per_lb",
+        "id": "food_dairy_mixed_per_kg",
         "category": "food",
         "subtype": "dairy_mixed",
-        "units": "kgCO2e_per_lb",
-        "value": 1.45,
+        "units": "kgCO2e_per_kg",
+        "value": 3.2,
         "region": "Global",
         "source": "Poore & Nemecek 2018",
         "source_url": "https://ourworldindata.org/environmental-impacts-of-food",
-        "notes": "Representative blended dairy basket. Prefer product-specific: milk ~1.3 kg/L, cheese ~13.5 kg/kg."
+        "notes": "Representative blended dairy basket. Milk ~1.3 kg/L, cheese ~13.5 kg/kg in metric."
     },
     {
         "id": "food_eggs_per_dozen",
@@ -300,37 +300,37 @@
         "notes": "If you want India-specific LCAs, we can replace with country data."
     },
     {
-        "id": "food_rice_per_lb",
+        "id": "food_rice_per_kg",
         "category": "food",
         "subtype": "rice",
-        "units": "kgCO2e_per_lb",
-        "value": 1.23,
+        "units": "kgCO2e_per_kg",
+        "value": 2.7,
         "region": "Global",
         "source": "Poore & Nemecek 2018",
         "source_url": "https://ourworldindata.org/environmental-impacts-of-food",
-        "notes": "2.7 kgCO2e/kg → ÷2.20462. India paddy systems vary by methane management."
+        "notes": "2.7 kgCO2e/kg from original source. India paddy systems vary by methane management."
     },
     {
-        "id": "food_vegetables_per_lb",
+        "id": "food_vegetables_per_kg",
         "category": "food",
         "subtype": "vegetables",
-        "units": "kgCO2e_per_lb",
-        "value": 0.23,
+        "units": "kgCO2e_per_kg",
+        "value": 0.5,
         "region": "Global",
         "source": "Poore & Nemecek 2018",
         "source_url": "https://ourworldindata.org/environmental-impacts-of-food",
-        "notes": "0.5 kgCO2e/kg → ÷2.20462."
+        "notes": "0.5 kgCO2e/kg from original source data."
     },
-    {
-        "id": "food_fruits_per_lb",
+        {
+        "id": "food_fruits_vegetables_per_kg",
         "category": "food",
-        "subtype": "fruits",
-        "units": "kgCO2e_per_lb",
-        "value": 0.18,
+        "subtype": "fruits_vegetables",
+        "units": "kgCO2e_per_kg",
+        "value": 0.44,
         "region": "Global",
         "source": "Poore & Nemecek 2018",
         "source_url": "https://ourworldindata.org/environmental-impacts-of-food",
-        "notes": "0.4 kgCO2e/kg → ÷2.20462."
+        "notes": "Mixed fruits and vegetables footprint in metric units"
     },
     {
         "id": "shopping_clothing_item_generic",

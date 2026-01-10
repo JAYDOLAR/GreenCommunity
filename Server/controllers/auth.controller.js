@@ -1123,3 +1123,28 @@ export const refresh2FAToken = asyncHandler(async (req, res) => {
     return res.status(401).json({ message: 'Invalid temporary token' });
   }
 });
+
+// Get user streak information
+export const getUserStreak = asyncHandler(async (req, res) => {
+  try {
+    const User = await getUserModel();
+    const user = await User.findById(req.user._id);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const streakInfo = user.getStreakInfo();
+    
+    res.status(200).json({
+      success: true,
+      streak: streakInfo
+    });
+  } catch (error) {
+    console.error('Error getting user streak:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error retrieving streak information' 
+    });
+  }
+});

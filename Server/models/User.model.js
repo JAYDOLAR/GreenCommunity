@@ -245,6 +245,21 @@ const userSchema = new mongoose.Schema({
     }
   },
 
+  // Streak Tracking
+  streakData: {
+    currentStreak: { type: Number, default: 0 },
+    longestStreak: { type: Number, default: 0 },
+    lastLogDate: { type: Date, default: null },
+    streakStartDate: { type: Date, default: null },
+    totalLoggingDays: { type: Number, default: 0 },
+    streakHistory: [{
+      startDate: { type: Date, required: true },
+      endDate: { type: Date, required: true },
+      streakLength: { type: Number, required: true },
+      createdAt: { type: Date, default: Date.now }
+    }]
+  },
+
   // Timestamps
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
@@ -540,6 +555,89 @@ userSchema.methods.addToWishlist = function (productId) {
     this.marketplace_activity.wishlist.push(productId);
   }
   return this.save();
+};
+
+// Streak Management Methods
+userSchema.methods.updateStreak = function (logDate = new Date()) {
+  const today = new Date(logDate);
+  today.setHours(0, 0, 0, 0);
+  
+  const lastLogDate = this.streakData.lastLogDate ? new Date(this.streakData.lastLogDate) : null;
+  
+  if (lastLogDate) {
+    lastLogDate.setHours(0, 0, 0, 0);
+    
+    // If already logged today, don't update
+    if (lastLogDate.getTime() === today.getTime()) {
+      return this.save();
+    }
+    
+    const daysDiff = Math.floor((today - lastLogDate) / (1000 * 60 * 60 * 24));
+    
+    if (daysDiff === 1) {
+      // Consecutive day - continue streak
+      this.streakData.currentStreak += 1;
+    } else if (daysDiff > 1) {
+      // Streak broken - save old streak to history and start new
+      if (this.streakData.currentStreak > 0) {
+        this.streakData.streakHistory.push({
+          startDate: this.streakData.streakStartDate,
+          endDate: lastLogDate,
+          streakLength: this.streakData.currentStreak
+        });
+      }
+      this.streakData.currentStreak = 1;
+      this.streakData.streakStartDate = today;
+    }
+  } else {
+    // First log ever
+    this.streakData.currentStreak = 1;
+    this.streakData.streakStartDate = today;
+  }
+  
+  // Update longest streak
+  if (this.streakData.currentStreak > this.streakData.longestStreak) {
+    this.streakData.longestStreak = this.streakData.currentStreak;
+  }
+  
+  // Update last log date and total logging days
+  this.streakData.lastLogDate = today;
+  this.streakData.totalLoggingDays += 1;
+  
+  return this.save();
+};
+
+userSchema.methods.getStreakInfo = function () {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  const lastLogDate = this.streakData.lastLogDate ? new Date(this.streakData.lastLogDate) : null;
+  
+  let isStreakActive = false;
+  let currentStreak = this.streakData.currentStreak;
+  
+  if (lastLogDate) {
+    lastLogDate.setHours(0, 0, 0, 0);
+    const daysDiff = Math.floor((today - lastLogDate) / (1000 * 60 * 60 * 24));
+    
+    if (daysDiff <= 1) {
+      isStreakActive = true;
+    } else if (daysDiff > 1) {
+      // Streak is broken but not yet updated
+      currentStreak = 0;
+      isStreakActive = false;
+    }
+  }
+  
+  return {
+    currentStreak,
+    longestStreak: this.streakData.longestStreak,
+    totalLoggingDays: this.streakData.totalLoggingDays,
+    lastLogDate: this.streakData.lastLogDate,
+    streakStartDate: this.streakData.streakStartDate,
+    isStreakActive,
+    streakHistory: this.streakData.streakHistory
+  };
 };
 
 // Static methods

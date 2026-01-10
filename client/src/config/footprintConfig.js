@@ -2,7 +2,7 @@
 // This file contains all the activity types, categories, and emission factors
 // TODO: Move this data to be fetched from backend APIs
 
-import { Car, Plane, Home, Utensils, Trash2, RefreshCw } from 'lucide-react';
+import { Car, Plane, Home, Utensils, Trash2, RefreshCw, Train, Bus, Bike, RotateCcw, Zap, Ship } from 'lucide-react';
 
 export const ACTIVITY_TYPES = [
     // Transportation
@@ -19,7 +19,7 @@ export const ACTIVITY_TYPES = [
     {
         value: 'transport-bus',
         label: 'Bus Travel',
-        icon: Car,
+        icon: Bus,
         unit: 'miles',
         factor: 0.15,
         category: 'Transportation',
@@ -28,7 +28,7 @@ export const ACTIVITY_TYPES = [
     {
         value: 'transport-train',
         label: 'Train Travel',
-        icon: Car,
+        icon: Bike,
         unit: 'miles',
         factor: 0.12,
         category: 'Transportation',
@@ -37,7 +37,7 @@ export const ACTIVITY_TYPES = [
     {
         value: 'transport-subway',
         label: 'Subway/Metro',
-        icon: Car,
+        icon: Train,
         unit: 'miles',
         factor: 0.08,
         category: 'Transportation'
@@ -45,7 +45,7 @@ export const ACTIVITY_TYPES = [
     {
         value: 'transport-taxi',
         label: 'Taxi/Rideshare',
-        icon: Car,
+        icon: RotateCcw,
         unit: 'miles',
         factor: 0.45,
         category: 'Transportation',
@@ -55,7 +55,7 @@ export const ACTIVITY_TYPES = [
     {
         value: 'transport-motorcycle',
         label: 'Motorcycle',
-        icon: Car,
+        icon: Bike,
         unit: 'miles',
         factor: 0.25,
         category: 'Transportation',
@@ -74,7 +74,7 @@ export const ACTIVITY_TYPES = [
     {
         value: 'transport-ferry',
         label: 'Ferry',
-        icon: Plane,
+        icon: Ship,
         unit: 'miles',
         factor: 0.35,
         category: 'Transportation',
@@ -83,7 +83,7 @@ export const ACTIVITY_TYPES = [
     {
         value: 'transport-bicycle',
         label: 'Bicycle',
-        icon: Car,
+        icon: Bike,
         unit: 'miles',
         factor: 0,
         category: 'Transportation'
@@ -91,7 +91,7 @@ export const ACTIVITY_TYPES = [
     {
         value: 'transport-walking',
         label: 'Walking',
-        icon: Car,
+        icon: RefreshCw,
         unit: 'miles',
         factor: 0,
         category: 'Transportation'

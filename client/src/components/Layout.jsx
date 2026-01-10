@@ -5,7 +5,7 @@ import FloatingParticles from './FloatingParticles';
 import ProfessionalProgress from './ProfessionalProgress';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Leaf, Menu, X, User, TrendingUp, LogOut, LayoutDashboard, FileText, ShoppingCart, TreePine, Users, Settings } from 'lucide-react';
+import { Leaf, Menu, X, User, TrendingUp, LogOut, LayoutDashboard, FileText, ShoppingCart, TreePine, Users, Settings, Bell } from 'lucide-react';
 import { useUser } from '@/context/UserContext';
 import { authAPI } from '@/lib/api';
 import Link from 'next/link';
@@ -15,7 +15,6 @@ import { useMediaQuery } from 'react-responsive';
 import { useOptimizedNavigation } from '@/lib/useOptimizedNavigation';
 import { SIDEBAR_ITEMS } from '@/config/navigationConfig';
 import { useTranslation } from '@/context/PreferencesContext';
-import { ThemeToggle } from './ThemeToggle';
 
 const sidebarItems = SIDEBAR_ITEMS;
 
@@ -23,6 +22,7 @@ export default function Layout({ children }) {
   const { t } = useTranslation(['navigation', 'common']);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [notificationOpen, setNotificationOpen] = useState(false);
   const { user, clearUser } = useUser();
   const router = useRouter();
   const { navigate } = useOptimizedNavigation();
@@ -37,6 +37,33 @@ export default function Layout({ children }) {
   const pathname = usePathname();
   const isMobile = useMediaQuery({ maxWidth: 767 });
   const isTablet = useMediaQuery({ minWidth: 768, maxWidth: 1024 });
+
+  // Sample notification data
+  const notifications = [
+    {
+      id: 1,
+      title: "New Challenge Available",
+      message: "Join the 'Green Week' challenge and reduce your carbon footprint!",
+      time: "2 minutes ago",
+      unread: true
+    },
+    {
+      id: 2,
+      title: "Goal Achievement",
+      message: "Congratulations! You've reached 75% of your monthly goal.",
+      time: "1 hour ago",
+      unread: true
+    },
+    {
+      id: 3,
+      title: "Community Update",
+      message: "Your community has saved 500kg of CO2 this week!",
+      time: "3 hours ago",
+      unread: false
+    }
+  ];
+
+  const unreadCount = notifications.filter(n => n.unread).length;
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -75,6 +102,9 @@ export default function Layout({ children }) {
 
   // Navigation click handler
   const handleNavigationClick = (path) => {
+    // Emit custom event to close any open dialogs
+    window.dispatchEvent(new CustomEvent('navigation-starting', { detail: { path } }));
+    
     if (isAuthenticated) {
       navigate(path);
     } else {
@@ -135,7 +165,43 @@ export default function Layout({ children }) {
               </div>
               {/* User Avatar for mobile/tablet - positioned on right with proper spacing */}
               <div className="flex items-center gap-2 ml-auto">
-                <ThemeToggle />
+                {/* Notification Icon */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="ghost" size="icon" className="relative p-2">
+                      <Bell className="h-5 w-5 text-muted-foreground" />
+                      {unreadCount > 0 && (
+                        <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                          {unreadCount}
+                        </span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80 p-0" align="end">
+                    <div className="p-4 border-b">
+                      <h3 className="font-semibold text-sm">Notifications</h3>
+                    </div>
+                    <div className="max-h-80 overflow-y-auto">
+                      {notifications.map((notification) => (
+                        <div key={notification.id} className={`p-3 border-b last:border-b-0 hover:bg-muted/50 cursor-pointer ${notification.unread ? 'bg-blue-50/50' : ''}`}>
+                          <div className="flex items-start gap-3">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-foreground">{notification.title}</p>
+                              <p className="text-xs text-muted-foreground mt-1">{notification.message}</p>
+                              <p className="text-xs text-muted-foreground mt-1">{notification.time}</p>
+                            </div>
+                            {notification.unread && (
+                              <div className="w-2 h-2 bg-blue-500 rounded-full mt-1"></div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="p-3 border-t">
+                      <Button variant="ghost" className="w-full text-xs">Mark all as read</Button>
+                    </div>
+                  </PopoverContent>
+                </Popover>
                 <Popover>
                   <PopoverTrigger asChild>
                     <button className="focus:outline-none">
@@ -148,17 +214,13 @@ export default function Layout({ children }) {
                     </button>
                   </PopoverTrigger>
                   <PopoverContent className="w-56 sm:w-60 p-4 flex flex-col gap-3" align="end">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-center">
                       <Avatar className="h-8 w-8 sm:h-9 sm:w-9 border-2 border-primary/30">
                         <AvatarImage src={user?.userInfo?.avatar?.url || null} alt={name} />
                         <AvatarFallback className="bg-gradient-primary text-black font-bold text-xs sm:text-sm">
                           <User className="h-3 w-3 sm:h-4 sm:w-4" />
                         </AvatarFallback>
                       </Avatar>
-                      <div>
-                        <div className="font-semibold text-xs sm:text-sm text-foreground">{name}</div>
-                        <div className="text-xs sm:text-sm text-muted-foreground">{displayLocation}</div>
-                      </div>
                     </div>
                     <div className="flex flex-col gap-2 mt-2">
                       <Link href="/settings">
@@ -198,7 +260,7 @@ export default function Layout({ children }) {
           )}
           {/* Navigation Buttons (desktop only) */}
           {!isMobile && !isTablet && (
-            <nav className="hidden lg:flex gap-0.5 md:gap-1 lg:gap-2 ml-2 md:ml-4 lg:ml-6">
+            <nav className="hidden lg:flex gap-0.5 md:gap-1 lg:gap-2 flex-1 justify-center">
               {sidebarItems.map((item) => {
                 const Icon = item.icon;
                 return (
@@ -222,22 +284,43 @@ export default function Layout({ children }) {
           {/* User Info and Profile (desktop only) */}
           {!isMobile && !isTablet && (
             <div className="flex items-center gap-1 md:gap-2 lg:gap-2">
-              <ThemeToggle />
-              <div className="hidden lg:flex flex-col items-end">
-                <span className="text-xs md:text-sm font-semibold text-foreground">{name}</span>
-                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <span>{displayLocation}</span>
-                  <TrendingUp className="h-3 w-3 text-success" />
-                </div>
-              </div>
-              {/* Enhanced Goal Progress */}
-              <div className="hidden xl:flex flex-col gap-2 min-w-24 md:min-w-32">
-                <ProfessionalProgress
-                  value={monthlyGoal}
-                  label="Monthly Goal"
-                  className="animate-fade-in"
-                />
-              </div>
+              {/* Notification Icon */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="icon" className="relative p-2">
+                    <Bell className="h-5 w-5 text-muted-foreground" />
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                        {unreadCount}
+                      </span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80 p-0" align="end">
+                  <div className="p-4 border-b">
+                    <h3 className="font-semibold text-sm">Notifications</h3>
+                  </div>
+                  <div className="max-h-80 overflow-y-auto">
+                    {notifications.map((notification) => (
+                      <div key={notification.id} className={`p-3 border-b last:border-b-0 hover:bg-muted/50 cursor-pointer ${notification.unread ? 'bg-blue-50/50' : ''}`}>
+                        <div className="flex items-start gap-3">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-foreground">{notification.title}</p>
+                            <p className="text-xs text-muted-foreground mt-1">{notification.message}</p>
+                            <p className="text-xs text-muted-foreground mt-1">{notification.time}</p>
+                          </div>
+                          {notification.unread && (
+                            <div className="w-2 h-2 bg-blue-500 rounded-full mt-1"></div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="p-3 border-t">
+                    <Button variant="ghost" className="w-full text-xs">Mark all as read</Button>
+                  </div>
+                </PopoverContent>
+              </Popover>
               {/* User Profile Dropdown */}
               <Popover>
                 <PopoverTrigger asChild>
@@ -251,17 +334,13 @@ export default function Layout({ children }) {
                   </button>
                 </PopoverTrigger>
                 <PopoverContent className="w-56 md:w-60 lg:w-64 p-4 flex flex-col gap-3" align="end">
-                  <div className="flex items-center gap-3 md:gap-4">
+                  <div className="flex items-center justify-center">
                     <Avatar className="h-8 w-8 md:h-9 md:w-9 lg:h-10 lg:w-10 border-2 border-primary/30">
                       <AvatarImage src={user?.userInfo?.avatar?.url || null} alt={name} />
                       <AvatarFallback className="bg-gradient-primary text-black font-bold text-xs md:text-sm lg:text-sm">
                         <User className="h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5" />
                       </AvatarFallback>
                     </Avatar>
-                    <div>
-                      <div className="font-semibold text-xs md:text-sm lg:text-sm text-foreground">{name}</div>
-                      <div className="text-xs md:text-sm text-muted-foreground">{displayLocation}</div>
-                    </div>
                   </div>
                   <div className="flex flex-col gap-2 mt-2">
                     <Link href="/settings">

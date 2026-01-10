@@ -140,10 +140,10 @@ export const footprintLogAPI = {
         // Basic emission factors (these should match server-side calculations)
         const emissionFactors = {
             'transport': {
-                'car': { factor: 0.4, unit: 'miles' }, // kg CO2 per mile
-                'flight': { factor: 0.2, unit: 'miles' },
-                'bus': { factor: 0.1, unit: 'miles' },
-                'train': { factor: 0.05, unit: 'miles' },
+                'car': { factor: 0.25, unit: 'km' }, // kg CO2 per km (converted from miles)
+                'flight': { factor: 0.12, unit: 'km' },
+                'bus': { factor: 0.06, unit: 'km' },
+                'train': { factor: 0.03, unit: 'km' },
             },
             'energy': {
                 'electricity': { factor: 0.5, unit: 'kWh' }, // kg CO2 per kWh
@@ -151,13 +151,13 @@ export const footprintLogAPI = {
                 'heating': { factor: 2.3, unit: 'kWh' },
             },
             'food': {
-                'meat': { factor: 6.5, unit: 'lbs' }, // kg CO2 per lb
-                'dairy': { factor: 1.0, unit: 'lbs' },
-                'vegetables': { factor: 0.2, unit: 'lbs' },
+                'meat': { factor: 14.3, unit: 'kg' }, // kg CO2 per kg (converted from lbs)
+                'dairy': { factor: 2.2, unit: 'kg' },
+                'vegetables': { factor: 0.44, unit: 'kg' },
             },
             'waste': {
-                'general': { factor: 0.5, unit: 'lbs' },
-                'recycling': { factor: 0.1, unit: 'lbs' },
+                'general': { factor: 1.1, unit: 'kg' }, // kg CO2 per kg (converted from lbs)
+                'recycling': { factor: 0.22, unit: 'kg' },
             }
         };
 
@@ -248,7 +248,7 @@ export const footprintLogAPI = {
         // Transportation specific fields
         if (activityType.startsWith('transport-')) {
             enrichedActivity.distance = parseFloat(quantity);
-            enrichedActivity.units = details.unit === 'miles' ? 'miles' : 'km';
+            enrichedActivity.units = details.unit === 'km' ? 'km' : 'km';
 
             // Add passengers if provided
             if (details.passengers && parseInt(details.passengers) > 1) {

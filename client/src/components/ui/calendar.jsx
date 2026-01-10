@@ -4,6 +4,7 @@ import {
   ChevronDownIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  Flame,
 } from "lucide-react"
 
 import { DayPicker, getDefaultClassNames } from "react-day-picker";
@@ -58,7 +59,7 @@ function Calendar({
       showOutsideDays={showOutsideDays}
       modifiers={streakModifiers}
       className={cn(
-        "bg-background group/calendar p-4 [--cell-size:--spacing(8)] [[data-slot=card-content]_&]:bg-transparent [[data-slot=popover-content]_&]:bg-transparent rounded-xl shadow-sm",
+        "bg-background group/calendar px-4 pt-6 pb-6 [--cell-size:--spacing(10)] [[data-slot=card-content]_&]:bg-transparent [[data-slot=popover-content]_&]:bg-transparent rounded-xl shadow-sm overflow-hidden",
         String.raw`rtl:**:[.rdp-button\_next>svg]:rotate-180`,
         String.raw`rtl:**:[.rdp-button\_previous>svg]:rotate-180`,
         className
@@ -103,20 +104,20 @@ function Calendar({
         caption_label: cn("select-none font-semibold", captionLayout === "label"
           ? "text-base text-green-800"
           : "rounded-md pl-2 pr-1 flex items-center gap-1 text-base h-8 [&>svg]:text-muted-foreground [&>svg]:size-3.5", defaultClassNames.caption_label),
-        table: "w-full border-collapse mt-1",
-        weekdays: cn("flex", defaultClassNames.weekdays),
+        table: "w-full border-collapse mt-1 mb-3 overflow-hidden",
+        weekdays: cn("flex overflow-hidden", defaultClassNames.weekdays),
         weekday: cn(
-          "text-green-700 rounded-md flex-1 font-medium text-[0.85rem] select-none",
+          "text-green-700 rounded-md flex-1 font-semibold text-sm tracking-wide select-none size-(--cell-size) flex items-center justify-center",
           defaultClassNames.weekday
         ),
-        week: cn("flex w-full mt-3", defaultClassNames.week),
+        week: cn("flex w-full mt-2 overflow-hidden", defaultClassNames.week),
         week_number_header: cn("select-none w-(--cell-size)", defaultClassNames.week_number_header),
         week_number: cn(
           "text-[0.8rem] select-none text-muted-foreground",
           defaultClassNames.week_number
         ),
         day: cn(
-          "relative w-full h-full p-0 text-center [&:first-child[data-selected=true]_button]:rounded-l-md [&:last-child[data-selected=true]_button]:rounded-r-md group/day aspect-square select-none",
+          "relative w-full h-full p-0 text-center [&:first-child[data-selected=true]_button]:rounded-l-md [&:last-child[data-selected=true]_button]:rounded-r-md group/day aspect-square select-none overflow-hidden",
           defaultClassNames.day
         ),
         range_start: cn("rounded-l-md bg-accent", defaultClassNames.range_start),
@@ -200,7 +201,7 @@ function CalendarDayButton({
       data-range-end={modifiers.range_end}
       data-range-middle={modifiers.range_middle}
       className={cn(
-        "relative flex items-center justify-center aspect-square w-full min-w-(--cell-size) font-medium text-base transition-all duration-200 overflow-hidden hover:scale-105",
+        "relative flex items-center justify-center aspect-square w-full min-w-(--cell-size) min-h-(--cell-size) font-medium text-base transition-all duration-200 overflow-hidden hover:scale-105 m-0 p-0",
         // Add ring-inset to all buttons to maintain consistent sizing
         "ring-inset",
 
@@ -208,23 +209,13 @@ function CalendarDayButton({
         !isStreak && !modifiers.selected &&
         "hover:bg-green-50 hover:text-green-700",
 
-        // Streak styling - applied to all streak days
+        // Streak styling - removed background, will show fire icon instead
         isStreak &&
-        "bg-green-100 text-green-800 z-0 shadow-sm",
+        "hover:bg-orange-50 text-gray-700 z-0",
 
-        // Rounded corners for streak days
-        isStart && !isEnd &&
-        "rounded-l-xl",
-        isEnd && !isStart &&
-        "rounded-r-xl",
-        isStart && isEnd &&
-        "rounded-xl",
-        isMiddle &&
-        "rounded-none",
-
-        // Selected day styling - only apply border/ring to maintain streak background
+        // Selected day styling for streak days
         modifiers.selected && isStreak &&
-        "ring-1 ring-green-100 z-10 font-bold shadow-md",
+        "ring-2 ring-orange-400 z-10 font-bold shadow-md",
 
         // Selected day styling for non-streak days
         modifiers.selected && !isStreak &&
@@ -235,7 +226,14 @@ function CalendarDayButton({
       )}
       {...props}
     >
-      <span className="z-10">{day.date.getDate()}</span>
+      {isStreak ? (
+        <div className="relative flex flex-col items-center justify-center">
+          <Flame className="h-3 w-3 sm:h-4 sm:w-4 text-orange-500 mb-0.5" />
+          <span className="text-xs font-bold text-gray-700">{day.date.getDate()}</span>
+        </div>
+      ) : (
+        <span className="z-10">{day.date.getDate()}</span>
+      )}
     </Button>
   );
 }

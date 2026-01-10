@@ -33,6 +33,15 @@ import {
   ArrowRight,
   Lightbulb,
   CheckCircle,
+  Flame,
+  Bike,
+  Fuel,
+  Trash2,
+  ShoppingCart,
+  Factory,
+  Droplets,
+  Bus,
+  Milk,
 } from "lucide-react";
 import AnimatedCounter from "@/components/AnimatedCounter";
 import ProfessionalProgress from "@/components/ProfessionalProgress";
@@ -47,6 +56,7 @@ import DashboardSkeleton from "@/components/DashboardSkeleton";
 import { Calendar as CustomCalendar } from "@/components/ui/calendar";
 import Link from "next/link";
 import { useFootprintLog } from "@/lib/useFootprintLog";
+import useStreak from "@/hooks/useStreak";
 import ReactMarkdown from "react-markdown";
 import ProtectedLayout from "@/components/ProtectedLayout";
 import AuthGuard from "@/components/AuthGuard";
@@ -90,6 +100,22 @@ const Dashboard = () => {
     loading: footprintLoading,
   } = useFootprintLog();
 
+  // Streak data integration
+  const {
+    streakData,
+    loading: streakLoading,
+    getStreakCalendar,
+    getTodayStatus,
+    refreshStreak
+  } = useStreak();
+
+  // Refresh streak when logs change (new log added)
+  useEffect(() => {
+    if (logs.length > 0) {
+      refreshStreak();
+    }
+  }, [logs.length]);
+
   // AI Tips from Gemini (must be declared before any early returns)
   const [tips, setTips] = useState([]);
   useEffect(() => {
@@ -121,7 +147,7 @@ const Dashboard = () => {
     setGreetingKey(getGreetingKey());
   }, []);
 
-  if (isLoading || footprintLoading) {
+  if (isLoading || footprintLoading || streakLoading) {
     return <DashboardSkeleton />;
   }
 
@@ -134,17 +160,17 @@ const Dashboard = () => {
   const name =
     user?.name && typeof user.name === "string" ? user.name : "Guest";
 
-  // Calculate real-time metrics from API data
+  // Calculate real-time metrics from API data with safety checks
   const currentFootprint =
     preferences.carbonUnits === "tons"
-      ? monthlyEmissions / 1000
-      : monthlyEmissions; // dynamic based on preference
+      ? (monthlyEmissions || 0) / 1000
+      : (monthlyEmissions || 0); // dynamic based on preference
   const targetFootprint = 20.0; // User's target (could come from user settings)
   const goalProgress =
-    isAuthenticated && targetFootprint > 0
+    isAuthenticated && targetFootprint > 0 && !isNaN(currentFootprint)
       ? Math.min((currentFootprint / targetFootprint) * 100, 100)
       : 0;
-  const averageDailyEmissions = weeklyEmissions / 7;
+  const averageDailyEmissions = (weeklyEmissions || 0) / 7;
 
   // Calculate trends (mock calculation for now - could be enhanced with historical data)
   const isAboveTarget = currentFootprint > targetFootprint * 0.8; // 80% of target
@@ -158,29 +184,90 @@ const Dashboard = () => {
   const footprintBreakdown = breakdownData.byActivityType.map((item) => {
     const iconMap = {
       transport: Car,
-      energy: Home,
+      car: Car,
+      bus: Bus,
+      motorcycle: Bike,
+      bike: Bike,
+      flight: Plane,
+      plane: Plane,
+      energy: Zap,
+      electricity: Zap,
+      home: Home,
+      housing: Home,
       food: Utensils,
-      waste: BarChart3,
+      dairy: Milk,
+      waste: Trash2,
+      shopping: ShoppingCart,
       other: Target,
+      fuel: Fuel,
+      heating: Flame,
+      manufacturing: Factory,
+      water: Droplets,
+      "water usage": Droplets,
     };
 
     const colorMap = {
       transport: "text-blue-500",
+      car: "text-blue-500",
+      bus: "text-blue-600",
+      motorcycle: "text-purple-500",
+      bike: "text-green-500",
+      flight: "text-blue-600",
+      plane: "text-blue-600",
       energy: "text-yellow-500",
+      electricity: "text-yellow-500",
+      home: "text-orange-500",
+      housing: "text-orange-500",
       food: "text-green-500",
-      waste: "text-orange-500",
-      other: "text-purple-500",
+      dairy: "text-blue-100",
+      waste: "text-red-500",
+      shopping: "text-pink-500",
+      other: "text-gray-500",
+      fuel: "text-brown-500",
+      heating: "text-red-600",
+      manufacturing: "text-gray-600",
+      water: "text-cyan-500",
+      "water usage": "text-cyan-500",
     };
 
     const percentage =
       totalEmissions > 0 ? (item.total / totalEmissions) * 100 : 0;
 
+    // Get the activity type key and normalize it
+    const activityKey = item._id.toLowerCase();
+    
+    // Function to find the best matching icon and color
+    const findBestMatch = (key, map) => {
+      // Direct match
+      if (map[key]) return map[key];
+      
+      // Specific food-related matches first (before generic patterns)
+      if (key.includes('dairy') || key.includes('milk') || key.includes('cheese')) return map['dairy'];
+      
+      // Partial matches for common patterns
+      if (key.includes('motor') || key.includes('bike')) return map['motorcycle'] || map['bike'];
+      if (key.includes('bus') || key.includes('public transport')) return map['bus'];
+      if (key.includes('water') || key.includes('h2o')) return map['water'];
+      if (key.includes('electric') || key.includes('power')) return map['electricity'];
+      if (key.includes('car') || key.includes('vehicle')) return map['car'];
+      if (key.includes('flight') || key.includes('airplane') || key === 'air travel') return map['flight'];
+      if (key.includes('home') || key.includes('house')) return map['home'];
+      if (key.includes('food') || key.includes('eat')) return map['food'];
+      if (key.includes('waste') || key.includes('trash')) return map['waste'];
+      if (key.includes('shop')) return map['shopping'];
+      if (key.includes('fuel') || key.includes('gas')) return map['fuel'];
+      if (key.includes('heat')) return map['heating'];
+      
+      // Default fallbacks
+      return map['other'] || Target;
+    };
+
     return {
       category: item._id.charAt(0).toUpperCase() + item._id.slice(1),
       amount: item.total,
       percentage: Math.round(percentage),
-      icon: iconMap[item._id] || Target,
-      color: colorMap[item._id] || "text-gray-500",
+      icon: findBestMatch(activityKey, iconMap),
+      color: findBestMatch(activityKey, colorMap),
     };
   });
 
@@ -195,12 +282,14 @@ const Dashboard = () => {
 
   const achievements = ACHIEVEMENT_TYPES;
 
-  // Generate streak days from 1st to 13th of the current month
-  const today = new Date();
-  const streakDays = Array.from(
-    { length: 13 },
-    (_, i) => new Date(today.getFullYear(), today.getMonth(), i + 1)
-  );
+  // Use real streak calendar data
+  const streakCalendar = getStreakCalendar();
+  const todayStatus = getTodayStatus();
+  
+  // Extract dates that have activity for the calendar
+  const streakDays = streakCalendar
+    .filter(day => day.hasActivity)
+    .map(day => day.date);
 
   return (
     <div className="px-4 sm:px-8 md:px-10 pt-2 sm:pt-4 md:pt-6 pb-8 sm:pb-12 md:pb-16 space-y-4 sm:space-y-5 md:space-y-4 bg-gradient-to-br from-background via-accent/5 to-primary/5 min-h-screen relative">
@@ -274,7 +363,15 @@ const Dashboard = () => {
                   </div>
                 )}
               </div>
-              <ProfessionalProgress value={80} className="mt-4" />
+              <ProfessionalProgress 
+                value={Math.min(
+                  !isNaN(currentFootprint) && targetFootprint > 0 
+                    ? (currentFootprint / targetFootprint) * 100 
+                    : 0, 
+                  100
+                )} 
+                className="mt-4" 
+              />
             </CardContent>
           </Card>
         </div>
@@ -324,7 +421,9 @@ const Dashboard = () => {
               <div className="mt-4">
                 <ProfessionalProgress
                   value={Math.min(
-                    (weeklyEmissions / (monthlyEmissions / 4)) * 100,
+                    weeklyEmissions > 0 && targetFootprint > 0
+                      ? (weeklyEmissions / ((targetFootprint * 1000) / 4)) * 100
+                      : 0,
                     100
                   )}
                 />
@@ -609,8 +708,58 @@ const Dashboard = () => {
 
         {/* Right Column with Enhanced Styling */}
         <div className="space-y-4 sm:space-y-6 md:space-y-8">
-          {/* Enhanced Quick Actions */}
+          {/* Calendar Streak */}
           <div className="animate-slide-up" style={{ animationDelay: "0.7s" }}>
+            <Card className="bg-gradient-to-br from-green-50 via-white to-green-100 border border-green-200 shadow-xl hover:shadow-2xl transition-shadow duration-300 rounded-2xl w-full mx-auto p-0 overflow-hidden">
+              <CardHeader className="px-4 py-3 sm:px-6 sm:py-4 md:px-6 md:py-5">
+                <CardTitle className="flex items-center gap-2 text-lg sm:text-xl md:text-2xl">
+                  <span className="inline-flex items-center justify-center h-8 w-8 sm:h-10 sm:w-10 md:h-10 md:w-10 rounded-full bg-gradient-to-br from-green-400 to-green-600 shadow-md mr-2">
+                    <Calendar className="h-5 w-5 sm:h-6 sm:w-6 md:h-5 md:w-5 text-white" />
+                  </span>
+                  <span className="bg-gradient-to-r from-green-600 to-green-400 bg-clip-text text-transparent font-extrabold">
+                    {t("dashboard:streak_calendar")}
+                  </span>
+                </CardTitle>
+                <div className="text-sm sm:text-base md:text-base text-gray-600 mt-1">
+                  {streakData.currentStreak > 1 ? (
+                    <>
+                      <div className="flex items-center gap-2">
+                        <span>🔥</span>
+                        <span>
+                          <AnimatedCounter end={streakData.currentStreak} /> day{streakData.currentStreak !== 1 ? 's' : ''} streak
+                        </span>
+                        {!todayStatus.hasLoggedToday && todayStatus.canContinueStreak && (
+                          <Badge variant="outline" className="text-xs text-orange-600 border-orange-200">
+                            Log today to continue!
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        Longest: {streakData.longestStreak} days • Total: {streakData.totalLoggingDays} days
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-sm text-gray-500">
+                      Log daily activities to build your streak!
+                    </div>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent className="px-4 py-2 sm:px-6 sm:py-3 md:px-6 md:py-4 lg:px-8 lg:py-4">
+                <div className="flex justify-center items-center w-full">
+                  <CustomCalendar
+                    mode="single"
+                    selected={date}
+                    onSelect={setDate}
+                    streakDays={streakDays}
+                    className="rounded-xl sm:rounded-2xl border-2 border-green-200 bg-white shadow-lg p-3 sm:p-4 md:p-5 lg:p-6 w-full min-w-[320px] max-w-[450px] hover:shadow-green-200 transition-shadow duration-300"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          {/* Enhanced Quick Actions */}
+          <div className="animate-slide-up" style={{ animationDelay: "0.75s" }}>
             <Card className="card-premium hover-glow">
               <CardHeader className="p-4 md:p-6">
                 <CardTitle className="flex items-center gap-2 text-xl md:text-2xl font-semibold text-muted-foreground group-hover:text-primary transition-colors">
@@ -643,36 +792,6 @@ const Dashboard = () => {
                     <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 ml-auto group-hover:translate-x-1 transition-transform" />
                   </Button>
                 </Link>
-              </CardContent>
-            </Card>
-          </div>
-          {/* Calendar Streak */}
-          <div className="animate-slide-up" style={{ animationDelay: "0.75s" }}>
-            <Card className="bg-gradient-to-br from-green-50 via-white to-green-100 border border-green-200 shadow-xl hover:shadow-2xl transition-shadow duration-300 rounded-2xl w-full max-w-full sm:max-w-md mx-auto p-0 overflow-hidden">
-              <CardHeader className="px-4 py-3 sm:px-6 sm:py-4 md:px-6 md:py-5">
-                <CardTitle className="flex items-center gap-2 text-lg sm:text-xl md:text-2xl">
-                  <span className="inline-flex items-center justify-center h-8 w-8 sm:h-10 sm:w-10 md:h-10 md:w-10 rounded-full bg-gradient-to-br from-green-400 to-green-600 shadow-md mr-2">
-                    <Calendar className="h-5 w-5 sm:h-6 sm:w-6 md:h-5 md:w-5 text-white" />
-                  </span>
-                  <span className="bg-gradient-to-r from-green-600 to-green-400 bg-clip-text text-transparent font-extrabold">
-                    {t("dashboard:streak_calendar")}
-                  </span>
-                </CardTitle>
-                <CardDescription className="text-sm sm:text-base md:text-base text-gray-600 mt-1">
-                  {t("dashboard:your_activity_streak")}{" "}
-                  {t("dashboard:this_month")}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="px-2 py-4 sm:px-4 sm:py-6 md:px-4 md:py-6 lg:px-6 lg:py-8">
-                <div className="flex justify-center items-center">
-                  <CustomCalendar
-                    mode="single"
-                    selected={date}
-                    onSelect={setDate}
-                    streakDays={streakDays}
-                    className="rounded-xl sm:rounded-2xl border-2 border-green-200 bg-white shadow-lg p-2 sm:p-4 md:p-4 lg:p-6 w-full max-w-xs sm:max-w-[320px] md:max-w-[280px] lg:max-w-[360px] hover:shadow-green-200 transition-shadow duration-300"
-                  />
-                </div>
               </CardContent>
             </Card>
           </div>

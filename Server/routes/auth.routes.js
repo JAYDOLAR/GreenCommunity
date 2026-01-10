@@ -28,7 +28,8 @@ import {
   getTrustedDevices,
   removeTrustedDevice,
   clearAllTrustedDevices,
-  generateToken
+  generateToken,
+  getUserStreak
 } from '../controllers/auth.controller.js';
 import { 
   validateRegister, 
@@ -203,5 +204,8 @@ router.get('/failure', (req, res) => {
 router.get('/health', (req, res) => {
   res.status(200).json({ message: 'Auth service is healthy' });
 });
+
+// Get user streak information
+router.get('/streak', authenticate, getUserStreak);
 
 export default router;
