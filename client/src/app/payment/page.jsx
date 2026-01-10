@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { useUser } from '@/context/UserContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -29,6 +30,7 @@ import AuthGuard from '@/components/AuthGuard';
 import Layout from '@/components/Layout';
 
 const Payment = () => {
+  const { user } = useUser();
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -159,8 +161,36 @@ const Payment = () => {
         name: 'GreenCommunity',
         description: `Climate contribution to ${projectName}`,
         image: '/logo.png',
-        handler: function (response) {
+        handler: async function (response) {
           console.log('Payment Success Response:', response);
+          
+          // Call payment verification API with invoice email
+          try {
+            const verificationResponse = await fetch('/api/payment/verify', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                amount: amountInINR.toFixed(0),
+                projectName,
+                userEmail: user?.email || billingInfo.email,
+                userName: user?.name || 'Valued Contributor',
+                co2Impact: `${calculateImpact(contributionAmount[0])} tons`
+              })
+            });
+
+            if (verificationResponse.ok) {
+              console.log('Payment verified and invoice email sent');
+            } else {
+              console.error('Payment verification failed');
+            }
+          } catch (error) {
+            console.error('Payment verification error:', error);
+          }
           
           toast.success(
             <div className="flex items-center gap-2">

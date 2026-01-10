@@ -206,6 +206,142 @@ class EmailService {
 
     return await this.transporter.sendMail(mailOptions);
   }
+
+  /**
+   * Send payment invoice email after successful payment
+   * @param {Object} paymentData - Payment information
+   * @param {string} paymentData.email - Recipient email
+   * @param {string} paymentData.name - User's name
+   * @param {string} paymentData.amount - Payment amount in INR
+   * @param {string} paymentData.projectName - Project name
+   * @param {string} paymentData.paymentId - Payment ID from Razorpay
+   * @param {string} paymentData.orderId - Order ID
+   * @param {string} paymentData.co2Impact - CO2 impact in tons/kg
+   * @param {Date} paymentData.date - Payment date
+   */
+  async sendPaymentInvoice(paymentData) {
+    const { email, name, amount, projectName, paymentId, orderId, co2Impact, date } = paymentData;
+    const invoiceDate = date ? new Date(date).toLocaleDateString('en-IN') : new Date().toLocaleDateString('en-IN');
+    const invoiceNumber = `INV-${orderId || paymentId || Date.now()}`;
+    
+    const mailOptions = {
+      to: email,
+      subject: `Payment Invoice - GreenCommunity Contribution | ${invoiceNumber}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9;">
+          <!-- Header -->
+          <div style="background-color: #4CAF50; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
+            <h1 style="margin: 0; font-size: 24px;">Payment Invoice</h1>
+            <p style="margin: 5px 0 0 0; opacity: 0.9;">GreenCommunity Climate Initiative</p>
+          </div>
+          
+          <!-- Invoice Content -->
+          <div style="background-color: white; padding: 30px; border-radius: 0 0 8px 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            
+            <!-- Thank You Message -->
+            <div style="text-align: center; margin-bottom: 30px;">
+              <h2 style="color: #4CAF50; margin: 0 0 10px 0;">Thank You for Your Contribution!</h2>
+              <p style="color: #666; margin: 0;">Your support helps us build a greener future together.</p>
+            </div>
+            
+            <!-- Invoice Details -->
+            <div style="background-color: #f8f9fa; padding: 20px; border-radius: 6px; margin-bottom: 25px;">
+              <h3 style="color: #333; margin: 0 0 15px 0; font-size: 16px;">Invoice Details</h3>
+              <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                  <td style="padding: 8px 0; color: #666; width: 40%;">Invoice Number:</td>
+                  <td style="padding: 8px 0; font-weight: bold; color: #333;">${invoiceNumber}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; color: #666;">Date:</td>
+                  <td style="padding: 8px 0; font-weight: bold; color: #333;">${invoiceDate}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; color: #666;">Payment ID:</td>
+                  <td style="padding: 8px 0; font-weight: bold; color: #333;">${paymentId}</td>
+                </tr>
+                ${orderId ? `
+                <tr>
+                  <td style="padding: 8px 0; color: #666;">Order ID:</td>
+                  <td style="padding: 8px 0; font-weight: bold; color: #333;">${orderId}</td>
+                </tr>
+                ` : ''}
+              </table>
+            </div>
+            
+            <!-- Payment Information -->
+            <div style="margin-bottom: 25px;">
+              <h3 style="color: #333; margin: 0 0 15px 0; font-size: 16px;">Payment Information</h3>
+              <table style="width: 100%; border-collapse: collapse; border: 1px solid #ddd;">
+                <thead>
+                  <tr style="background-color: #f8f9fa;">
+                    <th style="padding: 12px; text-align: left; border-bottom: 1px solid #ddd; color: #333;">Description</th>
+                    <th style="padding: 12px; text-align: right; border-bottom: 1px solid #ddd; color: #333;">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td style="padding: 12px; border-bottom: 1px solid #ddd; color: #666;">
+                      Climate Contribution to:<br>
+                      <strong style="color: #333;">${projectName}</strong>
+                    </td>
+                    <td style="padding: 12px; text-align: right; border-bottom: 1px solid #ddd; font-weight: bold; color: #333;">
+                      ₹${parseFloat(amount).toLocaleString('en-IN')}
+                    </td>
+                  </tr>
+                  <tr style="background-color: #f8f9fa;">
+                    <td style="padding: 12px; font-weight: bold; color: #333;">Total Amount Paid</td>
+                    <td style="padding: 12px; text-align: right; font-weight: bold; color: #4CAF50; font-size: 18px;">
+                      ₹${parseFloat(amount).toLocaleString('en-IN')}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            
+            <!-- Environmental Impact -->
+            ${co2Impact ? `
+            <div style="background-color: #e8f5e8; padding: 20px; border-radius: 6px; margin-bottom: 25px; border-left: 4px solid #4CAF50;">
+              <h3 style="color: #2e7d32; margin: 0 0 10px 0; font-size: 16px;">🌱 Your Environmental Impact</h3>
+              <p style="margin: 0; color: #2e7d32; font-size: 18px; font-weight: bold;">${co2Impact} CO₂ offset</p>
+              <p style="margin: 5px 0 0 0; color: #4caf50; font-size: 14px;">Thank you for making a positive impact on our planet!</p>
+            </div>
+            ` : ''}
+            
+            <!-- Billing Information -->
+            <div style="margin-bottom: 25px;">
+              <h3 style="color: #333; margin: 0 0 15px 0; font-size: 16px;">Billing Information</h3>
+              <p style="margin: 0; color: #666;">
+                <strong style="color: #333;">${name || 'Valued Contributor'}</strong><br>
+                ${email}
+              </p>
+            </div>
+            
+            <!-- Footer -->
+            <div style="border-top: 1px solid #ddd; padding-top: 20px; margin-top: 30px;">
+              <p style="color: #666; font-size: 14px; margin: 0 0 10px 0;">
+                <strong>Payment Method:</strong> Razorpay (Secure Online Payment)
+              </p>
+              <p style="color: #666; font-size: 14px; margin: 0 0 20px 0;">
+                This is a computer-generated invoice. No signature is required.
+              </p>
+              
+              <div style="text-align: center; padding: 15px; background-color: #f8f9fa; border-radius: 6px;">
+                <p style="margin: 0; color: #666; font-size: 12px;">
+                  For any queries regarding this invoice, please contact us at support@greencommunity.com
+                </p>
+                <p style="margin: 5px 0 0 0; color: #999; font-size: 11px;">
+                  GreenCommunity - Building a Sustainable Future Together
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      `
+    };
+
+    return await this.transporter.sendMail(mailOptions);
+  }
 }
 
 export default new EmailService();

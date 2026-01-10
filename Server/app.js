@@ -20,6 +20,7 @@ import footprintLogRoutes from "./routes/footprintlog.routes.js";
 import projectsRoutes from "./routes/projects.routes.js";
 import communityRoutes from "./routes/community.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
+import emailRoutes from "./routes/email.routes.js";
 import dotenv from "dotenv";
 import aiRoutes from "./routes/ai.routes.js";
 
@@ -125,6 +126,7 @@ async function createServer() {
   app.use("/api/ai", aiRoutes);
   app.use("/api/community", communityRoutes);
   app.use("/api/admin", adminRoutes);
+  app.use("/api/email", emailRoutes);
 
   // Global error handler for API
   app.use("/api", (err, req, res, next) => {

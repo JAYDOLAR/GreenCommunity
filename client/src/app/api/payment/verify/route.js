@@ -8,11 +8,54 @@ export async function POST(request) {
       razorpay_payment_id, 
       razorpay_signature,
       amount,
-      projectName 
+      projectName,
+      userEmail,
+      userName,
+      co2Impact
     } = await request.json();
+
+    console.log('💳 Payment verification request:', {
+      razorpay_payment_id,
+      razorpay_order_id,
+      amount,
+      projectName,
+      userEmail,
+      userName,
+      co2Impact
+    });
 
     // For development, always return success
     // In production, verify the payment signature
+    
+    // Send invoice email after successful payment
+    try {
+      console.log('📧 Attempting to send invoice email...');
+      
+      const invoiceResponse = await fetch('/api/email/invoice', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: userEmail,
+          name: userName,
+          amount,
+          projectName,
+          paymentId: razorpay_payment_id,
+          orderId: razorpay_order_id,
+          co2Impact
+        })
+      });
+
+      if (invoiceResponse.ok) {
+        console.log('✅ Invoice email sent successfully');
+      } else {
+        console.error('❌ Failed to send invoice email:', await invoiceResponse.text());
+      }
+    } catch (emailError) {
+      console.error('❌ Invoice email error:', emailError);
+      // Don't fail the payment verification if email fails
+    }
     
     return NextResponse.json({
       success: true,

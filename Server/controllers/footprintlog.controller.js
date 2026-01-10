@@ -4,7 +4,16 @@ import * as ipcc from "../lib/ipccEmissionCalculator.js";
 
 // Fallback emission calculation for when IPCC calculation fails
 function calculateFallbackEmission(activityData) {
-  const { activityType, quantity = 0 } = activityData;
+  const { activityType, quantity = 0, details = {} } = activityData;
+
+  // Handle special annual assessment activity types
+  if (activityType === "food-diet-annual") {
+    return calculateDietEmissions(details);
+  }
+  
+  if (activityType === "home-energy-annual") {
+    return calculateHousingEmissions(quantity, details);
+  }
 
   // Simple fallback emission factors (kg CO2e per unit)
   const fallbackFactors = {
@@ -55,6 +64,11 @@ function calculateFallbackEmission(activityData) {
     "shopping-electronics": 300.0,
     "shopping-books": 2.5,
     "shopping-furniture": 250.0,
+    
+    // Annual assessment types
+    "food-diet-annual": 800.0, // Average annual diet emissions (kg CO2e)
+    "home-energy-annual": 2.5, // Per square foot per year
+    
     // Assessment (client-computed aggregate, quantity = total kg CO2e)
     "assessment-annual": 1.0,
   };
@@ -63,6 +77,80 @@ function calculateFallbackEmission(activityData) {
   const baseEmission = parseFloat(quantity) * factor;
 
   return Math.max(0, baseEmission); // Ensure non-negative
+}
+
+// Helper function to calculate diet emissions based on diet type and preferences
+function calculateDietEmissions(details) {
+  const { diet_type, red_meat_frequency = "moderate", dairy_consumption = "moderate" } = details;
+  
+  // Base diet emissions (kg CO2e per year)
+  const dietBaseEmissions = {
+    vegan: 550,
+    vegetarian: 650,
+    pescatarian: 750,
+    flexitarian: 850,
+    omnivore: 1000
+  };
+  
+  let totalEmissions = dietBaseEmissions[diet_type] || 800;
+  
+  // Red meat frequency multiplier (for omnivore/flexitarian)
+  if (diet_type === "omnivore" || diet_type === "flexitarian") {
+    const redMeatMultiplier = {
+      never: 0.7,
+      rarely: 0.8,
+      occasionally: 0.9,
+      moderate: 1.0,
+      often: 1.2,
+      daily: 1.4
+    };
+    totalEmissions *= (redMeatMultiplier[red_meat_frequency] || 1.0);
+  }
+  
+  // Dairy consumption multiplier (for non-vegan diets)
+  if (diet_type !== "vegan") {
+    const dairyMultiplier = {
+      never: 0.8,
+      low: 0.9,
+      moderate: 1.0,
+      high: 1.2,
+      very_high: 1.4
+    };
+    totalEmissions *= (dairyMultiplier[dairy_consumption] || 1.0);
+  }
+  
+  return Math.max(0, totalEmissions);
+}
+
+// Helper function to calculate housing emissions
+function calculateHousingEmissions(quantity, details) {
+  const { home_size = "medium", household_members = 1, energy_usage = "average" } = details;
+  
+  // Base emissions per square foot per year (kg CO2e)
+  const baseEmissionPerSqFt = 2.5;
+  
+  // Home size in square feet
+  const homeSizeSqFt = {
+    small: 1000,
+    medium: 2000,
+    large: 3000
+  };
+  
+  const sqFt = homeSizeSqFt[home_size] || quantity || 2000;
+  const householdSize = parseFloat(household_members) || 1;
+  
+  // Energy usage multiplier
+  const energyMultiplier = {
+    low: 0.7,
+    average: 1.0,
+    high: 1.3,
+    very_high: 1.6
+  };
+  
+  const multiplier = energyMultiplier[energy_usage] || 1.0;
+  const totalEmissions = (sqFt * baseEmissionPerSqFt * multiplier) / householdSize;
+  
+  return Math.max(0, totalEmissions);
 }
 
 // Create a new footprint log with IPCC-verified calculation

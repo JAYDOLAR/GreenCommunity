@@ -49,7 +49,7 @@ const CarbonCalculator = () => {
   const [data, setData] = useState({
     fullName: "",
     photo: "",
-    country: "",
+    country: "India", // Default to India
     state: "",
     mobile: "",
     householdSize: "",
@@ -72,6 +72,7 @@ const CarbonCalculator = () => {
   const [countries, setCountries] = useState([]);
   const [states, setStates] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [calculationResults, setCalculationResults] = useState(null);
   const [countrySearch, setCountrySearch] = useState("");
   const [stateSearch, setStateSearch] = useState("");
   const [photoError, setPhotoError] = useState("");
@@ -102,6 +103,48 @@ const CarbonCalculator = () => {
   const router = useRouter();
   const { user, updateUser, isLoading } = useUser();
   const { createLog, loading: logLoading } = useFootprintLog();
+  
+  // Real-time calculation effect - recalculates at every step
+  useEffect(() => {
+    const triggerCalculation = async () => {
+      // Calculate whenever we have any meaningful data
+      if (data.carMiles || data.shortFlights || data.longFlights || data.diet || data.homeSize || 
+          data.carType || data.householdSize || data.redMeat || data.dairy) {
+        try {
+          const result = await calculateCarbonFootprint();
+          setCalculationResults(result);
+        } catch (error) {
+          console.error('Real-time calculation failed:', error);
+        }
+      }
+    };
+
+    // Trigger calculation immediately without debounce for step-by-step updates
+    triggerCalculation();
+  }, [
+    // Trigger on any data change to recalculate at every step
+    data.carMiles, data.carType, data.shortFlights, data.longFlights, 
+    data.diet, data.redMeat, data.otherProtein, data.dairy,
+    data.homeSize, data.householdSize, data.publicTransit,
+    data.pets, data.furnishings, data.clothes, data.supplies
+  ]);
+
+  // Also trigger calculation when step changes
+  useEffect(() => {
+    const triggerStepCalculation = async () => {
+      if (data.carMiles || data.diet || data.homeSize) {
+        try {
+          const result = await calculateCarbonFootprint();
+          setCalculationResults(result);
+        } catch (error) {
+          console.error('Step calculation failed:', error);
+        }
+      }
+    };
+    
+    triggerStepCalculation();
+  }, [step]);
+  
   // Step visibility logic (diet-dependent)
   const isStepVisible = (id) => {
     const diet = data.diet;
@@ -129,7 +172,7 @@ const CarbonCalculator = () => {
       label: "Country & State",
       completed: !!data.country && !!data.state,
     },
-    { id: 3, icon: Phone, label: "Mobile Number", completed: !!data.mobile },
+    { id: 3, icon: Phone, label: "Mobile Number", completed: data.mobile && data.mobile.length === 10 },
     { id: 4, icon: Users, label: "Household", completed: !!data.householdSize },
     { id: 5, icon: Car, label: "Cars", completed: !!data.carType },
     {
@@ -497,68 +540,22 @@ const CarbonCalculator = () => {
     return countryCodes[countryCode] || "";
   };
 
-  // Fetch countries on component mount
+  // Load Indian states on component mount
   useEffect(() => {
-    fetchCountries();
+    fetchIndianStates();
   }, []);
-
-  // Fetch states when country changes
-  useEffect(() => {
-    if (data.country) {
-      fetchStates(data.country);
-      setStateSearch(""); // Reset state search when country changes
-    } else {
-      setStates([]);
-    }
-  }, [data.country]);
-
-  // Filter countries based on search
-  const filteredCountries = countries.filter((country) =>
-    country.name.toLowerCase().includes(countrySearch.toLowerCase())
-  );
 
   // Filter states based on search
   const filteredStates = states.filter((state) =>
     state.name.toLowerCase().includes(stateSearch.toLowerCase())
   );
 
-  const fetchCountries = async () => {
+  const fetchIndianStates = async () => {
     try {
       setLoading(true);
+      // Fetch states for India (ISO code: IN)
       const response = await fetch(
-        "https://api.countrystatecity.in/v1/countries",
-        {
-          headers: {
-            "X-CSCAPI-KEY":
-              "MlU4TDJ0NDlYRU9ZSlptb0VkWHQ4cWxMRkMyVzYxeUdqMUVVMFM4RQ==",
-          },
-        }
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        const sortedCountries = data
-          .map((country) => ({
-            name: country.name,
-            code: country.iso2,
-          }))
-          .sort((a, b) => a.name.localeCompare(b.name));
-        setCountries(sortedCountries);
-      } else {
-        console.error("Failed to fetch countries:", response.status);
-      }
-    } catch (error) {
-      console.error("Error fetching countries:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchStates = async (countryCode) => {
-    try {
-      setLoading(true);
-      const response = await fetch(
-        `https://api.countrystatecity.in/v1/countries/${countryCode}/states`,
+        "https://api.countrystatecity.in/v1/countries/IN/states",
         {
           headers: {
             "X-CSCAPI-KEY":
@@ -577,16 +574,27 @@ const CarbonCalculator = () => {
           .sort((a, b) => a.name.localeCompare(b.name));
         setStates(sortedStates);
       } else {
-        console.error("Failed to fetch states:", response.status);
+        console.error("Failed to fetch Indian states:", response.status);
       }
     } catch (error) {
-      console.error("Error fetching states:", error);
+      console.error("Error fetching Indian states:", error);
     } finally {
       setLoading(false);
     }
   };
 
   const handleInputChange = (field, value) => {
+    // Mobile number validation: only allow up to 10 numeric digits
+    if (field === 'mobile') {
+      // Remove any non-numeric characters
+      const numericValue = value.replace(/\D/g, '');
+      // Limit to 10 digits
+      if (numericValue.length <= 10) {
+        setData((prev) => ({ ...prev, [field]: numericValue }));
+      }
+      return;
+    }
+    
     setData((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -652,45 +660,207 @@ const CarbonCalculator = () => {
     e.target.value = "";
   };
 
-  const calculateCarbonFootprint = () => {
-    // Simple carbon footprint calculation based on user inputs
+  const calculateCarbonFootprint = async () => {
+    // Real-time carbon footprint calculation using backend IPCC engine
     let totalEmissions = 0;
-
-    // Transportation emissions
-    const carMiles = parseFloat(data.carMiles) || 0;
-    const carTypeMultiplier =
-      data.carType === "gas" ? 0.4 : data.carType === "hybrid" ? 0.25 : 0.1;
-    totalEmissions += carMiles * carTypeMultiplier * 52; // Per year
-
-    // Flight emissions
-    const shortFlights = parseFloat(data.shortFlights) || 0;
-    const longFlights = parseFloat(data.longFlights) || 0;
-    totalEmissions += shortFlights * 1000 * 0.2; // kg CO2 per mile for short flights
-    totalEmissions += longFlights * 2000 * 0.25; // kg CO2 per mile for long flights
-
-    // Diet emissions (annual)
-    // Updated diet mapping aligned with current options
-    const dietMap = {
-      omnivore: 1000,
-      flexitarian: 850,
-      pescatarian: 750,
-      vegetarian: 650,
-      vegan: 550,
+    const emissionBreakdown = {
+      transportation: 0,
+      flights: 0,
+      diet: 0,
+      housing: 0,
     };
-    const dietMultiplier = dietMap[data.diet] || 600;
-    totalEmissions += dietMultiplier;
 
-    // Housing emissions
-    const householdSize = parseFloat(data.householdSize) || 1;
-    const homeSize =
-      data.homeSize === "large"
-        ? 3000
-        : data.homeSize === "medium"
-        ? 2000
-        : 1000;
-    totalEmissions += (homeSize * 5.0) / householdSize; // Divided by household members
+    try {
+      // Import the API for real-time calculations
+      const { footprintLogAPI } = await import('@/lib/footprintlogApi.js');
 
-    return totalEmissions;
+      // Transportation emissions (car)
+      if (data.carMiles && parseFloat(data.carMiles) > 0) {
+        const carActivity = {
+          activityType: data.carType === "gas" ? "transport-car" : 
+                       data.carType === "hybrid" ? "transport-hybrid" : "transport-electric",
+          quantity: parseFloat(data.carMiles) * 52, // Annual miles
+          details: {
+            vehicle_type: data.carType,
+            distance_unit: "miles",
+            frequency: "weekly_to_annual"
+          }
+        };
+        
+        try {
+          const carResult = await footprintLogAPI.calculateEmissionsPreview(carActivity);
+          const carEmissions = carResult.emission || 0;
+          emissionBreakdown.transportation += carEmissions;
+          totalEmissions += carEmissions;
+        } catch (error) {
+          console.warn('Car emissions calculation failed, using fallback');
+          // Fallback calculation
+          const carTypeMultiplier = data.carType === "gas" ? 0.4 : data.carType === "hybrid" ? 0.25 : 0.1;
+          const fallbackCar = parseFloat(data.carMiles) * carTypeMultiplier * 52;
+          emissionBreakdown.transportation += fallbackCar;
+          totalEmissions += fallbackCar;
+        }
+      }
+
+      // Flight emissions
+      if ((data.shortFlights && parseFloat(data.shortFlights) > 0) || 
+          (data.longFlights && parseFloat(data.longFlights) > 0)) {
+        
+        // Short flights
+        if (data.shortFlights && parseFloat(data.shortFlights) > 0) {
+          const shortFlightActivity = {
+            activityType: "transport-flight-domestic",
+            quantity: parseFloat(data.shortFlights),
+            details: {
+              flight_type: "domestic",
+              distance_estimate: 1000 // miles per short flight
+            }
+          };
+          
+          try {
+            const shortFlightResult = await footprintLogAPI.calculateEmissionsPreview(shortFlightActivity);
+            const shortFlightEmissions = shortFlightResult.emission || 0;
+            emissionBreakdown.flights += shortFlightEmissions;
+            totalEmissions += shortFlightEmissions;
+          } catch (error) {
+            console.warn('Short flight calculation failed, using fallback');
+            const fallbackShort = parseFloat(data.shortFlights) * 1000 * 0.2;
+            emissionBreakdown.flights += fallbackShort;
+            totalEmissions += fallbackShort;
+          }
+        }
+
+        // Long flights  
+        if (data.longFlights && parseFloat(data.longFlights) > 0) {
+          const longFlightActivity = {
+            activityType: "transport-flight-international",
+            quantity: parseFloat(data.longFlights),
+            details: {
+              flight_type: "international", 
+              distance_estimate: 2000 // miles per long flight
+            }
+          };
+          
+          try {
+            const longFlightResult = await footprintLogAPI.calculateEmissionsPreview(longFlightActivity);
+            const longFlightEmissions = longFlightResult.emission || 0;
+            emissionBreakdown.flights += longFlightEmissions;
+            totalEmissions += longFlightEmissions;
+          } catch (error) {
+            console.warn('Long flight calculation failed, using fallback');
+            const fallbackLong = parseFloat(data.longFlights) * 2000 * 0.25;
+            emissionBreakdown.flights += fallbackLong;
+            totalEmissions += fallbackLong;
+          }
+        }
+      }
+
+      // Diet emissions (annual basis)
+      if (data.diet) {
+        const dietActivity = {
+          activityType: "food-diet-annual", 
+          quantity: 1, // One year
+          details: {
+            diet_type: data.diet,
+            red_meat_frequency: data.redMeat || "moderate",
+            dairy_consumption: data.dairy || "moderate"
+          }
+        };
+        
+        console.log('Diet activity data:', dietActivity);
+        
+        try {
+          const dietResult = await footprintLogAPI.calculateEmissionsPreview(dietActivity);
+          console.log('Diet result from API:', dietResult);
+          const dietEmissions = dietResult.emission || 0;
+          console.log('Diet emissions calculated:', dietEmissions);
+          emissionBreakdown.diet += dietEmissions;
+          totalEmissions += dietEmissions;
+        } catch (error) {
+          console.warn('Diet calculation failed, using fallback:', error);
+          // Fallback diet calculation
+          const dietMap = {
+            omnivore: 1000,
+            flexitarian: 850,
+            pescatarian: 750,
+            vegetarian: 650,
+            vegan: 550,
+          };
+          const fallbackDiet = dietMap[data.diet] || 600;
+          console.log('Using fallback diet emissions:', fallbackDiet);
+          emissionBreakdown.diet += fallbackDiet;
+          totalEmissions += fallbackDiet;
+        }
+      }
+
+      // Housing emissions
+      if (data.homeSize && data.householdSize) {
+        const householdSize = parseFloat(data.householdSize) || 1;
+        const homeSize = data.homeSize === "large" ? 3000 : data.homeSize === "medium" ? 2000 : 1000;
+        
+        const housingActivity = {
+          activityType: "home-energy-annual",
+          quantity: homeSize / householdSize, // Adjusted for household size
+          details: {
+            home_size: data.homeSize,
+            household_members: householdSize,
+            energy_usage: "average" // Could be enhanced with user input
+          }
+        };
+        
+        console.log('Housing activity data:', housingActivity);
+        
+        try {
+          const housingResult = await footprintLogAPI.calculateEmissionsPreview(housingActivity);
+          console.log('Housing result from API:', housingResult);
+          const housingEmissions = housingResult.emission || 0;
+          console.log('Housing emissions calculated:', housingEmissions);
+          emissionBreakdown.housing += housingEmissions;
+          totalEmissions += housingEmissions;
+        } catch (error) {
+          console.warn('Housing calculation failed, using fallback:', error);
+          // Fallback housing calculation
+          const fallbackHousing = (homeSize * 5.0) / householdSize;
+          console.log('Using fallback housing emissions:', fallbackHousing);
+          emissionBreakdown.housing += fallbackHousing;
+          totalEmissions += fallbackHousing;
+        }
+      }
+
+    } catch (error) {
+      console.error('Real-time calculation failed, using fallback method:', error);
+      
+      // Complete fallback to original calculation method
+      // Transportation emissions
+      const carMiles = parseFloat(data.carMiles) || 0;
+      const carTypeMultiplier = data.carType === "gas" ? 0.4 : data.carType === "hybrid" ? 0.25 : 0.1;
+      totalEmissions += carMiles * carTypeMultiplier * 52;
+
+      // Flight emissions
+      const shortFlights = parseFloat(data.shortFlights) || 0;
+      const longFlights = parseFloat(data.longFlights) || 0;
+      totalEmissions += shortFlights * 1000 * 0.2;
+      totalEmissions += longFlights * 2000 * 0.25;
+
+      // Diet emissions
+      const dietMap = { omnivore: 1000, flexitarian: 850, pescatarian: 750, vegetarian: 650, vegan: 550 };
+      const dietMultiplier = dietMap[data.diet] || 600;
+      totalEmissions += dietMultiplier;
+
+      // Housing emissions
+      const householdSize = parseFloat(data.householdSize) || 1;
+      const homeSize = data.homeSize === "large" ? 3000 : data.homeSize === "medium" ? 2000 : 1000;
+      totalEmissions += (homeSize * 5.0) / householdSize;
+    }
+    
+    console.log('Final calculation results:');
+    console.log('Total emissions:', totalEmissions);
+    console.log('Emission breakdown:', emissionBreakdown);
+
+    return { 
+      total: totalEmissions,
+      breakdown: emissionBreakdown 
+    };
   };
 
   const handleNext = async () => {
@@ -705,49 +875,53 @@ const CarbonCalculator = () => {
     // Final submission (create assessment log)
     try {
       setLoading(true);
-      const totalEmissions = calculateCarbonFootprint(); // kg CO2e (annual)
+      const calculationResult = await calculateCarbonFootprint(); // Real-time calculation
+      const totalEmissions = calculationResult.total; // kg CO2e (annual)
+      
       const logData = {
         activityType: "assessment-annual", // recognized server-side factor 1.0
         quantity: parseFloat(totalEmissions.toFixed(2)), // store actual emission as quantity
         selectedDate: new Date(),
-        activity: "Annual Carbon Footprint Assessment",
+        activity: "Annual Carbon Footprint Assessment (Real-time)",
         details: {
           assessment: true,
-            totalEmissions,
-            breakdown: {
-              transportation: {
-                carMiles: data.carMiles,
-                carType: data.carType,
-                shortFlights: data.shortFlights,
-                longFlights: data.longFlights,
-                publicTransit: data.publicTransit,
-              },
-              diet: {
-                type: data.diet,
-                redMeat: data.redMeat,
-                otherProtein: data.otherProtein,
-                dairy: data.dairy,
-              },
-              housing: {
-                size: data.homeSize,
-                householdSize: data.householdSize,
-              },
-              lifestyle: {
-                pets: data.pets,
-                furnishings: data.furnishings,
-                clothes: data.clothes,
-                supplies: data.supplies,
-              },
+          calculationMethod: "ipcc-realtime-assessment",
+          totalEmissions,
+          emissionBreakdown: calculationResult.breakdown,
+          breakdown: {
+            transportation: {
+              carMiles: data.carMiles,
+              carType: data.carType,
+              shortFlights: data.shortFlights,
+              longFlights: data.longFlights,
+              publicTransit: data.publicTransit,
             },
-            userProfile: {
-              fullName: data.fullName,
-              country: data.country,
-              state: data.state,
-              mobile: data.mobile,
+            diet: {
+              type: data.diet,
+              redMeat: data.redMeat,
+              otherProtein: data.otherProtein,
+              dairy: data.dairy,
             },
-            unit: "kg CO2e / year",
-            category: "assessment",
-            calculationMethod: "comprehensive-lifestyle-assessment",
+            housing: {
+              size: data.homeSize,
+              householdSize: data.householdSize,
+            },
+            lifestyle: {
+              pets: data.pets,
+              furnishings: data.furnishings,
+              clothes: data.clothes,
+              supplies: data.supplies,
+            },
+          },
+          userProfile: {
+            fullName: data.fullName,
+            country: data.country,
+            state: data.state,
+            mobile: data.mobile,
+          },
+          unit: "kg CO2e / year",
+          category: "assessment",
+          calculationMethod: "comprehensive-lifestyle-assessment",
         },
       };
       await createLog(logData);
@@ -779,7 +953,7 @@ const CarbonCalculator = () => {
     const id = step; // step id corresponds to original numbering
     if (id === 1) return !!data.fullName;
     if (id === 2) return !!data.country && !!data.state;
-    if (id === 3) return !!data.mobile;
+    if (id === 3) return data.mobile && data.mobile.length === 10;
     return true; // others optional
   };
 
@@ -825,7 +999,7 @@ const CarbonCalculator = () => {
       case 1:
         return "Please provide your basic information to get started.";
       case 2:
-        return "Select your country and state to help us calculate your carbon footprint accurately.";
+        return "Select your state to help us calculate your carbon footprint with India-specific emission factors.";
       case 3:
         return "We'll use this to send you updates about your carbon footprint and environmental tips.";
       case 4:
@@ -934,105 +1108,72 @@ const CarbonCalculator = () => {
 
   const renderCountryStep = () => (
     <div className="space-y-6">
-      {/* Country Selection */}
+      {/* Country Selection - Fixed to India */}
       <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
         <Label className="text-base font-semibold text-gray-900">Country</Label>
+        <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+          <div className="flex items-center gap-3">
+            <Globe className="h-5 w-5 text-green-600" />
+            <span className="text-base font-medium text-green-800">India</span>
+            <Badge variant="secondary" className="ml-auto bg-green-100 text-green-800">
+              Selected
+            </Badge>
+          </div>
+          <p className="text-sm text-green-600 mt-2">
+            Carbon footprint calculations are optimized for India's emission factors and energy sources.
+          </p>
+        </div>
+      </div>
+
+      {/* State Selection - Indian States Only */}
+      <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+        <Label className="text-base font-semibold text-gray-900">
+          State/Union Territory
+        </Label>
         <Select
-          value={data.country}
-          onValueChange={(value) => handleInputChange("country", value)}
+          value={data.state}
+          onValueChange={(value) => handleInputChange("state", value)}
         >
           <SelectTrigger className="h-12 mt-3 border-gray-300 focus:border-green-500 focus:ring-green-500">
             <div className="flex items-center gap-3">
-              <Globe className="h-5 w-5 text-green-600" />
+              <MapPin className="h-5 w-5 text-green-600" />
               <SelectValue
                 placeholder={
-                  loading ? "Loading countries..." : "Select your country"
+                  loading ? "Loading states..." : "Select your state"
                 }
               />
             </div>
           </SelectTrigger>
           <SelectContent
             onWheel={(e) => {
-              if (countryScrollRef.current) {
-                countryScrollRef.current.scrollTop += e.deltaY;
+              if (stateScrollRef.current) {
+                stateScrollRef.current.scrollTop += e.deltaY;
               }
             }}
           >
-            {/* Search Input for Countries */}
+            {/* Search Input for States */}
             <div className="p-3">
               <Input
-                placeholder="Search countries..."
-                value={countrySearch}
-                onChange={(e) => setCountrySearch(e.target.value)}
+                placeholder="Search Indian states..."
+                value={stateSearch}
+                onChange={(e) => setStateSearch(e.target.value)}
                 className="h-10 text-base"
               />
             </div>
-            <div className="max-h-60 overflow-y-auto" ref={countryScrollRef}>
-              {filteredCountries.map((country) => (
+            <div className="max-h-60 overflow-y-auto" ref={stateScrollRef}>
+              {filteredStates.map((state) => (
                 <SelectItem
-                  key={country.code}
-                  value={country.code}
+                  key={state.code}
+                  value={state.code}
                   className="text-base"
                 >
-                  {country.name}
+                  {state.name}
                 </SelectItem>
               ))}
             </div>
           </SelectContent>
         </Select>
       </div>
-
-      {/* State Selection */}
-      {data.country && (
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-          <Label className="text-base font-semibold text-gray-900">
-            State/Province
-          </Label>
-          <Select
-            value={data.state}
-            onValueChange={(value) => handleInputChange("state", value)}
-          >
-            <SelectTrigger className="h-12 mt-3 border-gray-300 focus:border-green-500 focus:ring-green-500">
-              <div className="flex items-center gap-3">
-                <MapPin className="h-5 w-5 text-green-600" />
-                <SelectValue
-                  placeholder={
-                    loading ? "Loading states..." : "Select your state"
-                  }
-                />
-              </div>
-            </SelectTrigger>
-            <SelectContent
-              onWheel={(e) => {
-                if (stateScrollRef.current) {
-                  stateScrollRef.current.scrollTop += e.deltaY;
-                }
-              }}
-            >
-              {/* Search Input for States */}
-              <div className="p-3">
-                <Input
-                  placeholder="Search states..."
-                  value={stateSearch}
-                  onChange={(e) => setStateSearch(e.target.value)}
-                  className="h-10 text-base"
-                />
-              </div>
-              <div className="max-h-60 overflow-y-auto" ref={stateScrollRef}>
-                {filteredStates.map((state) => (
-                  <SelectItem
-                    key={state.code}
-                    value={state.code}
-                    className="text-base"
-                  >
-                    {state.name}
-                  </SelectItem>
-                ))}
-              </div>
-            </SelectContent>
-          </Select>
-        </div>
-      )}
     </div>
   );
 
@@ -1056,14 +1197,33 @@ const CarbonCalculator = () => {
             )}
             <Input
               id="mobile"
+              type="tel"
               value={data.mobile}
               onChange={(e) => handleInputChange("mobile", e.target.value)}
-              placeholder="Enter your mobile number"
+              placeholder="Enter your 10-digit mobile number"
+              maxLength={10}
               className={`${
                 countryCode ? "rounded-l-none" : ""
               } border-gray-300 focus:border-green-500 focus:ring-green-500 h-12 text-base`}
             />
           </div>
+          
+          {/* Mobile validation feedback */}
+          <div className="mt-2">
+            {data.mobile && data.mobile.length < 10 && (
+              <p className="text-sm text-orange-600 flex items-center gap-1">
+                <span>⚠️</span>
+                Mobile number must be exactly 10 digits ({data.mobile.length}/10)
+              </p>
+            )}
+            {data.mobile && data.mobile.length === 10 && (
+              <p className="text-sm text-green-600 flex items-center gap-1">
+                <span>✓</span>
+                Valid mobile number
+              </p>
+            )}
+          </div>
+          
           {countryCode && (
             <p className="text-sm text-gray-500 mt-3 flex items-center gap-2">
               <Globe className="h-4 w-4" />
@@ -1404,7 +1564,72 @@ const CarbonCalculator = () => {
           ref={mainContentScrollRef}
         >
           <div className="max-w-3xl md:max-w-4xl mx-auto space-y-6">
-            {renderCurrentStep()}
+            {/* Current Step Content */}
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+              {renderCurrentStep()}
+            </div>
+            
+            {/* Carbon Footprint Display - Shown at Every Step */}
+            <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-6 rounded-xl border border-green-200 shadow-sm">
+              <div className="text-center">
+                <h3 className="text-lg font-semibold text-green-800 mb-3 flex items-center justify-center gap-2">
+                  <Calculator className="h-5 w-5" />
+                  Your Carbon Footprint Progress
+                </h3>
+                <div className="text-4xl md:text-5xl font-bold text-green-700 mb-2">
+                  {calculationResults ? 
+                    (calculationResults.total / 1000).toFixed(1) : 
+                    "-.--"
+                  }
+                </div>
+                <p className="text-sm text-green-600 mb-4">
+                  tons CO2e / year {calculationResults && "(Real-time IPCC calculation)"}
+                </p>
+                
+                {/* Loading indicator */}
+                {loading && (
+                  <div className="flex items-center justify-center gap-2 text-green-600 mb-4">
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                    <span className="text-sm">Calculating...</span>
+                  </div>
+                )}
+                
+                {/* Breakdown display */}
+                {calculationResults && calculationResults.breakdown && (
+                  <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                    <div className="bg-blue-50 p-3 rounded border border-blue-200">
+                      <div className="font-medium text-blue-800">Transportation</div>
+                      <div className="text-blue-600">
+                        {(calculationResults.breakdown.transportation / 1000).toFixed(2)} tons
+                      </div>
+                    </div>
+                    <div className="bg-emerald-50 p-3 rounded border border-emerald-200">
+                      <div className="font-medium text-emerald-800">Flights</div>
+                      <div className="text-emerald-600">
+                        {(calculationResults.breakdown.flights / 1000).toFixed(2)} tons
+                      </div>
+                    </div>
+                    <div className="bg-orange-50 p-3 rounded border border-orange-200">
+                      <div className="font-medium text-orange-800">Diet</div>
+                      <div className="text-orange-600">
+                        {(calculationResults.breakdown.diet / 1000).toFixed(2)} tons
+                      </div>
+                    </div>
+                    <div className="bg-purple-50 p-3 rounded border border-purple-200">
+                      <div className="font-medium text-purple-800">Housing</div>
+                      <div className="text-purple-600">
+                        {(calculationResults.breakdown.housing / 1000).toFixed(2)} tons
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Step progress indicator */}
+                <div className="mt-4 text-xs text-green-600">
+                  Step {step} of {categories.length} • Updates automatically as you progress
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -1486,7 +1711,6 @@ const CarbonCalculator = () => {
         }}
       >
         <div className="space-y-6">
-
           <div className="bg-primary/5 p-5 rounded-lg border border-primary/20">
             <h3 className="font-semibold text-primary mb-3 text-base">
               Why This Matters
@@ -1497,15 +1721,40 @@ const CarbonCalculator = () => {
             </p>
           </div>
 
-          {/* Simple Carbon Footprint Display */}
-          <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm text-center">
+          {/* Assessment Tips */}
+          <div className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm">
             <h3 className="text-base font-medium text-gray-600 mb-3">
-              Your carbon footprint
+              Assessment Tips
             </h3>
-            <div className="text-5xl md:text-6xl font-bold text-gray-800">
-              {(calculateCarbonFootprint() / 1000).toFixed(1)}
-            </div>
-            <p className="text-sm text-gray-500 mt-2">tons CO2e / year</p>
+            <ul className="text-sm text-gray-600 space-y-2">
+              <li className="flex items-start gap-2">
+                <span className="text-green-600 mt-0.5">•</span>
+                Your carbon footprint updates automatically as you enter data
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-green-600 mt-0.5">•</span>
+                Be honest with your answers for the most accurate results
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-green-600 mt-0.5">•</span>
+                You can always go back and update your responses
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-green-600 mt-0.5">•</span>
+                The calculation uses IPCC-approved emission factors for India
+              </li>
+            </ul>
+          </div>
+
+          {/* Environmental Impact */}
+          <div className="bg-blue-50 p-5 rounded-lg border border-blue-200">
+            <h3 className="text-base font-medium text-blue-800 mb-3">
+              Environmental Impact
+            </h3>
+            <p className="text-sm text-blue-700">
+              The average Indian citizen produces about 1.9 tons of CO2e per year. 
+              By measuring your footprint, you're taking the first step to reduce it!
+            </p>
           </div>
         </div>
       </div>

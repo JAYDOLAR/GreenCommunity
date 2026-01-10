@@ -161,11 +161,12 @@ const Dashboard = () => {
     user?.name && typeof user.name === "string" ? user.name : "Guest";
 
   // Calculate real-time metrics from API data with safety checks
+  // API returns emissions in kg, so we need to convert based on user preference
   const currentFootprint =
     preferences.carbonUnits === "tons"
-      ? (monthlyEmissions || 0) / 1000
-      : (monthlyEmissions || 0); // dynamic based on preference
-  const targetFootprint = 20.0; // User's target (could come from user settings)
+      ? (monthlyEmissions || 0) / 1000  // Convert kg to tons
+      : (monthlyEmissions || 0);        // Keep in kg
+  const targetFootprint = preferences.carbonUnits === "tons" ? 2.0 : 2000; // 2 tons or 2000 kg per month target
   const goalProgress =
     isAuthenticated && targetFootprint > 0 && !isNaN(currentFootprint)
       ? Math.min((currentFootprint / targetFootprint) * 100, 100)
@@ -415,7 +416,8 @@ const Dashboard = () => {
                 </div>
                 <div className="text-xs sm:text-xs md:text-sm lg:text-sm text-muted-foreground min-h-[1.5rem]">
                   {t("dashboard:daily_average")}:{" "}
-                  {(weeklyEmissions / 7).toFixed(1)} {t("dashboard:kg_co2")}
+                  {formatEmissions(weeklyEmissions / 7)}{" "}
+                  {preferences.carbonUnits === "tons" ? "tons CO₂" : t("dashboard:kg_co2")}
                 </div>
               </div>
               <div className="mt-4">
@@ -451,10 +453,11 @@ const Dashboard = () => {
                 </div>
                 <div className="text-xs sm:text-xs md:text-sm lg:text-sm text-muted-foreground min-h-[1.5rem]">
                   {t("dashboard:target")}: {targetFootprint}{" "}
-                  {t("dashboard:tons_month")}
+                  {preferences.carbonUnits === "tons" ? t("dashboard:tons_month") : "kg/month"}
                 </div>
                 <div className="text-xs sm:text-xs md:text-sm lg:text-sm text-muted-foreground min-h-[1.5rem]">
-                  {t("dashboard:current")}: {currentFootprint.toFixed(1)} tons
+                  {t("dashboard:current")}: {formatEmissions(monthlyEmissions)}{" "}
+                  {preferences.carbonUnits === "tons" ? "tons" : "kg"}
                 </div>
               </div>
               <ProfessionalProgress value={goalProgress} className="mt-4" />
@@ -477,9 +480,12 @@ const Dashboard = () => {
             <CardContent className="p-4 md:p-6 flex-1 flex flex-col justify-between">
               <div className="space-y-3">
                 <div className="text-xl sm:text-2xl md:text-2xl lg:text-3xl xl:text-3xl font-bold text-foreground">
-                  <AnimatedCounter end={1.2} decimals={1} />
+                  <AnimatedCounter 
+                    end={preferences.carbonUnits === "tons" ? 1.2 : 1200} 
+                    decimals={preferences.carbonUnits === "tons" ? 1 : 0} 
+                  />
                   <span className="text-xs sm:text-sm md:text-sm lg:text-base font-normal text-muted-foreground ml-1">
-                    tons
+                    {preferences.carbonUnits === "tons" ? "tons" : "kg"}
                   </span>
                 </div>
                 <div className="text-xs sm:text-xs md:text-sm lg:text-sm text-muted-foreground min-h-[1.5rem]">
