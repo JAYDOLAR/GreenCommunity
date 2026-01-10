@@ -727,8 +727,9 @@ const FootprintLog = () => {
     }
 
     // Get the correct unit from the activity type config
-    const activityConfig = activityTypes.find(type => type.value === log.activityType);
+    const activityConfig = activityTypes.find(type => type.value === log.activityType);const correctCategory = activityConfig?.category || log.category || 'Other';
     const correctUnit = activityConfig?.unit || log.details?.unit || "units";
+    
     
     return {
       id: log._id,
