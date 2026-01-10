@@ -1,0 +1,9 @@
+/** @type {import('jest').Config} */
+export default {
+  testEnvironment: 'node',
+  testMatch: ['**/tests/**/*.test.js'],
+  transform: {},
+  verbose: false,
+  moduleFileExtensions: ['js','json'],
+  clearMocks: true,
+};

@@ -1,6 +1,25 @@
 import express from 'express';
-import { adminLogin, adminVerify, getUsers, updateUser, deleteUser, getDashboardStats, createProjectAdmin, updateProjectAdmin, deleteProjectAdmin } from '../controllers/admin.controller.js';
+import { 
+  adminLogin, 
+  adminVerify, 
+  getUsers, 
+  updateUser, 
+  deleteUser, 
+  getDashboardStats, 
+  createProjectAdmin, 
+  updateProjectAdmin, 
+  deleteProjectAdmin, 
+  submitProjectForReview, 
+  markProjectInReview, 
+  approveAndRegisterProject, 
+  rejectProject, 
+  updateAutoRetireBps, 
+  updateProjectAutoRetire,
+  registerExistingProjectOnBlockchain,
+  getProjectBlockchainStatus
+} from '../controllers/admin.controller.js';
 import { authenticate, authenticateAdmin } from '../middleware/auth.js';
+import { upload } from '../middleware/fileUpload.js';
 
 const router = express.Router();
 
@@ -32,5 +51,39 @@ router.delete('/users', authenticateAdmin, requireAdmin, deleteUser);
 router.post('/projects', authenticateAdmin, requireAdmin, createProjectAdmin);
 router.put('/projects', authenticateAdmin, requireAdmin, updateProjectAdmin);
 router.delete('/projects', authenticateAdmin, requireAdmin, deleteProjectAdmin);
+router.post('/projects/submit', authenticateAdmin, requireAdmin, submitProjectForReview);
+router.post('/projects/in-review', authenticateAdmin, requireAdmin, markProjectInReview);
+router.post('/projects/approve', authenticateAdmin, requireAdmin, approveAndRegisterProject);
+router.post('/projects/reject', authenticateAdmin, requireAdmin, rejectProject);
+
+// New blockchain integration routes
+router.post('/projects/:projectId/register-blockchain', authenticateAdmin, requireAdmin, registerExistingProjectOnBlockchain);
+router.get('/projects/:projectId/blockchain-status', authenticateAdmin, requireAdmin, getProjectBlockchainStatus);
+router.post('/blockchain/auto-retire', authenticateAdmin, requireAdmin, updateAutoRetireBps);
+router.post('/blockchain/project-auto-retire', authenticateAdmin, requireAdmin, updateProjectAutoRetire);
+
+// IPFS document upload route
+router.post('/projects/upload-doc', authenticateAdmin, requireAdmin, upload.single('file'), async (req,res)=>{
+  try {
+    if(!req.file) return res.status(400).json({ success:false, message:'No file provided' });
+    const { addFileFromBuffer } = await import('../services/localIpfs.service.js');
+    const { cid, uri } = await addFileFromBuffer(req.file.buffer, req.file.originalname);
+    return res.json({ success:true, name: req.file.originalname, size: req.file.size, cid, uri });
+  } catch (e) {
+    console.error('IPFS upload error', e);
+    return res.status(500).json({ success:false, message:'Upload failed', error: e.message });
+  }
+});
+
+// IPFS health route
+router.get('/ipfs/health', authenticateAdmin, requireAdmin, async (req, res) => {
+  try {
+    const { ipfsHealth } = await import('../services/localIpfs.service.js');
+    const info = await ipfsHealth();
+    res.json({ success: true, ...info });
+  } catch (e) {
+    res.status(500).json({ success: false, message: 'IPFS health check failed', error: e.message });
+  }
+});
 
 export default router;

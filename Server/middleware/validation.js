@@ -136,3 +136,32 @@ export const validateUpdatePassword = [
       return true;
     })
 ];
+
+// Wallet link validation
+export const validateLinkWallet = [
+  body('address')
+    .isString().withMessage('address required')
+    .matches(/^0x[a-fA-F0-9]{40}$/).withMessage('invalid address'),
+  body('chain').optional().isString()
+];
+
+// Approve & register project validation
+export const validateApproveProject = [
+  body('totalCredits').isInt({ min: 1 }).withMessage('totalCredits must be >0'),
+  body('pricePerCreditWei').isString().matches(/^[0-9]+$/).withMessage('pricePerCreditWei numeric string required'),
+  body('metadataURI').isString().withMessage('metadataURI required')
+];
+
+// Fiat grant validation
+export const validateGrantFiat = [
+  body('buyerAddress').matches(/^0x[a-fA-F0-9]{40}$/).withMessage('invalid buyerAddress'),
+  body('amount').isInt({ min:1 }).withMessage('amount must be >0'),
+  body('receiptId').isString().withMessage('receiptId required'),
+  body('retireImmediately').optional().isBoolean(),
+  body('certificateURI').optional().isString()
+];
+
+// Record crypto purchase validation
+export const validateRecordPurchase = [
+  body('txHash').matches(/^0x([A-Fa-f0-9]{64})$/).withMessage('invalid txHash')
+];

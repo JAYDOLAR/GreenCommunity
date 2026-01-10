@@ -29,8 +29,11 @@ import {
   RefreshCw,
   Trash2,
   Save,
-  Upload
+  Upload,
+  Cpu,
+  RefreshCcw
 } from 'lucide-react';
+import { blockchainApi } from '@/lib/blockchainApi';
 
 const ProjectsPage = () => {
   const router = useRouter();
@@ -41,6 +44,7 @@ const ProjectsPage = () => {
   const [selectedProject, setSelectedProject] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [editingProject, setEditingProject] = useState({});
+<<<<<<< Updated upstream
   const [projects, setProjects] = useState([
     // Fallback data to prevent empty state errors
     {
@@ -82,6 +86,13 @@ const ProjectsPage = () => {
       carbonOffsetTarget: 100000
     }
   ]);
+=======
+  const [projects, setProjects] = useState([]);
+  const [syncingId, setSyncingId] = useState(null);
+  // Removed blockchain registration UI (now automatic in backend)
+  const [saving, setSaving] = useState(false);
+  // Registration flow moved to Add Project page
+>>>>>>> Stashed changes
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -114,113 +125,90 @@ const ProjectsPage = () => {
   const fetchProjects = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/projects?limit=1000&page=1');
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const rawText = await response.text();
-      let data;
-      
-      try {
-        data = rawText ? JSON.parse(rawText) : { projects: [] };
-      } catch (jsonError) {
-        console.error('JSON Parse Error:', jsonError);
-        console.error('Raw Response:', rawText.slice(0, 300));
-        throw new Error('Invalid response from server');
-      }
-      
-      if (data.success && data.data?.projects) {
-        setProjects(data.data.projects);
-      } else if (data.projects) {
-        setProjects(data.projects);
-      } else {
-        setProjects([]);
-      }
-    } catch (error) {
-      console.error('Failed to fetch projects:', error);
-      // Set some fallback data to prevent UI crashes
+      const response = await fetch('/api/projects?limit=1000&page=1', { cache: 'no-store' });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const text = await response.text();
+      const json = text ? JSON.parse(text) : {};
+      const list = (json?.data?.projects || json?.projects || []).map(p => ({ ...p, id: p._id || p.id }));
+      setProjects(list);
+    } catch (e) {
+      console.error('Fetch projects failed', e);
       setProjects([]);
-    } finally {
-      setIsLoading(false);
+    } finally { setIsLoading(false); }
+  };
+
+  // Generic partial updater
+  const updateProjectPartial = async (id, patch, { optimistic = true } = {}) => {
+    const idx = projects.findIndex(p => p.id === id);
+    if (idx === -1) return false;
+    let rollback;
+    if (optimistic) {
+      rollback = projects[idx];
+      setProjects(prev => prev.map(p => p.id === id ? { ...p, ...patch } : p));
+    }
+    try {
+      const res = await fetch('/api/admin/projects', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, ...patch })
+      });
+      if (!res.ok) throw new Error(`Update failed ${res.status}`);
+      const data = await res.json().catch(()=>({}));
+      if (data.project) {
+        setProjects(prev => prev.map(p => p.id === id ? { ...p, ...data.project, id: data.project._id || data.project.id || id } : p));
+      }
+      return true;
+    } catch (e) {
+      console.error('Partial update error', e);
+      if (rollback) setProjects(prev => prev.map(p => p.id === id ? rollback : p));
+      alert(e.message || 'Update failed');
+      return false;
     }
   };
 
   const handleStatusChange = async (projectId, newStatus) => {
-    try {
-      const project = projects.find(p => p.id === projectId);
-      if (project) {
-        const updatedProject = { ...project, status: newStatus };
-        const response = await fetch('/api/admin/projects', {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(updatedProject),
-        });
-        
-        if (response.ok) {
-          setProjects(projects.map(project => 
-            project.id === projectId ? { ...project, status: newStatus } : project
-          ));
-        }
-      }
-    } catch (error) {
-      console.error('Failed to update project status:', error);
-    }
+    await updateProjectPartial(projectId, { status: newStatus });
   };
 
   const handleVerificationChange = async (projectId, verified) => {
-    try {
-      const project = projects.find(p => p.id === projectId);
-      if (project) {
-        const updatedProject = { ...project, verified };
-        const response = await fetch('/api/admin/projects', {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(updatedProject),
-        });
-        
-        if (response.ok) {
-          setProjects(projects.map(project => 
-            project.id === projectId ? { ...project, verified } : project
-          ));
-        }
-      }
-    } catch (error) {
-      console.error('Failed to update project verification:', error);
-    }
+    await updateProjectPartial(projectId, { verified });
   };
 
   const handleFeaturedChange = async (projectId, featured) => {
-    try {
-      const project = projects.find(p => p.id === projectId);
-      if (project) {
-        const updatedProject = { ...project, featured };
-        const response = await fetch('/api/admin/projects', {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(updatedProject),
-        });
-        
-        if (response.ok) {
-          setProjects(projects.map(project => 
-            project.id === projectId ? { ...project, featured } : project
-          ));
-        }
-      }
-    } catch (error) {
-      console.error('Failed to update project featured status:', error);
-    }
+    await updateProjectPartial(projectId, { featured });
   };
 
   const handleAddProject = () => {
     router.push('/admin/projects/add');
+  };
+
+  const handleSyncProject = async (project) => {
+    if(!project?._id && !project.id) return;
+    try {
+      setSyncingId(project._id || project.id);
+      await blockchainApi.syncProject(project._id || project.id);
+      await fetchProjects();
+    } catch (e) { console.error('Sync failed', e); alert('Sync failed: '+ e.message); } finally { setSyncingId(null); }
+  };
+
+  const openRegisterForm = (project) => {
+    setShowRegisterFormFor(project._id || project.id);
+    setRegisterForm({ totalCredits:'', pricePerCreditWei:'', metadataURI:'' });
+  };
+
+  const submitRegister = async (project) => {
+    if(!registerForm.totalCredits || !registerForm.pricePerCreditWei || !registerForm.metadataURI) {
+      alert('Fill all fields'); return; }
+    try {
+      setRegisteringId(project._id || project.id);
+      await blockchainApi.approveRegisterProject(project._id || project.id, {
+        totalCredits: parseInt(registerForm.totalCredits),
+        pricePerCreditWei: registerForm.pricePerCreditWei,
+        metadataURI: registerForm.metadataURI
+      });
+      setShowRegisterFormFor(null);
+      await fetchProjects();
+    } catch (e) { console.error('Register failed', e); alert('Register failed: '+ e.message); } finally { setRegisteringId(null); }
   };
 
   const handleEditProject = (project) => {
@@ -243,51 +231,49 @@ const ProjectsPage = () => {
   };
 
   const handleDeleteProject = async (projectId) => {
-    if (confirm('Are you sure you want to delete this project?')) {
-      try {
-        const response = await fetch(`/api/admin/projects?id=${projectId}`, {
-          method: 'DELETE',
-        });
-        
-        if (response.ok) {
-          setProjects(projects.filter(project => project.id !== projectId));
-        }
-      } catch (error) {
-        console.error('Failed to delete project:', error);
-      }
+    if (!confirm('Delete this project?')) return;
+    const prev = projects;
+    setProjects(prev.filter(p => p.id !== projectId));
+    try {
+      const res = await fetch(`/api/admin/projects?id=${projectId}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error(`Delete failed ${res.status}`);
+    } catch (e) {
+      console.error('Delete project failed', e);
+      alert(e.message || 'Delete failed');
+      setProjects(prev); // rollback
     }
   };
 
   const handleUpdateProject = async () => {
     if (selectedProject && editingProject.name && editingProject.location && editingProject.type) {
       try {
-        const updatedProject = {
-          ...selectedProject,
-          ...editingProject,
-          totalFunding: parseFloat(editingProject.totalFunding),
-          teamSize: editingProject.teamSize ? parseInt(editingProject.teamSize) : null,
-          carbonOffsetTarget: editingProject.carbonOffsetTarget ? parseInt(editingProject.carbonOffsetTarget) : null
+        setSaving(true);
+        const payload = {
+          name: editingProject.name,
+          location: editingProject.location,
+            type: editingProject.type,
+            description: editingProject.description,
+            totalFunding: parseFloat(editingProject.totalFunding),
+            teamSize: editingProject.teamSize ? parseInt(editingProject.teamSize) : null,
+            carbonOffsetTarget: editingProject.carbonOffsetTarget ? parseInt(editingProject.carbonOffsetTarget) : null,
+            status: editingProject.status,
+            image: editingProject.image,
+            verified: editingProject.verified !== undefined ? editingProject.verified : selectedProject.verified,
+            featured: editingProject.featured !== undefined ? editingProject.featured : selectedProject.featured,
+            expectedCompletion: editingProject.expectedCompletion
         };
-
-        const response = await fetch('/api/admin/projects', {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(updatedProject),
-        });
-
-        if (response.ok) {
-          setProjects(prev => prev.map(project => 
-            project.id === selectedProject.id ? updatedProject : project
-          ));
+        const ok = await updateProjectPartial(selectedProject.id, payload, { optimistic: false });
+        if (ok) {
           setShowEditProject(false);
           setSelectedProject(null);
           setEditingProject({});
+          await fetchProjects(); // refresh to show any auto-registration
         }
       } catch (error) {
         console.error('Failed to update project:', error);
         alert('Failed to update project. Please try again.');
+      } finally {
+        setSaving(false);
       }
     } else {
       alert('Please fill in all required fields');
@@ -523,6 +509,14 @@ const ProjectsPage = () => {
                 </div>
 
                 <div className="flex items-center gap-2">
+                  {/* Blockchain status badge */}
+                  {project.blockchain?.projectId ? (
+                    <Badge className="bg-emerald-600 text-white flex items-center gap-1">
+                      <Cpu className="h-3 w-3" />ID #{project.blockchain.projectId}
+                    </Badge>
+                  ) : (
+                    <Badge className="bg-gray-300 text-gray-700">Off-chain</Badge>
+                  )}
                   <Select value={project.status} onValueChange={(value) => handleStatusChange(project.id, value)}>
                     <SelectTrigger className="w-32">
                       <SelectValue />
@@ -570,6 +564,19 @@ const ProjectsPage = () => {
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
+                  {/* Sync action (registration only at creation) */}
+                  {project.blockchain?.projectId && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={syncingId === (project._id || project.id)}
+                      onClick={() => handleSyncProject(project)}
+                      title="Sync blockchain stats"
+                    >
+                      <RefreshCcw className={`h-4 w-4 mr-1 ${syncingId === (project._id || project.id) ? 'animate-spin' : ''}`} />
+                      Sync
+                    </Button>
+                  )}
                 </div>
               </div>
             ))}
@@ -707,15 +714,17 @@ const ProjectsPage = () => {
                   <label htmlFor="edit-featured" className="text-sm font-medium">Featured</label>
                 </div>
               </div>
+
+              {/* Blockchain registration inputs removed (handled automatically server-side) */}
             </div>
 
             <div className="flex gap-2 mt-6">
               <Button onClick={() => setShowEditProject(false)} variant="outline" className="flex-1">
                 Cancel
               </Button>
-              <Button onClick={handleUpdateProject} className="flex-1">
-                <Save className="h-4 w-4 mr-2" />
-                Update Project
+              <Button onClick={handleUpdateProject} className="flex-1" disabled={saving}>
+                <Save className={`h-4 w-4 mr-2 ${saving ? 'animate-spin' : ''}`} />
+                {saving ? 'Saving...' : 'Update Project'}
               </Button>
             </div>
           </div>

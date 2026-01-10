@@ -10,6 +10,7 @@ import { getEventModel } from '../models/Event.model.js';
 import { getChallengeModel } from '../models/Challenge.model.js';
 import { getGroupModel } from '../models/Group.model.js';
 import { getProjectModel } from '../models/Project.model.js';
+import { registerProjectOnChain, setAutoRetireBps, setProjectAutoRetireBps } from '../services/blockchain.service.js';
 
 /**
  * Admin login handler
@@ -592,11 +593,30 @@ export const getUsers = asyncHandler(async (req, res) => {
 
 /**
  * Admin: Create project
- * Uses existing Project model and database
+ * Creates project in database and optionally registers on blockchain if blockchain details provided
  */
 export const createProjectAdmin = asyncHandler(async (req, res) => {
   const Project = await getProjectModel();
   const body = req.body || {};
+
+  // Validate incoming documents (base64) early
+  const documents = Array.isArray(body.documents) ? body.documents : [];
+  const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+  const ALLOWED_MIME = ['application/pdf','image/png','image/jpeg','image/jpg'];
+  const sanitizedDocs = [];
+  for (const doc of documents) {
+    if (!doc || typeof doc !== 'object') continue;
+    const { name = 'file', base64, size, mime } = doc;
+    if (!base64) continue;
+    if (size && size > MAX_FILE_SIZE) {
+      return res.status(400).json({ success:false, message:`Document ${name} exceeds 5MB limit` });
+    }
+    if (mime && !ALLOWED_MIME.includes(mime)) {
+      return res.status(400).json({ success:false, message:`Document ${name} has disallowed type` });
+    }
+    sanitizedDocs.push({ name, base64, size, mime });
+  }
+  const docs = Array.isArray(body.documents) ? body.documents : [];
 
   // Map incoming admin fields to Project schema
   const mapped = {
@@ -612,17 +632,128 @@ export const createProjectAdmin = asyncHandler(async (req, res) => {
     verified: !!body.verified,
     featured: !!body.featured,
     endDate: body.expectedCompletion ? new Date(body.expectedCompletion) : undefined,
+    // Add additional fields for better project management
+    startDate: body.startDate ? new Date(body.startDate) : new Date(),
+    category: body.category || 'other',
+    impact: {
+      carbonOffset: body.carbonOffset ? Number(body.carbonOffset) : 0,
+      area: body.area ? Number(body.area) : 0,
+      beneficiaries: body.beneficiaries ? Number(body.beneficiaries) : 0
+    },
+    coordinates: {
+      latitude: body.latitude ? Number(body.latitude) : undefined,
+      longitude: body.longitude ? Number(body.longitude) : undefined
+    },
+    organization: {
+      name: body.organizationName || '',
+      contact: body.organizationContact || '',
+      website: body.organizationWebsite || ''
+    }
   };
+
+  // Compute carbon credits: 1 ton == 1 credit (input carbonOffsetTarget in kg)
+  if (body.carbonOffsetTarget) {
+    const kg = Number(body.carbonOffsetTarget);
+    if (!isNaN(kg)) {
+      mapped.impact.carbonOffset = Math.floor(kg / 1000); // store tons
+    }
+  }
 
   // Basic validation
   if (!mapped.name || !mapped.location || !mapped.type) {
-    return res.status(400).json({ success: false, message: 'Missing required fields: name, location, type' });
+    return res.status(400).json({ 
+      success: false, 
+      message: 'Missing required fields: name, location, type' 
+    });
   }
 
-  const project = new Project(mapped);
-  await project.save();
+  try {
+    // Create project in database first
+    const project = new Project(mapped);
+    await project.save();
 
-  return res.status(201).json({ success: true, message: 'Project created', project });
+    // Compute credits from carbonOffsetTarget if provided (assuming kg)
+    if (body.carbonOffsetTarget) {
+      const kg = Number(body.carbonOffsetTarget);
+      if (!isNaN(kg) && kg > 0) {
+        const tons = Math.floor(kg / 1000);
+        if (tons > 0) {
+          project.blockchain = project.blockchain || {};
+          // store as potential future totalCredits if on-chain later
+          project.blockchain.totalCredits = tons;
+        }
+      }
+    }
+
+    // --- Auto blockchain registration (if possible) ---
+    let chainInfo = null; let chainError = null;
+    try {
+      // Only attempt if not already registered and env contract present
+      if (!project.blockchain?.projectId && process.env.MARKETPLACE_CONTRACT_ADDRESS) {
+        const totalCredits = project.blockchain?.totalCredits || project.impact?.carbonOffset || 0; // tons
+        // Derive pricePerCreditWei: body.pricePerCreditWei > env > default
+        const pricePerCreditWei = (body.pricePerCreditWei && /^\d+$/.test(body.pricePerCreditWei))
+          ? body.pricePerCreditWei
+          : (process.env.DEFAULT_PRICE_PER_CREDIT_WEI || '1000000000000000'); // 0.001 ETH default
+        // Build metadata JSON if not provided
+        let metadataURI = body.metadataURI;
+        if (!metadataURI) {
+          try {
+            const { addJSON } = await import('../services/localIpfs.service.js');
+            const meta = {
+              name: project.name,
+              description: project.description,
+              location: project.location,
+              type: project.type,
+              createdAt: project.createdAt,
+              totalCredits,
+              image: project.image || null
+            };
+            const pinned = await addJSON(meta);
+            metadataURI = pinned.uri;
+          } catch (e) {
+            // If IPFS unavailable skip registration
+            if (!process.env.ALLOW_NO_IPFS_REGISTRATION) throw new Error('IPFS unavailable for metadata: ' + e.message);
+          }
+        }
+        if (totalCredits > 0 && metadataURI) {
+          const { projectId: chainProjectId, txHash } = await registerProjectOnChain({ projectId: 0, totalCredits, pricePerCreditWei, metadataURI });
+          project.blockchain = project.blockchain || {};
+          project.blockchain.projectId = chainProjectId;
+          project.blockchain.totalCredits = Number(totalCredits);
+          project.blockchain.pricePerCreditWei = pricePerCreditWei.toString();
+          project.blockchain.metadataURI = metadataURI;
+          project.blockchain.contractAddress = process.env.MARKETPLACE_CONTRACT_ADDRESS;
+          project.verified = true;
+          await project.save();
+          console.log(`[BLOCKCHAIN] Auto-registered new project id=${chainProjectId} tx=${txHash}`);
+          chainInfo = { projectId: chainProjectId, txHash, metadataURI };
+        } else {
+          chainError = 'Insufficient data for auto registration (needs totalCredits>0 and metadataURI)';
+        }
+      }
+    } catch (e) {
+      chainError = e.message;
+      console.error('[BLOCKCHAIN] Auto registration failed:', e.message);
+    }
+
+    return res.status(201).json({
+      success: true,
+      message: 'Project created successfully' + (chainInfo ? ' & registered on-chain' : ''),
+      project,
+      documents: project.verification?.documents || [],
+      credits: project.blockchain?.totalCredits || 0,
+      blockchain: chainInfo || undefined,
+      blockchainError: chainError || undefined
+    });
+  } catch (error) {
+    console.error('Error creating project:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to create project',
+      error: error.message
+    });
+  }
 });
 
 /**
@@ -655,7 +786,56 @@ export const updateProjectAdmin = asyncHandler(async (req, res) => {
   if (!updated) {
     return res.status(404).json({ success: false, message: 'Project not found' });
   }
-  return res.status(200).json({ success: true, message: 'Project updated', project: updated });
+
+  // Attempt auto-registration if not yet registered
+  let chainInfo = null; let chainError = null;
+  if (!updated.blockchain?.projectId && process.env.MARKETPLACE_CONTRACT_ADDRESS) {
+    try {
+      const totalCredits = updated.blockchain?.totalCredits || updated.impact?.carbonOffset || 0;
+      const pricePerCreditWei = (body.pricePerCreditWei && /^\d+$/.test(body.pricePerCreditWei))
+        ? body.pricePerCreditWei
+        : (process.env.DEFAULT_PRICE_PER_CREDIT_WEI || '1000000000000000');
+      let metadataURI = body.metadataURI;
+      if (!metadataURI) {
+        try {
+          const { addJSON } = await import('../services/localIpfs.service.js');
+            const meta = {
+              name: updated.name,
+              description: updated.description,
+              location: updated.location,
+              type: updated.type,
+              updatedAt: new Date(),
+              totalCredits,
+              image: updated.image || null
+            };
+            const pinned = await addJSON(meta);
+            metadataURI = pinned.uri;
+        } catch (e) {
+          if (!process.env.ALLOW_NO_IPFS_REGISTRATION) throw new Error('IPFS unavailable for metadata: ' + e.message);
+        }
+      }
+      if (totalCredits > 0 && metadataURI) {
+        const { projectId: chainProjectId, txHash } = await registerProjectOnChain({ projectId: 0, totalCredits, pricePerCreditWei, metadataURI });
+        updated.blockchain = updated.blockchain || {};
+        updated.blockchain.projectId = chainProjectId;
+        updated.blockchain.totalCredits = Number(totalCredits);
+        updated.blockchain.pricePerCreditWei = pricePerCreditWei.toString();
+        updated.blockchain.metadataURI = metadataURI;
+        updated.blockchain.contractAddress = process.env.MARKETPLACE_CONTRACT_ADDRESS;
+        updated.verified = true;
+        await updated.save();
+        console.log(`[BLOCKCHAIN] Auto-registered project on update id=${chainProjectId} tx=${txHash}`);
+        chainInfo = { projectId: chainProjectId, txHash, metadataURI };
+      } else {
+        chainError = 'Insufficient data for auto registration (needs totalCredits>0 and metadataURI)';
+      }
+    } catch (e) {
+      chainError = e.message;
+      console.error('[BLOCKCHAIN] Auto registration (update) failed:', e.message);
+    }
+  }
+
+  return res.status(200).json({ success: true, message: 'Project updated' + (chainInfo ? ' & registered on-chain' : ''), project: updated, blockchain: chainInfo || undefined, blockchainError: chainError || undefined });
 });
 
 /**
@@ -667,9 +847,288 @@ export const deleteProjectAdmin = asyncHandler(async (req, res) => {
   if (!id) {
     return res.status(400).json({ success: false, message: 'Project id is required' });
   }
-  const deleted = await Project.findByIdAndDelete(id);
+  // Validate ObjectId format before query to avoid CastError
+  if (!id || !id.match(/^[0-9a-fA-F]{24}$/)) {
+    return res.status(400).json({ success: false, message: 'Invalid project id format' });
+  }
+  const deleted = await Project.findByIdAndDelete(id).catch(err => {
+    console.error('Delete project error', err);
+    return null;
+  });
   if (!deleted) {
     return res.status(404).json({ success: false, message: 'Project not found' });
   }
   return res.status(200).json({ success: true, message: 'Project deleted' });
 });
+
+// --- Blockchain Project Workflow Additions ---
+
+// Submit project for review
+export const submitProjectForReview = asyncHandler(async (req, res) => {
+  const Project = await getProjectModel();
+  const { id } = req.body;
+  if (!id) return res.status(400).json({ success:false, message:'Project id required' });
+  const project = await Project.findById(id);
+  if (!project) return res.status(404).json({ success:false, message:'Project not found' });
+  if (project.verification.status !== 'draft') return res.status(400).json({ success:false, message:'Only draft can be submitted' });
+  project.verification.status = 'submitted';
+  project.verification.submittedAt = new Date();
+  await project.save();
+  res.json({ success:true, message:'Project submitted', project });
+});
+
+// Move to in-review (admin action)
+export const markProjectInReview = asyncHandler(async (req, res) => {
+  const Project = await getProjectModel();
+  const { id } = req.body;
+  const project = await Project.findById(id);
+  if (!project) return res.status(404).json({ success:false, message:'Project not found' });
+  if (!['submitted'].includes(project.verification.status)) return res.status(400).json({ success:false, message:'Must be submitted first' });
+  project.verification.status = 'in-review';
+  project.verification.reviewedAt = new Date();
+  project.verification.reviewer = req.user._id;
+  await project.save();
+  res.json({ success:true, message:'Project set to in-review', project });
+});
+
+// Approve & register on-chain
+export const approveAndRegisterProject = asyncHandler(async (req, res) => {
+  const { id, totalCredits, pricePerCreditWei, metadataURI } = req.body;
+  if (!id || !totalCredits || !pricePerCreditWei || !metadataURI) return res.status(400).json({ success:false, message:'id, totalCredits, pricePerCreditWei, metadataURI required' });
+  const Project = await getProjectModel();
+  // Atomic status transition guard to mitigate race
+  const project = await Project.findOneAndUpdate({ _id: id, 'verification.status': 'in-review', 'blockchain.projectId': { $exists: false } }, { $set: { 'verification.status': 'approving' } }, { new: true });
+  if (!project) return res.status(409).json({ success:false, message:'Project not in-review or already registered' });
+  try {
+  const { projectId: chainProjectId, txHash } = await registerProjectOnChain({ projectId: 0, totalCredits, pricePerCreditWei, metadataURI });
+  project.blockchain.projectId = chainProjectId;
+    project.blockchain.totalCredits = Number(totalCredits);
+    project.blockchain.pricePerCreditWei = pricePerCreditWei.toString();
+    project.blockchain.metadataURI = metadataURI;
+    project.blockchain.contractAddress = process.env.MARKETPLACE_CONTRACT_ADDRESS;
+    project.verification.status = 'approved';
+    project.verification.reviewedAt = new Date();
+    project.verified = true;
+    await project.save();
+  console.log(`[BLOCKCHAIN] Project registered id=${chainProjectId} tx=${txHash}`);
+  res.json({ success:true, message:'Project approved & registered', txHash, project });
+  } catch (e) {
+    // revert status so admin can retry
+    project.verification.status = 'in-review';
+    await project.save();
+    res.status(500).json({ success:false, message:'On-chain registration failed', error:e.message });
+  }
+});
+
+// Reject project
+export const rejectProject = asyncHandler(async (req, res) => {
+  const { id, note } = req.body;
+  const Project = await getProjectModel();
+  const project = await Project.findById(id);
+  if (!project) return res.status(404).json({ success:false, message:'Project not found' });
+  project.verification.status = 'rejected';
+  project.verification.reviewedAt = new Date();
+  project.verification.reviewer = req.user._id;
+  if (note) project.verification.notes.push({ by: req.user._id, note });
+  await project.save();
+  res.json({ success:true, message:'Project rejected', project });
+});
+
+// Set global auto-retire bps
+export const updateAutoRetireBps = asyncHandler(async (req, res) => {
+  const { bps } = req.body;
+  if (bps == null) return res.status(400).json({ success:false, message:'bps required' });
+  if (bps < 0 || bps > 10000) return res.status(400).json({ success:false, message:'bps out of range' });
+  try {
+    const receipt = await setAutoRetireBps(bps);
+    res.json({ success:true, txHash: receipt.hash, bps });
+  } catch (e) {
+    res.status(500).json({ success:false, message:'Failed to set autoRetireBps', error:e.message });
+  }
+});
+
+// Set per-project auto-retire override
+export const updateProjectAutoRetire = asyncHandler(async (req, res) => {
+  const { projectId, bps } = req.body;
+  if (!projectId || bps == null) return res.status(400).json({ success:false, message:'projectId and bps required' });
+  if (bps < 0 || bps > 10000) return res.status(400).json({ success:false, message:'bps out of range' });
+  try {
+    const receipt = await setProjectAutoRetireBps(projectId, bps);
+    res.json({ success:true, txHash: receipt.hash, projectId, bps });
+  } catch (e) {
+    res.status(500).json({ success:false, message:'Failed to set project autoRetireBps', error:e.message });
+  }
+});
+
+/**
+ * Admin: Register existing project on blockchain
+ * Takes an existing project and registers it on the blockchain with specified parameters
+ */
+export const registerExistingProjectOnBlockchain = asyncHandler(async (req, res) => {
+  const { projectId } = req.params;
+  const { totalCredits, pricePerCreditWei, metadataURI, autoRetireBps = 0 } = req.body;
+
+  // Validate required fields
+  if (!totalCredits || !pricePerCreditWei || !metadataURI) {
+    return res.status(400).json({
+      success: false,
+      message: 'Missing required fields: totalCredits, pricePerCreditWei, metadataURI'
+    });
+  }
+
+  // Validate numeric values
+  if (isNaN(totalCredits) || totalCredits <= 0) {
+    return res.status(400).json({
+      success: false,
+      message: 'totalCredits must be a positive number'
+    });
+  }
+
+  if (isNaN(autoRetireBps) || autoRetireBps < 0 || autoRetireBps > 10000) {
+    return res.status(400).json({
+      success: false,
+      message: 'autoRetireBps must be between 0 and 10000'
+    });
+  }
+
+  try {
+    const Project = await getProjectModel();
+    const project = await Project.findById(projectId);
+    
+    if (!project) {
+      return res.status(404).json({
+        success: false,
+        message: 'Project not found'
+      });
+    }
+
+    // Check if project is already registered on blockchain
+    if (project.blockchain?.projectId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Project is already registered on blockchain',
+        blockchainProjectId: project.blockchain.projectId
+      });
+    }
+
+    // Register project on blockchain
+  const { projectId: blockchainProjectId, txHash } = await registerProjectOnChain({
+      projectId: 0, // Auto-increment
+      totalCredits: parseInt(totalCredits),
+      pricePerCreditWei: pricePerCreditWei.toString(),
+      metadataURI
+    });
+
+    // Update project with blockchain information
+    project.blockchain = {
+      projectId: blockchainProjectId,
+      totalCredits: parseInt(totalCredits),
+      soldCredits: 0,
+      pricePerCreditWei: pricePerCreditWei.toString(),
+      certificateBaseURI: metadataURI,
+      contractAddress: process.env.MARKETPLACE_CONTRACT_ADDRESS,
+      network: process.env.BLOCKCHAIN_NETWORK || 'localhost',
+      lastSyncAt: new Date()
+    };
+
+    // Set project auto-retire if specified
+    if (autoRetireBps > 0) {
+      await setProjectAutoRetireBps(blockchainProjectId, parseInt(autoRetireBps));
+    }
+
+    project.verified = true; // Projects registered on blockchain are automatically verified
+    await project.save();
+
+  console.log(`[BLOCKCHAIN] Existing project registered id=${blockchainProjectId} tx=${txHash}`);
+  res.json({
+      success: true,
+      message: 'Project registered on blockchain successfully',
+      data: {
+        projectId: project._id,
+        blockchainProjectId,
+        totalCredits: parseInt(totalCredits),
+        pricePerCreditWei: pricePerCreditWei.toString(),
+        metadataURI,
+    autoRetireBps: parseInt(autoRetireBps),
+    txHash
+      }
+    });
+  } catch (error) {
+    console.error('Error registering project on blockchain:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to register project on blockchain',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * Admin: Get project blockchain status
+ * Returns blockchain information for a project
+ */
+export const getProjectBlockchainStatus = asyncHandler(async (req, res) => {
+  const { projectId } = req.params;
+
+  try {
+    const Project = await getProjectModel();
+    const project = await Project.findById(projectId);
+    
+    if (!project) {
+      return res.status(404).json({
+        success: false,
+        message: 'Project not found'
+      });
+    }
+
+    if (!project.blockchain?.projectId) {
+      return res.json({
+        success: true,
+        data: {
+          registered: false,
+          message: 'Project is not registered on blockchain'
+        }
+      });
+    }
+
+    // Fetch current data from blockchain
+    try {
+      const blockchainData = await getProjectOnChain(project.blockchain.projectId);
+      
+      res.json({
+        success: true,
+        data: {
+          registered: true,
+          database: project.blockchain,
+          blockchain: {
+            id: blockchainData.id.toString(),
+            totalCredits: blockchainData.totalCredits.toString(),
+            soldCredits: blockchainData.soldCredits.toString(),
+            pricePerCredit: blockchainData.pricePerCredit.toString(),
+            metadataURI: blockchainData.metadataURI,
+            active: blockchainData.active,
+            autoRetireBps: blockchainData.autoRetireBps.toString()
+          }
+        }
+      });
+    } catch (blockchainError) {
+      res.json({
+        success: true,
+        data: {
+          registered: true,
+          database: project.blockchain,
+          blockchain: null,
+          warning: 'Could not fetch current blockchain data: ' + blockchainError.message
+        }
+      });
+    }
+  } catch (error) {
+    console.error('Error getting project blockchain status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get project blockchain status',
+      error: error.message
+    });
+  }
+});
+

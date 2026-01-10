@@ -72,6 +72,12 @@ const userSchema = new mongoose.Schema({
   lastLogin: Date,
   ipAddress: String,
   userAgent: String,
+  // Web3 Wallet
+  wallet: {
+    address: { type: String, index: true },
+    chain: { type: String },
+    linkedAt: { type: Date }
+  },
 
   // Marketplace Profile
   marketplace_profile: {

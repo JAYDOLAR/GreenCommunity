@@ -23,7 +23,39 @@ const projectSchema = new mongoose.Schema({
   fundingGoal: { type: Number, default: 0 },
   currentFunding: { type: Number, default: 0 },
   verified: { type: Boolean, default: false },
+  // Detailed verification workflow
+  verification: {
+    status: { type: String, enum: ['draft','submitted','in-review','approved','rejected'], default: 'draft', index: true },
+    submittedAt: { type: Date },
+    reviewedAt: { type: Date },
+    reviewer: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    notes: [{ at: { type: Date, default: Date.now }, by: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, note: String }],
+    documents: [{
+      name: String,
+      url: String,
+      hash: String,
+      uploadedAt: { type: Date, default: Date.now },
+      verified: { type: Boolean, default: false },
+      verificationNote: String
+    }]
+  },
   featured: { type: Boolean, default: false },
+  // Blockchain integration
+  blockchain: {
+    projectId: { type: Number, index: true }, // tokenId on chain
+    totalCredits: { type: Number, default: 0 },
+    soldCredits: { type: Number, default: 0 },
+    pricePerCreditWei: { type: String }, // store as string to preserve big int
+    certificateBaseURI: { type: String },
+    contractAddress: { type: String }, // marketplace contract
+    network: { type: String, default: 'localhost' },
+    lastSyncAt: { type: Date },
+    transactions: [{
+      txHash: { type: String, index: true },
+      user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+      at: { type: Date, default: Date.now }
+    }]
+  },
   category: { 
     type: String, 
     enum: ['reforestation', 'renewable-energy', 'conservation', 'clean-water', 'sustainable-agriculture', 'waste-management', 'other'],
@@ -50,6 +82,9 @@ projectSchema.index({ region: 1 });
 projectSchema.index({ status: 1 });
 projectSchema.index({ category: 1 });
 projectSchema.index({ featured: 1 });
+// NOTE: Do NOT add an additional index for blockchain.projectId here because
+// the field definition already sets index: true. Adding both causes Mongoose
+// to emit a duplicate index warning.
 
 const getProjectModel = async () => {
   const projectsConn = await getConnection('PROJECTS_DB');

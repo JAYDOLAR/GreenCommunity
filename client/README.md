@@ -34,3 +34,26 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Blockchain Integration
+
+Environment variable (create `.env.local`):
+```
+NEXT_PUBLIC_MARKETPLACE_ADDRESS=0xYourMarketplaceContract
+```
+
+Wrap the root layout (e.g. `app/layout.tsx`) with the `WalletProvider`:
+```tsx
+import { WalletProvider } from '@/context/WalletContext';
+
+export default function RootLayout({ children }) {
+	return <html><body><WalletProvider>{children}</WalletProvider></body></html>
+}
+```
+
+Use the purchase component:
+```tsx
+<BuyCreditsButton projectMongoId="<mongoId>" projectIdOnChain={1} pricePerCreditWei="10000000000000000" />
+```
+
+After tx confirmation it posts to `/api/blockchain/projects/:projectMongoId/record-purchase` which verifies & syncs.

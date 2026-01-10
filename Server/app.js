@@ -23,6 +23,10 @@ import adminRoutes from "./routes/admin.routes.js";
 import emailRoutes from "./routes/email.routes.js";
 import dotenv from "dotenv";
 import aiRoutes from "./routes/ai.routes.js";
+import blockchainRouter from "./blockchain.js";
+import blockchainApiRoutes from "./routes/blockchain.routes.js";
+import { startBlockchainListeners } from './services/blockchain.listener.js';
+import { syncHistoricalEvents } from './services/blockchain.sync.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -31,15 +35,28 @@ dotenv.config();
 
 const dev = process.env.NODE_ENV !== "production";
 const clientDir = dev ? path.resolve(__dirname, '../client') : path.resolve(__dirname, './client');
-const nextApp = next({ dev, dir: clientDir });
-const nextHandler = nextApp.getRequestHandler();
+// Lazy initialize Next.js only when not in test mode to speed tests
+const isTest = process.env.NODE_ENV === 'test';
+let nextApp; let nextHandler;
+if (!isTest) {
+  nextApp = next({ dev, dir: clientDir });
+  nextHandler = nextApp.getRequestHandler();
+}
 
 async function createServer() {
-  await nextApp.prepare();
+  if (!isTest) {
+    await nextApp.prepare();
+  }
   const app = express();
 
   // Connect to all MongoDB databases
-  connectAllDatabases();
+  if (!isTest) {
+    connectAllDatabases();
+  // Start blockchain listeners (non-fatal if it fails)
+  startBlockchainListeners();
+  // Kick off historical sync (non-blocking)
+  setTimeout(() => { syncHistoricalEvents(); }, 2000);
+  }
 
   // Security middleware
   app.use(
@@ -126,7 +143,9 @@ async function createServer() {
   app.use("/api/ai", aiRoutes);
   app.use("/api/community", communityRoutes);
   app.use("/api/admin", adminRoutes);
-  app.use("/api/email", emailRoutes);
+  app.use('/api/blockchain', blockchainApiRoutes);
+  // Simple blockchain demo endpoints (non /api for clarity/tests)
+  app.use('/blockchain', blockchainRouter);
 
   // Global error handler for API
   app.use("/api", (err, req, res, next) => {
@@ -139,9 +158,13 @@ async function createServer() {
   });
 
   // Handle all other requests with Next.js
-  app.all("*", (req, res) => {
-    return nextHandler(req, res);
-  });
+  if (!isTest) {
+    app.all("*", (req, res) => {
+      return nextHandler(req, res);
+    });
+  } else {
+    app.get('/', (req,res)=> res.json({status:'ok'}));
+  }
 
   return app;
 }
