@@ -723,20 +723,11 @@ const Dashboard = () => {
                 <div className="text-sm sm:text-base md:text-base text-gray-600 mt-1">
                   {streakData.currentStreak > 1 ? (
                     <>
-                      <div className="flex items-center gap-2">
-                        <span>🔥</span>
-                        <span>
-                          <AnimatedCounter end={streakData.currentStreak} /> day{streakData.currentStreak !== 1 ? 's' : ''} streak
-                        </span>
-                        {!todayStatus.hasLoggedToday && todayStatus.canContinueStreak && (
-                          <Badge variant="outline" className="text-xs text-orange-600 border-orange-200">
-                            Log today to continue!
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="text-xs text-gray-500 mt-1">
-                        Longest: {streakData.longestStreak} days • Total: {streakData.totalLoggingDays} days
-                      </div>
+                      {!todayStatus.hasLoggedToday && todayStatus.canContinueStreak && (
+                        <Badge variant="outline" className="text-xs text-orange-600 border-orange-200">
+                          Log today to continue!
+                        </Badge>
+                      )}
                     </>
                   ) : (
                     <div className="text-sm text-gray-500">
