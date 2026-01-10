@@ -899,14 +899,14 @@ const AnalyticsPage = () => {
              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
          {/* User Growth Chart */}
          <Card>
-           <CardHeader className="flex flex-row items-center justify-between">
-                           <div>
+           <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="w-full sm:w-auto">
                 <CardTitle>User Growth</CardTitle>
                 <CardDescription>New user registrations over time</CardDescription>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap w-full sm:w-auto gap-2" aria-label="User growth chart filters">
                 <Select value={userChartType} onValueChange={setUserChartType}>
-                  <SelectTrigger className="w-32">
+                  <SelectTrigger className="min-w-[110px] sm:w-32 flex-1 sm:flex-none">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -917,23 +917,21 @@ const AnalyticsPage = () => {
                     <SelectItem value="radar">Radar</SelectItem>
                   </SelectContent>
                 </Select>
-                
-                                 <Select value={userChartMonth.toString()} onValueChange={(value) => setUserChartMonth(parseInt(value))}>
-                   <SelectTrigger className="w-28">
-                     <SelectValue />
-                   </SelectTrigger>
-                   <SelectContent>
-                     <SelectItem value="-1">Full Year</SelectItem>
-                     {months.map(month => (
-                       <SelectItem key={month.value} value={month.value.toString()}>
-                         {month.label}
-                       </SelectItem>
-                     ))}
-                   </SelectContent>
-                 </Select>
-                
+                <Select value={userChartMonth.toString()} onValueChange={(value) => setUserChartMonth(parseInt(value))}>
+                  <SelectTrigger className="min-w-[120px] sm:w-28 flex-1 sm:flex-none">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="-1">Full Year</SelectItem>
+                    {months.map(month => (
+                      <SelectItem key={month.value} value={month.value.toString()}>
+                        {month.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <Select value={userChartYear.toString()} onValueChange={(value) => setUserChartYear(parseInt(value))}>
-                  <SelectTrigger className="w-20">
+                  <SelectTrigger className="min-w-[90px] sm:w-20 flex-1 sm:flex-none">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -947,7 +945,7 @@ const AnalyticsPage = () => {
               </div>
            </CardHeader>
            <CardContent>
-             <div className="h-64">
+             <div className="h-56 sm:h-64 md:h-72">
                <ResponsiveContainer width="100%" height="100%">
                  {renderUserChart(userChartType)}
                </ResponsiveContainer>
@@ -957,54 +955,52 @@ const AnalyticsPage = () => {
 
                  {/* Revenue Chart */}
          <Card>
-           <CardHeader className="flex flex-row items-center justify-between">
-                          <div>
+           <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+             <div className="w-full sm:w-auto">
                <CardTitle>Revenue Trends</CardTitle>
                <CardDescription>Monthly revenue performance</CardDescription>
              </div>
-             <div className="flex gap-2">
-                <Select value={revenueChartType} onValueChange={setRevenueChartType}>
-                  <SelectTrigger className="w-32">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="line">Line</SelectItem>
-                    <SelectItem value="area">Area</SelectItem>
-                    <SelectItem value="bar">Bar</SelectItem>
-                    <SelectItem value="combo">Combo</SelectItem>
-                  </SelectContent>
-                </Select>
-                
-                                 <Select value={revenueChartMonth.toString()} onValueChange={(value) => setRevenueChartMonth(parseInt(value))}>
-                   <SelectTrigger className="w-28">
-                     <SelectValue />
-                   </SelectTrigger>
-                   <SelectContent>
-                     <SelectItem value="-1">Full Year</SelectItem>
-                     {months.map(month => (
-                       <SelectItem key={month.value} value={month.value.toString()}>
-                         {month.label}
-                       </SelectItem>
-                     ))}
-                   </SelectContent>
-                 </Select>
-                
-                <Select value={revenueChartYear.toString()} onValueChange={(value) => setRevenueChartYear(parseInt(value))}>
-                  <SelectTrigger className="w-20">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {years.map(year => (
-                      <SelectItem key={year.value} value={year.value.toString()}>
-                        {year.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+             <div className="flex flex-wrap w-full sm:w-auto gap-2" aria-label="Revenue chart filters">
+               <Select value={revenueChartType} onValueChange={setRevenueChartType}>
+                 <SelectTrigger className="min-w-[110px] sm:w-32 flex-1 sm:flex-none">
+                   <SelectValue />
+                 </SelectTrigger>
+                 <SelectContent>
+                   <SelectItem value="line">Line</SelectItem>
+                   <SelectItem value="area">Area</SelectItem>
+                   <SelectItem value="bar">Bar</SelectItem>
+                   <SelectItem value="combo">Combo</SelectItem>
+                 </SelectContent>
+               </Select>
+               <Select value={revenueChartMonth.toString()} onValueChange={(value) => setRevenueChartMonth(parseInt(value))}>
+                 <SelectTrigger className="min-w-[120px] sm:w-28 flex-1 sm:flex-none">
+                   <SelectValue />
+                 </SelectTrigger>
+                 <SelectContent>
+                   <SelectItem value="-1">Full Year</SelectItem>
+                   {months.map(month => (
+                     <SelectItem key={month.value} value={month.value.toString()}>
+                       {month.label}
+                     </SelectItem>
+                   ))}
+                 </SelectContent>
+               </Select>
+               <Select value={revenueChartYear.toString()} onValueChange={(value) => setRevenueChartYear(parseInt(value))}>
+                 <SelectTrigger className="min-w-[90px] sm:w-20 flex-1 sm:flex-none">
+                   <SelectValue />
+                 </SelectTrigger>
+                 <SelectContent>
+                   {years.map(year => (
+                     <SelectItem key={year.value} value={year.value.toString()}>
+                       {year.label}
+                     </SelectItem>
+                   ))}
+                 </SelectContent>
+               </Select>
+             </div>
            </CardHeader>
            <CardContent>
-             <div className="h-64">
+             <div className="h-56 sm:h-64 md:h-72">
                <ResponsiveContainer width="100%" height="100%">
                  {renderRevenueChart(revenueChartType)}
                </ResponsiveContainer>

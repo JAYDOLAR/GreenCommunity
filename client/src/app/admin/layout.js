@@ -10,6 +10,7 @@ const AdminLayout = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [mobileOpen, setMobileOpen] = useState(false); // must be before any conditional return
 
   useEffect(() => {
     const checkAuth = () => {
@@ -42,7 +43,18 @@ const AdminLayout = ({ children }) => {
 
     // Add a small delay to ensure localStorage is available
     const timer = setTimeout(checkAuth, 100);
-    return () => clearTimeout(timer);
+
+    // Add class to body to prevent horizontal scroll on admin pages
+    if (typeof document !== 'undefined') {
+      document.body.classList.add('overflow-x-hidden');
+    }
+
+    return () => {
+      clearTimeout(timer);
+      if (typeof document !== 'undefined') {
+        document.body.classList.remove('overflow-x-hidden');
+      }
+    };
   }, [pathname, router]);
 
   // Show loading spinner while checking authentication
@@ -93,12 +105,39 @@ const AdminLayout = ({ children }) => {
     );
   }
 
-  // Show admin layout with sidebar
+  // (mobileOpen state moved above to keep hook order consistent)
+
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <AdminSidebar />
-      <div className="flex-1">
-        <main className="w-full min-h-screen">
+    <div className="relative min-h-screen bg-gray-50 overflow-x-hidden" style={{maxWidth:'100vw'}}>
+      {/* Sidebar */}
+      <AdminSidebar isOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
+
+      {/* Mobile top bar */}
+      <div className="lg:hidden sticky top-0 z-30 flex items-center gap-3 bg-white/80 backdrop-blur px-4 py-3 border-b border-gray-200">
+        <button
+          onClick={() => setMobileOpen(true)}
+          className="p-2 rounded-md bg-green-500 text-white focus:outline-none focus:ring-2 focus:ring-green-400"
+          aria-label="Open sidebar"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+        <h1 className="font-semibold text-gray-800 text-sm">Admin Panel</h1>
+      </div>
+
+      {/* Overlay for mobile */}
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 bg-black/40 z-30 lg:hidden"
+          onClick={() => setMobileOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Main content */}
+      <div className="lg:ml-64">
+        <main className="min-h-screen w-full px-4 md:px-8 pb-16 pt-4">
           {children}
         </main>
       </div>
