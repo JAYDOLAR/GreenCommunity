@@ -164,22 +164,22 @@ const ChatBot = () => {
   const content = (
     <div className="relative">
       {/* Chat Button */}
-      <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-[10020] pointer-events-none">
+      <div className="fixed bottom-3 right-3 sm:bottom-4 sm:right-4 md:bottom-6 md:right-6 z-[10020] pointer-events-none">
         <div className="relative pointer-events-auto">
           {/* pulsing glow */}
           {!isOpen && (
-            <span className="absolute inset-0 -m-3 rounded-full bg-green-500/20 blur-xl animate-pulse" aria-hidden />
+            <span className="absolute inset-0 -m-2 sm:-m-3 rounded-full bg-green-500/20 blur-xl animate-pulse" aria-hidden />
           )}
           <button
             ref={buttonRef}
             onClick={() => setIsOpen(prev => !prev)}
             aria-label={isOpen ? 'Close chat' : 'Open chat'}
-            className="relative rounded-full w-14 h-14 sm:w-16 sm:h-16 md:w-18 md:h-18 shadow-lg focus:outline-none focus:ring-2 focus:ring-green-400/60 bg-gradient-to-br from-green-600 to-emerald-500 text-white flex items-center justify-center hover:scale-105 transition-transform"
+            className="relative rounded-full w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 lg:w-18 lg:h-18 shadow-lg focus:outline-none focus:ring-2 focus:ring-green-400/60 bg-gradient-to-br from-green-600 to-emerald-500 text-white flex items-center justify-center hover:scale-105 transition-transform"
           >
             {isOpen ? (
-              <ChevronDown className="h-6 w-6" />
+              <ChevronDown className="h-5 w-5 sm:h-6 sm:w-6" />
             ) : (
-              <MessageCircle className="h-7 w-7" />
+              <MessageCircle className="h-6 w-6 sm:h-7 sm:w-7" />
             )}
           </button>
         </div>
@@ -193,23 +193,24 @@ const ChatBot = () => {
           e.preventDefault();
           e.stopPropagation();
           list.scrollBy({ top: e.deltaY, behavior: 'auto' });
-        }} className="fixed bottom-24 right-4 sm:bottom-28 sm:right-6
-          w-[min(95vw,420px)] h-[min(80vh,560px)]
+        }} className="fixed bottom-20 right-3 sm:bottom-24 sm:right-4 md:bottom-28 md:right-6
+          w-[min(95vw,380px)] sm:w-[min(95vw,400px)] md:w-[min(95vw,420px)] 
+          h-[min(75vh,500px)] sm:h-[min(80vh,540px)] md:h-[min(80vh,560px)]
           shadow-xl border border-primary/10 overflow-hidden z-[10000] animate-slide-up
-          bg-white rounded-2xl pointer-events-auto">
+          bg-white rounded-xl sm:rounded-2xl pointer-events-auto">
           <div className="h-full flex flex-col">
             {/* Header */}
-            <div className="p-3 border-b border-primary/10">
-              <div className="flex items-center gap-3">
-                <div className="size-10 rounded-full bg-gradient-to-br from-green-600 to-emerald-500 flex items-center justify-center text-white">
-                  <Bot className="h-5 w-5" />
+            <div className="p-2 sm:p-3 border-b border-primary/10">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="size-8 sm:size-10 rounded-full bg-gradient-to-br from-green-600 to-emerald-500 flex items-center justify-center text-white">
+                  <Bot className="h-4 w-4 sm:h-5 sm:w-5" />
                 </div>
-                <div className="min-w-0">
-                  <h3 className="font-semibold text-foreground leading-tight">Eco Assistant</h3>
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-semibold text-sm sm:text-base text-foreground leading-tight">Eco Assistant</h3>
                   <p className="text-xs text-muted-foreground leading-tight">Typically replies in a few minutes</p>
                 </div>
-                <div className="ml-auto text-green-600 flex items-center gap-1">
-                  <Sparkles className="h-4 w-4" />
+                <div className="text-green-600 flex items-center gap-1">
+                  <Sparkles className="h-3 w-3 sm:h-4 sm:w-4" />
                   <span className="text-xs">AI</span>
                 </div>
               </div>

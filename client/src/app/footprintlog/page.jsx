@@ -754,7 +754,7 @@ const FootprintLog = () => {
   const averageDaily = weeklyTotal / 7;
 
   return (
-  <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 bg-gradient-to-b from-background to-accent/5 min-h-screen">
+  <div className="p-3 sm:p-4 md:p-6 space-y-3 sm:space-y-4 md:space-y-6 bg-gradient-to-b from-background to-accent/5 min-h-screen">
       <Toaster position="top-right" />
 
       {/* Error State */}
@@ -769,7 +769,7 @@ const FootprintLog = () => {
       )}
 
       {/* Header */}
-      <div className="flex justify-between items-start">
+      <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
         <div className="space-y-2">
           <h1 className="text-2xl sm:text-3xl font-bold text-gradient">
             {t("footprint:carbon_footprint_log")}
@@ -778,9 +778,9 @@ const FootprintLog = () => {
             {t("footprint:monitor_environmental_impact")}
           </p>
         </div>
-        <div className="flex gap-2">
-          <Link href="/CarbonCalculator">
-            <Button variant="default" size="sm" className="shrink-0">
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          <Link href="/CarbonCalculator" className="w-full sm:w-auto">
+            <Button variant="default" size="sm" className="w-full sm:w-auto">
               <Calculator className="h-4 w-4 mr-2" />
               {t("footprint:full_assessment")}
             </Button>
@@ -790,7 +790,7 @@ const FootprintLog = () => {
             size="sm"
             onClick={refresh}
             disabled={loading}
-            className="shrink-0"
+            className="w-full sm:w-auto"
           >
             <RefreshCw
               className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`}
@@ -810,15 +810,15 @@ const FootprintLog = () => {
       )}
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
         <Card className="card-eco">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+          <CardHeader className="pb-2 sm:pb-3">
+            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
               {t("footprint:this_week")}
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-xl sm:text-2xl font-bold text-foreground">
+          <CardContent className="pt-0">
+            <div className="text-lg sm:text-xl md:text-2xl font-bold text-foreground">
               {weeklyTotal.toFixed(1)}{" "}
               <span className="text-xs sm:text-sm font-normal text-muted-foreground">
                 kg CO₂
@@ -834,13 +834,13 @@ const FootprintLog = () => {
         </Card>
 
         <Card className="card-gradient">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+          <CardHeader className="pb-2 sm:pb-3">
+            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
               {t("footprint:total_entries")}
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-xl sm:text-2xl font-bold text-foreground">
+          <CardContent className="pt-0">
+            <div className="text-lg sm:text-xl md:text-2xl font-bold text-foreground">
               {logs.length}
             </div>
             <div className="text-xs sm:text-sm text-muted-foreground mt-2">
@@ -850,13 +850,13 @@ const FootprintLog = () => {
         </Card>
 
         <Card className="card-gradient">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+          <CardHeader className="pb-2 sm:pb-3">
+            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
               {t("footprint:average_daily")}
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-xl sm:text-2xl font-bold text-foreground">
+          <CardContent className="pt-0">
+            <div className="text-lg sm:text-xl md:text-2xl font-bold text-foreground">
               {averageDaily.toFixed(1)}{" "}
               <span className="text-xs sm:text-sm font-normal text-muted-foreground">
                 kg CO₂
@@ -869,13 +869,13 @@ const FootprintLog = () => {
         </Card>
 
         <Card className="card-gradient">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+          <CardHeader className="pb-2 sm:pb-3">
+            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
               {t("footprint:total_emissions")}
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-xl sm:text-2xl font-bold text-foreground">
+          <CardContent className="pt-0">
+            <div className="text-lg sm:text-xl md:text-2xl font-bold text-foreground">
               {totalEmissions.toFixed(1)}{" "}
               <span className="text-xs sm:text-sm font-normal text-muted-foreground">
                 kg CO₂
@@ -888,9 +888,9 @@ const FootprintLog = () => {
         </Card>
       </div>
 
-  <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+  <div className="grid grid-cols-1 xl:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
         {/* Left Column - Activity Form */}
-        <div className="lg:col-span-1">
+        <div className="xl:col-span-1">
           <Card className="card-gradient">
             <CardHeader className="space-y-2">
               <CardTitle className="flex items-center gap-2">
@@ -901,7 +901,7 @@ const FootprintLog = () => {
                 {t("footprint:record_daily_activities")}
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3 sm:space-y-4">
+            <CardContent className="space-y-4 sm:space-y-5">
               {/* Activity Type */}
               <div>
                 <Label className="text-sm sm:text-base">
@@ -914,19 +914,19 @@ const FootprintLog = () => {
                     />
                   </SelectTrigger>
                   <SelectContent 
-                    className="max-h-96 overflow-hidden p-0 focus:outline-none"
+                    className="max-h-96 overflow-hidden p-0 focus:outline-none w-[var(--radix-select-trigger-width)]"
                   >
                     {/* Search box (does not close the select) */}
                     <div className="sticky top-0 z-10 bg-popover p-2 pb-2 border-b border-border">
-                      <Input
-                        autoFocus
-                        value={activitySearch}
-                        onChange={(e) => setActivitySearch(e.target.value)}
-                        placeholder={
-                          t("footprint:search_activity") || "Search activity..."
-                        }
-                        className="h-8 text-xs"
-                      />
+                                          <Input
+                      autoFocus
+                      value={activitySearch}
+                      onChange={(e) => setActivitySearch(e.target.value)}
+                      placeholder={
+                        t("footprint:search_activity") || "Search activity..."
+                      }
+                      className="h-9 sm:h-8 text-xs"
+                    />
                       {activitySearch && (
                         <div className="mt-1 text-[10px] text-muted-foreground flex justify-between">
                           <span>
@@ -1031,7 +1031,7 @@ const FootprintLog = () => {
 
               {/* Quantity and Unit */}
               {activityType && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-3">
                   <div>
                     <Label className="text-sm sm:text-base">
                       {getQuantityLabel()}
@@ -1347,7 +1347,7 @@ const FootprintLog = () => {
                       )}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
+                  <PopoverContent className="w-auto p-0" align="start" side="bottom">
                     <Calendar
                       mode="single"
                       selected={selectedDate}
@@ -1414,11 +1414,11 @@ const FootprintLog = () => {
         </div>
 
         {/* Right Column - Timeline */}
-        <div className="lg:col-span-2 lg:h-full lg:flex lg:flex-col">
+        <div className="xl:col-span-2 xl:h-full xl:flex xl:flex-col">
           <Card className="card-gradient lg:h-full lg:flex lg:flex-col">
             <CardHeader className="shrink-0">
-              <div className="flex items-center justify-between">
-                <div className="space-y-2">
+              <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4">
+                <div className="space-y-2 flex-1">
                   <CardTitle className="flex items-center gap-2 text-lg sm:text-xl md:text-xl lg:text-2xl font-semibold text-muted-foreground group-hover:text-primary transition-colors">
                     {t("footprint:activity_timeline")}
                   </CardTitle>
@@ -1433,7 +1433,7 @@ const FootprintLog = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="group-hover:bg-primary/10 transition-colors"
+                  className="group-hover:bg-primary/10 transition-colors w-full xl:w-auto"
                 >
                   <Filter className="h-4 w-4 mr-2" />
                   {t("footprint:filter_activities")}
@@ -1460,39 +1460,43 @@ const FootprintLog = () => {
                   </p>
                 </div>
               ) : (
-                <div className="space-y-3 sm:space-y-4">
+                <div className="space-y-2 sm:space-y-3 md:space-y-4">
                   {displayLogs.map((entry) => {
                     const Icon = entry.icon;
                     return (
                       <div
                         key={entry.id}
-                        className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 border border-border/50 rounded-lg hover:bg-accent/20 transition-colors hover-lift group"
+                        className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 p-3 sm:p-4 border border-border/50 rounded-lg hover:bg-accent/20 transition-colors hover-lift group"
                       >
-                        <div className="p-2 sm:p-3 bg-accent/20 rounded-lg">
-                          <Icon className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                        <div className="flex items-center gap-3 w-full sm:w-auto">
+                          <div className="p-2 sm:p-3 bg-accent/20 rounded-lg">
+                            <Icon className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                          </div>
+
+                          <div className="flex-1 sm:flex-none">
+                            <div className="font-medium text-foreground text-sm sm:text-base">
+                              {entry.activity}
+                            </div>
+                            <div className="text-xs sm:text-sm text-muted-foreground">
+                              {entry.amount} {entry.unit} • {entry.date}
+                            </div>
+                          </div>
                         </div>
 
-                        <div className="flex-1">
-                          <div className="font-medium text-foreground text-sm sm:text-base">
-                            {entry.activity}
-                          </div>
-                          <div className="text-xs sm:text-sm text-muted-foreground">
-                            {entry.amount} {entry.unit} • {entry.date}
-                          </div>
-                        </div>
-
-                        <div className="text-right">
+                        <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-2 sm:gap-0">
                           <Badge
                             variant="secondary"
-                            className="mb-1 text-xs capitalize"
+                            className="text-xs capitalize"
                           >
                             {entry.type}
                           </Badge>
-                          <div className="text-base sm:text-lg font-bold text-foreground">
-                            {entry.co2.toFixed(2)} kg
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            CO₂
+                          <div className="text-right">
+                            <div className="text-base sm:text-lg font-bold text-foreground">
+                              {entry.co2.toFixed(2)} kg
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              CO₂
+                            </div>
                           </div>
                         </div>
 

@@ -59,31 +59,31 @@ function MobileMarketplaceView() {
   };
 
   return (
-    <div className="p-3 sm:p-4 space-y-3 sm:space-y-4 bg-gradient-to-b from-background to-accent/5 min-h-screen">
+    <div className="p-3 sm:p-4 md:p-6 space-y-3 sm:space-y-4 md:space-y-6 bg-gradient-to-b from-background to-accent/5 min-h-screen">
       {/* Header */}
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         {/* Heading and description instead of logo */}
         <div className="flex flex-col flex-1">
-          <h1 className="text-base sm:text-lg font-bold text-foreground leading-tight">{t('marketplace:eco_marketplace')}</h1>
-          <span className="text-xs text-muted-foreground">{t('marketplace:discover_sustainable_products')}</span>
+          <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-foreground leading-tight">{t('marketplace:eco_marketplace')}</h1>
+          <span className="text-xs sm:text-sm text-muted-foreground">{t('marketplace:discover_sustainable_products')}</span>
         </div>
       </div>
       {/* Search and Filters */}
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-3">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 text-xs sm:text-sm"
+            className="pl-10 h-10 sm:h-9 text-sm"
           />
         </div>
         <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-          <SelectTrigger className="w-full text-xs">
+          <SelectTrigger className="w-full h-10 sm:h-9 text-sm">
             <SelectValue placeholder="Category" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="w-[var(--radix-select-trigger-width)]">
             {categories.map(category => (
               <SelectItem key={category.value} value={category.value}>
                 {category.label}
@@ -93,39 +93,39 @@ function MobileMarketplaceView() {
         </Select>
       </div>
       {/* Products List */}
-      <div className="flex flex-col gap-2 sm:gap-3">
+      <div className="flex flex-col gap-3 sm:gap-4">
         {isLoading ? (
-          <div className="text-center py-6">
-            <div className="text-muted-foreground text-sm">Loading products...</div>
+          <div className="text-center py-6 sm:py-8">
+            <div className="text-muted-foreground text-sm sm:text-base">Loading products...</div>
           </div>
         ) : filteredProducts.length > 0 ? (
           filteredProducts.map(product => (
             <Card
               key={product.id}
-              className="relative flex flex-row gap-2 items-center p-2 sm:p-3 cursor-pointer hover:shadow-md transition-shadow"
+              className="relative flex flex-row gap-3 items-start p-3 sm:p-4 cursor-pointer hover:shadow-md transition-shadow"
               onClick={() => handleProductClick(product.id)}
             >
               {product.featured && (
-                <Badge className="absolute top-1 sm:top-2 left-1 sm:left-2 z-10 bg-success text-white text-[10px] sm:text-xs pointer-events-none">Featured</Badge>
+                <Badge className="absolute top-2 left-2 z-10 bg-success text-white text-xs pointer-events-none">Featured</Badge>
               )}
-              <img src={product.image || '/Marketplace/1.jpeg'} alt={product.name} className="w-14 h-14 sm:w-16 sm:h-16 object-cover rounded" onError={(e) => { e.target.src = '/Marketplace/1.jpeg'; }} />
-              <div className="flex-1 space-y-1">
+              <img src={product.image || '/Marketplace/1.jpeg'} alt={product.name} className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded" onError={(e) => { e.target.src = '/Marketplace/1.jpeg'; }} />
+              <div className="flex-1 space-y-2">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-semibold text-xs text-foreground leading-tight">{product.name}</h3>
-                  <span className="font-bold text-xs text-foreground">₹{product.price}</span>
+                  <h3 className="font-semibold text-sm text-foreground leading-tight">{product.name}</h3>
+                  <span className="font-bold text-sm text-foreground">₹{product.price}</span>
                 </div>
-                <p className="text-xs text-muted-foreground line-clamp-2">{product.description}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2">{product.description}</p>
                 <div className="flex items-center gap-1">
-                  <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                  <span className="text-xs font-medium">{product.rating}</span>
-                  <span className="text-xs text-muted-foreground">({product.reviews})</span>
+                  <Star className="h-3 w-3 sm:h-4 sm:w-4 fill-yellow-400 text-yellow-400" />
+                  <span className="text-xs sm:text-sm font-medium">{product.rating}</span>
+                  <span className="text-xs sm:text-sm text-muted-foreground">({product.reviews})</span>
                 </div>
                 <div className="flex gap-1 flex-wrap">
                   {product.tags.slice(0, 1).map(tag => (
-                    <Badge key={tag} variant="secondary" className="text-[10px]">{tag}</Badge>
+                    <Badge key={tag} variant="secondary" className="text-xs">{tag}</Badge>
                   ))}
                   {product.tags.length > 1 && (
-                    <Badge variant="secondary" className="text-[10px]">+{product.tags.length - 1}</Badge>
+                    <Badge variant="secondary" className="text-xs">+{product.tags.length - 1}</Badge>
                   )}
                 </div>
               </div>
@@ -134,7 +134,7 @@ function MobileMarketplaceView() {
         ) : (
           <div className="text-center py-6 sm:py-8">
             <div className="text-muted-foreground text-sm sm:text-base">No products found</div>
-            <p className="text-muted-foreground text-xs">Try adjusting your search or filters</p>
+            <p className="text-muted-foreground text-xs sm:text-sm">Try adjusting your search or filters</p>
           </div>
         )}
       </div>
@@ -179,30 +179,30 @@ function TabletMarketplaceView() {
   };
 
   return (
-    <div className="p-3 sm:p-4 space-y-4 sm:space-y-5 bg-gradient-to-b from-background to-accent/5 min-h-screen">
+    <div className="p-3 sm:p-4 md:p-6 space-y-3 sm:space-y-4 md:space-y-6 bg-gradient-to-b from-background to-accent/5 min-h-screen">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-foreground">{t('marketplace:eco_marketplace')}</h1>
-          <p className="text-muted-foreground text-xs sm:text-sm">{t('marketplace:discover_sustainable_products')}</p>
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">{t('marketplace:eco_marketplace')}</h1>
+          <p className="text-muted-foreground text-xs sm:text-sm md:text-base">{t('marketplace:discover_sustainable_products')}</p>
         </div>
       </div>
       {/* Search and Filters */}
-      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search eco-friendly products..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 text-sm"
+            className="pl-10 h-10 sm:h-9 text-sm"
           />
         </div>
         <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-          <SelectTrigger className="w-full sm:w-48 text-sm">
+          <SelectTrigger className="w-full sm:w-48 h-10 sm:h-9 text-sm">
             <SelectValue placeholder="Category" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="w-[var(--radix-select-trigger-width)]">
             {categories.map(category => (
               <SelectItem key={category.value} value={category.value}>
                 {category.label}
@@ -213,11 +213,11 @@ function TabletMarketplaceView() {
       </div>
       {/* Products Grid */}
       <div className={viewMode === 'grid'
-        ? 'grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4'
-        : 'space-y-3 sm:space-y-4'}>
+        ? 'grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 md:gap-6'
+        : 'space-y-3 sm:space-y-4 md:space-y-6'}>
         {isLoading ? (
-          <div className="text-center py-8">
-            <div className="text-muted-foreground text-base">Loading products...</div>
+          <div className="text-center py-6 sm:py-8 md:py-10">
+            <div className="text-muted-foreground text-sm sm:text-base md:text-lg">Loading products...</div>
           </div>
         ) : filteredProducts.length > 0 ? (
           filteredProducts.map(product => (
@@ -241,13 +241,13 @@ function TabletMarketplaceView() {
                   )}
                 </div>
               </div>
-              <CardContent className={`p-3 ${viewMode === 'list' ? 'flex-1' : ''}`}>
-                <div className="space-y-2">
+              <CardContent className={`p-3 sm:p-4 ${viewMode === 'list' ? 'flex-1' : ''}`}>
+                <div className="space-y-2 sm:space-y-3">
                   <div>
                     <div className="flex items-start justify-between gap-2">
-                      <h3 className="font-semibold text-foreground leading-tight text-sm sm:text-base">{product.name}</h3>
+                      <h3 className="font-semibold text-sm sm:text-base text-foreground leading-tight">{product.name}</h3>
                       <div className="text-right shrink-0">
-                        <div className="font-bold text-foreground text-sm sm:text-base">₹{product.price}</div>
+                        <div className="font-bold text-sm sm:text-base text-foreground">₹{product.price}</div>
                       </div>
                     </div>
                     <p className="text-xs sm:text-sm text-muted-foreground mt-1">{product.description}</p>
@@ -264,20 +264,20 @@ function TabletMarketplaceView() {
                   </div>
                   <div className="flex flex-wrap gap-1">
                     {product.tags.slice(0, 2).map(tag => (
-                      <Badge key={tag} variant="secondary" className="text-[10px] sm:text-xs">
+                      <Badge key={tag} variant="secondary" className="text-xs">
                         {tag}
                       </Badge>
                     ))}
                     {product.tags.length > 2 && (
-                      <Badge variant="secondary" className="text-[10px] sm:text-xs">
+                      <Badge variant="secondary" className="text-xs">
                         +{product.tags.length - 2}
                       </Badge>
                     )}
                   </div>
                   <div className="flex items-center justify-between gap-2 mt-2">
                     <div className="flex items-center gap-1 text-success">
-                      <Leaf className="h-4 w-4" />
-                      <span className="text-sm font-medium">-{product.co2Saved}kg CO₂</span>
+                      <Leaf className="h-3 w-3 sm:h-4 sm:w-4" />
+                      <span className="text-xs sm:text-sm font-medium">-{product.co2Saved}kg CO₂</span>
                     </div>
                   </div>
                 </div>
@@ -285,9 +285,9 @@ function TabletMarketplaceView() {
             </Card>
           ))
         ) : (
-          <div className="text-center py-8">
-            <div className="text-muted-foreground text-base">No products found</div>
-            <p className="text-muted-foreground text-xs">Try adjusting your search or filters</p>
+          <div className="text-center py-6 sm:py-8 md:py-10">
+            <div className="text-muted-foreground text-sm sm:text-base md:text-lg">No products found</div>
+            <p className="text-muted-foreground text-xs sm:text-sm">Try adjusting your search or filters</p>
           </div>
         )}
       </div>
@@ -333,30 +333,30 @@ function DesktopMarketplaceView() {
   };
 
   return (
-    <div className="p-6 space-y-6 bg-gradient-to-b from-background to-accent/5 min-h-screen">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6 lg:space-y-8 bg-gradient-to-b from-background to-accent/5 min-h-screen">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gradient">{t('marketplace:eco_marketplace')}</h1>
-          <p className="text-muted-foreground">{t('marketplace:discover_sustainable_products')}</p>
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gradient">{t('marketplace:eco_marketplace')}</h1>
+          <p className="text-sm sm:text-base lg:text-lg text-muted-foreground">{t('marketplace:discover_sustainable_products')}</p>
         </div>
       </div>
       {/* Search and Filters */}
-      <div className="flex flex-col md:flex-row gap-4">
+      <div className="flex flex-col md:flex-row gap-3 sm:gap-4">
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search eco-friendly products..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
+            className="pl-10 h-10 sm:h-9"
           />
         </div>
         <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-          <SelectTrigger className="w-full md:w-48">
+          <SelectTrigger className="w-full md:w-48 h-10 sm:h-9">
             <SelectValue placeholder="Category" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="w-[var(--radix-select-trigger-width)]">
             {categories.map(category => (
               <SelectItem key={category.value} value={category.value}>
                 {category.label}
@@ -367,11 +367,11 @@ function DesktopMarketplaceView() {
       </div>
       {/* Products Grid */}
       <div className={viewMode === 'grid'
-        ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6'
-        : 'space-y-4'}>
+        ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 lg:gap-8'
+        : 'space-y-4 sm:space-y-6'}>
         {isLoading ? (
-          <div className="text-center py-12">
-            <div className="text-muted-foreground text-lg">Loading products...</div>
+          <div className="text-center py-8 sm:py-10 lg:py-12">
+            <div className="text-muted-foreground text-base sm:text-lg lg:text-xl">Loading products...</div>
           </div>
         ) : filteredProducts.length > 0 ? (
           filteredProducts.map(product => (
@@ -397,24 +397,24 @@ function DesktopMarketplaceView() {
                   )}
                 </div>
               </div>
-              <CardContent className={`p-4 ${viewMode === 'list' ? 'flex-1' : ''}`}>
-                <div className="space-y-3">
+              <CardContent className={`p-3 sm:p-4 ${viewMode === 'list' ? 'flex-1' : ''}`}>
+                <div className="space-y-2 sm:space-y-3">
                   <div>
                     <div className="flex items-start justify-between gap-2">
-                      <h3 className="font-semibold text-foreground leading-tight">{product.name}</h3>
+                      <h3 className="font-semibold text-sm sm:text-base text-foreground leading-tight">{product.name}</h3>
                       <div className="text-right shrink-0">
-                        <div className="font-bold text-foreground">₹{product.price}</div>
+                        <div className="font-bold text-sm sm:text-base text-foreground">₹{product.price}</div>
                       </div>
                     </div>
-                    <p className="text-sm text-muted-foreground mt-1">{product.description}</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground mt-1">{product.description}</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="flex items-center gap-1">
-                      <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                      <span className="text-sm font-medium">{product.rating}</span>
+                      <Star className="h-3 w-3 sm:h-4 sm:w-4 fill-yellow-400 text-yellow-400" />
+                      <span className="text-xs sm:text-sm font-medium">{product.rating}</span>
                     </div>
-                    <span className="text-sm text-muted-foreground">({product.reviews})</span>
-                    <Badge variant="outline" className="ml-auto">
+                    <span className="text-xs sm:text-sm text-muted-foreground">({product.reviews})</span>
+                    <Badge variant="outline" className="ml-auto text-xs">
                       {product.vendorType}
                     </Badge>
                   </div>
@@ -432,8 +432,8 @@ function DesktopMarketplaceView() {
                   </div>
                   <div className="flex items-center justify-between gap-2 mt-2">
                     <div className="flex items-center gap-1 text-success">
-                      <Leaf className="h-4 w-4" />
-                      <span className="text-sm font-medium">-{product.co2Saved}kg CO₂</span>
+                      <Leaf className="h-3 w-3 sm:h-4 sm:w-4" />
+                      <span className="text-xs sm:text-sm font-medium">-{product.co2Saved}kg CO₂</span>
                     </div>
                   </div>
                 </div>
@@ -441,9 +441,9 @@ function DesktopMarketplaceView() {
             </Card>
           ))
         ) : (
-          <div className="text-center py-12">
-            <div className="text-muted-foreground text-lg">No products found</div>
-            <p className="text-muted-foreground">Try adjusting your search or filters</p>
+          <div className="text-center py-8 sm:py-10 lg:py-12">
+            <div className="text-muted-foreground text-base sm:text-lg lg:text-xl">No products found</div>
+            <p className="text-muted-foreground text-sm sm:text-base">Try adjusting your search or filters</p>
           </div>
         )}
       </div>
