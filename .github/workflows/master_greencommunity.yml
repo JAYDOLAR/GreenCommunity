@@ -18,7 +18,7 @@ jobs:
   build-and-deploy:
     name: Build and Deploy Application
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
 
     permissions:
       id-token: write
@@ -161,8 +161,21 @@ jobs:
           # Remove source maps (optional - comment out if you need them for debugging)
           find . -name "*.map" -type f -delete 2>/dev/null || true
           
+          # Remove unnecessary node_modules subdirectories
+          find . -type d -name ".bin" -path "*/node_modules/*" -exec rm -rf {} + 2>/dev/null || true
+          find . -type d -name "test" -path "*/node_modules/*" -exec rm -rf {} + 2>/dev/null || true
+          find . -type d -name "tests" -path "*/node_modules/*" -exec rm -rf {} + 2>/dev/null || true
+          
           echo "Final package size:"
           du -sh .
+
+      - name: Create ZIP deployment package
+        run: |
+          echo "Creating ZIP archive for faster upload..."
+          cd deployment-package
+          zip -r -q ../deployment.zip . -x "*.git*"
+          cd ..
+          echo "ZIP size: $(du -h deployment.zip | cut -f1)"
 
       - name: Verify deployment structure
         working-directory: deployment-package
@@ -198,57 +211,68 @@ jobs:
             SCM_DO_BUILD_DURING_DEPLOYMENT=false \
             WEBSITE_NODE_DEFAULT_VERSION=22.x \
             NODE_ENV=production \
-            WEBSITE_RUN_FROM_PACKAGE=0 \
-            WEBSITE_ENABLE_SYNC_UPDATE_SITE=true
+            WEBSITE_RUN_FROM_PACKAGE=1 \
+            WEBSITE_ENABLE_SYNC_UPDATE_SITE=true \
+            --output none
 
-      - name: Stop Azure Web App
+      - name: Deploy using Azure CLI (ZIP Deploy)
         run: |
-          echo "Stopping app service for deployment..."
-          az webapp stop --name Green-community --resource-group Green_Community
+          echo "Starting ZIP deployment to Azure..."
+          echo "⏱️  This may take several minutes for large packages..."
+          
+          # Deploy using az webapp deployment
+          az webapp deploy \
+            --resource-group Green_Community \
+            --name Green-community \
+            --src-path deployment.zip \
+            --type zip \
+            --async false \
+            --timeout 600
+          
+          echo "✅ Deployment command completed"
 
-      - name: Deploy to Azure Web App
-        id: deploy-to-webapp
-        uses: azure/webapps-deploy@v3
-        timeout-minutes: 15
-        with:
-          app-name: Green-community
-          package: ./deployment-package
-          clean: true
-
-      - name: Start Azure Web App
+      - name: Restart Azure Web App
         run: |
-          echo "Starting app service..."
-          az webapp start --name Green-community --resource-group Green_Community
+          echo "Restarting app service..."
+          az webapp restart --name Green-community --resource-group Green_Community
           echo "Waiting for app to start..."
-          sleep 30
+          sleep 45
 
       - name: Warm up application
         run: |
           echo "Warming up application..."
-          for i in {1..5}; do
-            echo "Attempt $i/5:"
-            if curl -f -s -m 30 "https://green-community.azurewebsites.net" > /dev/null; then
+          max_attempts=8
+          for i in $(seq 1 $max_attempts); do
+            echo "Attempt $i/$max_attempts:"
+            if curl -f -s -m 30 "https://green-community.azurewebsites.net" > /dev/null 2>&1; then
               echo "✅ Application is responding"
-              break
+              exit 0
             else
               echo "⏳ Application not ready yet, waiting..."
-              sleep 15
+              if [ $i -lt $max_attempts ]; then
+                sleep 20
+              fi
             fi
           done
+          echo "⚠️ Application may still be starting up"
 
       - name: Health check
         run: |
           echo "Performing final health check..."
-          if curl -f -s -m 30 "https://green-community.azurewebsites.net" > /dev/null; then
+          if curl -f -s -m 30 "https://green-community.azurewebsites.net" > /dev/null 2>&1; then
             echo "✅ Deployment successful - Application is healthy"
+            echo "🌐 App URL: https://green-community.azurewebsites.net"
           else
             echo "⚠️ Application may still be starting up"
-            echo "Check logs at: https://green-community.scm.azurewebsites.net/api/logs/docker"
+            echo "📋 Check logs at: https://green-community.scm.azurewebsites.net/api/logs/docker"
+            echo "💡 You can also check: az webapp log tail --name Green-community --resource-group Green_Community"
+            exit 1
           fi
 
       - name: Cleanup workspace
         if: always()
         run: |
-          echo "Cleaning up deployment package from workspace..."
+          echo "Cleaning up..."
           rm -rf deployment-package
+          rm -f deployment.zip
           echo "✅ Cleanup complete"
