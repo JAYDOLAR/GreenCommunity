@@ -38,7 +38,7 @@ export const MARKETPLACE_CATEGORIES = [
 export const USD_TO_INR = 83;
 
 // Default product image
-export const DEFAULT_PRODUCT_IMAGE = '/marketplace/default.jpeg';
+export const DEFAULT_PRODUCT_IMAGE = '/tree1.jpg';
 
 // Vendor types
 export const VENDOR_TYPES = {

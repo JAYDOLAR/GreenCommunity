@@ -372,11 +372,11 @@ const Settings = () => {
         <p className="text-muted-foreground">{t('preferences:preferences')}</p>
       </div>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="profile">Profile</TabsTrigger>
-          <TabsTrigger value="notifications">Notifications</TabsTrigger>
-          <TabsTrigger value="preferences">{t('preferences:preferences')}</TabsTrigger>
-          <TabsTrigger value="data">Data & Privacy</TabsTrigger>
+        <TabsList className="w-full flex gap-0.1 overflow-x-auto hide-scrollbar p-1 bg-accent/20 rounded-xl sm:grid sm:grid-cols-4 sm:gap-0">
+          <TabsTrigger value="profile" className="shrink-0 rounded-full px-3 py-2 text-xs sm:text-sm whitespace-nowrap data-[state=active]:bg-white data-[state=active]:shadow-sm">Profile</TabsTrigger>
+          <TabsTrigger value="notifications" className="shrink-0 rounded-full px-3 py-2 text-xs sm:text-sm whitespace-nowrap data-[state=active]:bg-white data-[state=active]:shadow-sm">Notifications</TabsTrigger>
+          <TabsTrigger value="preferences" className="shrink-0 rounded-full px-3 py-2 text-xs sm:text-sm whitespace-nowrap data-[state=active]:bg-white data-[state=active]:shadow-sm">{t('preferences:preferences')}</TabsTrigger>
+          <TabsTrigger value="data" className="shrink-0 rounded-full px-3 py-2 text-xs sm:text-sm whitespace-nowrap data-[state=active]:bg-white data-[state=active]:shadow-sm">Data & Privacy</TabsTrigger>
         </TabsList>
         <TabsContent value="profile" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

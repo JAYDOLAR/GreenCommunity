@@ -1,4 +1,4 @@
-import { apiRequest } from './api';
+import { apiRequest, API_BASE_URL } from './api';
 import {
   CATEGORY_MAPPING,
   CLIENT_TO_BACKEND_CATEGORIES,
@@ -17,6 +17,15 @@ const transformProduct = (backendProduct) => {
   // Determine vendor type based on certifications
   const vendorType = getVendorType(backendProduct.sustainability?.certifications);
 
+  // Resolve image url (supports absolute and relative paths, and object forms)
+  const firstImage = backendProduct.images?.[0];
+  const rawImage = typeof firstImage === 'string' ? firstImage : (firstImage?.url || firstImage?.path || '');
+  const resolvedImage = rawImage
+    ? (rawImage.startsWith('http')
+        ? rawImage
+        : `${API_BASE_URL}${rawImage.startsWith('/') ? '' : '/'}${rawImage}`)
+    : DEFAULT_PRODUCT_IMAGE;
+
   return {
     id: backendProduct._id,
     name: backendProduct.name,
@@ -24,7 +33,7 @@ const transformProduct = (backendProduct) => {
     originalPrice: backendProduct.pricing.discount_price ? backendProduct.pricing.base_price : null,
     rating: backendProduct.reviews?.average_rating || 4.5,
     reviews: backendProduct.reviews?.total_reviews || Math.floor(Math.random() * 300) + 50,
-    image: backendProduct.images?.[0] || DEFAULT_PRODUCT_IMAGE,
+    image: resolvedImage,
     category: CATEGORY_MAPPING[backendProduct.category] || 'tech',
     vendor: seller?.name || 'EcoStore',
     vendorType,

@@ -8,7 +8,7 @@ const sidebarItems = SIMPLE_SIDEBAR_ITEMS;
 const Sidebar = () => {
   const pathname = usePathname();
   return (
-    <aside className="w-72 bg-card/95 border-r border-border/30">
+    <aside className="w-72 bg-card border-r border-border/30">
       <div className="h-full px-6 py-8 space-y-3">
         {sidebarItems.map((item) => (
           <Link

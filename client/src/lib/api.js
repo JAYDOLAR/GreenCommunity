@@ -1,5 +1,5 @@
 // API Configuration - Handle both development and production environments
-const API_BASE_URL = (() => {
+export const API_BASE_URL = (() => {
   // In browser, use the current host's API or fallback
   if (typeof window !== 'undefined') {
     // Client-side: Use same origin for API calls in production, localhost in development

@@ -39,7 +39,7 @@ export default function Layout({ children }) {
   const isTablet = useMediaQuery({ minWidth: 768, maxWidth: 1024 });
 
   // Sample notification data
-  const notifications = [
+  const [notifications, setNotifications] = useState([
     {
       id: 1,
       title: "New Challenge Available",
@@ -61,9 +61,17 @@ export default function Layout({ children }) {
       time: "3 hours ago",
       unread: false
     }
-  ];
+  ]);
 
   const unreadCount = notifications.filter(n => n.unread).length;
+
+  const markAsRead = (id) => {
+    setNotifications((prev) => prev.map(n => n.id === id ? { ...n, unread: false } : n));
+  };
+
+  const markAllAsRead = () => {
+    setNotifications((prev) => prev.map(n => ({ ...n, unread: false })));
+  };
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -78,6 +86,17 @@ export default function Layout({ children }) {
       }
     } catch { }
   }, []);
+
+  // Lock body scroll when sidebar is open (mobile/tablet)
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    if (sidebarOpen) {
+      document.body.classList.add('overflow-hidden');
+    } else {
+      document.body.classList.remove('overflow-hidden');
+    }
+    return () => document.body.classList.remove('overflow-hidden');
+  }, [sidebarOpen]);
 
   // Don't render the layout if logging out to prevent flash
   if (isLoggingOut) {
@@ -139,13 +158,11 @@ export default function Layout({ children }) {
     // Don't reset isLoggingOut here to prevent flash
   };
 
-  const displayLocation = hasLocation ? locationText : (fallbackLocation || 'Unknown');
-
   return (
     <div className="min-h-screen bg-background relative">
       <FloatingParticles />
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border/30 shadow-sm supports-[backdrop-filter]:bg-background/80">
+      <header className={`fixed top-0 left-0 right-0 z-50 border-b border-border/30 shadow-sm ${sidebarOpen ? 'bg-background isolate' : 'bg-background/95 backdrop-blur-sm supports-[backdrop-filter]:bg-background/80'}`}>
         <div className="flex items-center justify-between px-4 sm:px-6 md:px-8 h-16 md:h-20 relative">
           {/* Logo and Navigation */}
           {isMobile || isTablet ? (
@@ -177,13 +194,13 @@ export default function Layout({ children }) {
                       )}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-80 p-0" align="end">
+                  <PopoverContent className="w-80 p-0" align="end" side="bottom" sideOffset={8}>
                     <div className="p-4 border-b">
                       <h3 className="font-semibold text-sm">Notifications</h3>
                     </div>
                     <div className="max-h-80 overflow-y-auto">
                       {notifications.map((notification) => (
-                        <div key={notification.id} className={`p-3 border-b last:border-b-0 hover:bg-muted/50 cursor-pointer ${notification.unread ? 'bg-blue-50/50' : ''}`}>
+                        <div key={notification.id} onClick={() => markAsRead(notification.id)} className={`p-3 border-b last:border-b-0 hover:bg-muted/50 cursor-pointer ${notification.unread ? 'bg-blue-50/50' : ''}`}>
                           <div className="flex items-start gap-3">
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-medium text-foreground">{notification.title}</p>
@@ -198,7 +215,7 @@ export default function Layout({ children }) {
                       ))}
                     </div>
                     <div className="p-3 border-t">
-                      <Button variant="ghost" className="w-full text-xs">Mark all as read</Button>
+                      <Button variant="ghost" className="w-full text-xs" onClick={markAllAsRead}>Mark all as read</Button>
                     </div>
                   </PopoverContent>
                 </Popover>
@@ -296,13 +313,13 @@ export default function Layout({ children }) {
                     )}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-80 p-0" align="end">
+                <PopoverContent className="w-80 p-0" align="end" side="bottom" sideOffset={8}>
                   <div className="p-4 border-b">
                     <h3 className="font-semibold text-sm">Notifications</h3>
                   </div>
                   <div className="max-h-80 overflow-y-auto">
                     {notifications.map((notification) => (
-                      <div key={notification.id} className={`p-3 border-b last:border-b-0 hover:bg-muted/50 cursor-pointer ${notification.unread ? 'bg-blue-50/50' : ''}`}>
+                      <div key={notification.id} onClick={() => markAsRead(notification.id)} className={`p-3 border-b last:border-b-0 hover:bg-muted/50 cursor-pointer ${notification.unread ? 'bg-blue-50/50' : ''}`}>
                         <div className="flex items-start gap-3">
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-foreground">{notification.title}</p>
@@ -317,7 +334,7 @@ export default function Layout({ children }) {
                     ))}
                   </div>
                   <div className="p-3 border-t">
-                    <Button variant="ghost" className="w-full text-xs">Mark all as read</Button>
+                    <Button variant="ghost" className="w-full text-xs" onClick={markAllAsRead}>Mark all as read</Button>
                   </div>
                 </PopoverContent>
               </Popover>
@@ -375,9 +392,9 @@ export default function Layout({ children }) {
               {/* Sidebar Drawer */}
               <div>
                 {sidebarOpen && (
-                  <div className="fixed inset-0 z-50 bg-black/40" onClick={() => setSidebarOpen(false)}></div>
+                  <div className="fixed inset-0 z-[9998] bg-black/40" onClick={() => setSidebarOpen(false)}></div>
                 )}
-                <div className={`fixed top-0 left-0 z-50 h-full w-64 md:w-80 bg-background border-r border-border shadow-lg transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 flex flex-col`}>
+                <div className={`fixed top-0 left-0 z-[9999] h-full w-64 md:w-80 bg-[#ffffff] opacity-100 bg-opacity-100 backdrop-blur-0 mix-blend-normal border-r border-border shadow-2xl transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 flex flex-col isolate`}>
                   <div className="flex items-center justify-between p-4 md:p-6 border-b border-border">
                     <img
                       src="/logo.png"
@@ -392,7 +409,7 @@ export default function Layout({ children }) {
                       <X className="h-5 w-5 sm:h-6 sm:w-6" />
                     </Button>
                   </div>
-                  <nav className="flex-1 flex flex-col gap-2 md:gap-3 p-4 md:p-6">
+                  <nav className="flex-1 flex flex-col gap-2 md:gap-3 p-4 md:p-6 bg-white">
                     {sidebarItems.map((item) => {
                       const Icon = item.icon;
                       return (

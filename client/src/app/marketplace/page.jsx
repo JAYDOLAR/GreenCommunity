@@ -108,7 +108,7 @@ function MobileMarketplaceView() {
               {product.featured && (
                 <Badge className="absolute top-2 left-2 z-10 bg-success text-white text-xs pointer-events-none">Featured</Badge>
               )}
-              <img src={product.image || '/Marketplace/1.jpeg'} alt={product.name} className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded" onError={(e) => { e.target.src = '/Marketplace/1.jpeg'; }} />
+              <img src={product.image || '/tree1.jpg'} alt={product.name} className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded" onError={(e) => { e.currentTarget.src = '/tree1.jpg'; }} />
               <div className="flex-1 space-y-2">
                 <div className="flex items-center justify-between">
                   <h3 className="font-semibold text-sm text-foreground leading-tight">{product.name}</h3>
@@ -230,9 +230,10 @@ function TabletMarketplaceView() {
               <div className={viewMode === 'list' ? 'w-32 shrink-0' : ''}>
                 <div className="relative aspect-square overflow-hidden rounded-t-lg">
                   <img
-                    src={product.image}
+                    src={product.image || '/tree1.jpg'}
                     alt={product.name}
                     className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                    onError={(e) => { e.currentTarget.src = '/tree1.jpg'; }}
                   />
                   {!product.inStock && (
                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
