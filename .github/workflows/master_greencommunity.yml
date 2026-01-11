@@ -1,155 +1,108 @@
-name: Build and deploy Node.js app to Azure Web App - greencommunity
+name: Build & Deploy Fullstack App to Azure Web App
 
 on:
   push:
-    branches:
-      - master
+    branches: [ master ]
   workflow_dispatch:
 
 env:
   AZURE_WEBAPP_NAME: Green-community
   NODE_VERSION: '22.x'
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
-permissions:
-  # id-token is needed for OIDC login; contents read for checkout
-  id-token: write
-  contents: read
-
 jobs:
   build:
-    name: Build (client + server) & Run Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    name: Build App & Prepare Deployment Package
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Use Node.js ${{ env.NODE_VERSION }}
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: |
-            client/package-lock.json
-            Server/package-lock.json
 
-      - name: Cache Next.js build + server node_modules
-        uses: actions/cache@v4
-        with:
-          path: |
-            client/.next/cache
-            client/node_modules
-            Server/node_modules
-          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('client/src/**/*', 'Server/**/*') }}
-          restore-keys: |
-            ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-
-            ${{ runner.os }}-nextjs-
-
-      - name: Install client dependencies
-        working-directory: ./client
-        run: npm ci --prefer-offline --no-audit --silent
-
-      - name: Install server dependencies
+      # ---- Install dependencies ----
+      - name: Install Server deps
         working-directory: ./Server
-        run: npm ci --legacy-peer-deps --prefer-offline --no-audit --silent
+        run: npm ci --legacy-peer-deps
 
-      - name: Build Next.js client
+      - name: Install Client deps
+        working-directory: ./client
+        run: npm ci
+
+      # ---- Build NextJS ----
+      - name: Build Next.js Client
         working-directory: ./client
         run: npm run build
 
-      - name: Run tests (client + server) with safe OAuth env (avoids OAuth clientID error)
+      # ---- Tests ----
+      - name: Run Backend & Client Tests
         env:
-          # Provide safe test values to avoid passport OAuth initialization errors.
-          GOOGLE_CLIENT_ID: "test-ci-client-id"
-          GOOGLE_CLIENT_SECRET: "test-ci-secret"
+          GOOGLE_CLIENT_ID: "test"
+          GOOGLE_CLIENT_SECRET: "test"
           GOOGLE_CALLBACK: "http://localhost"
           NODE_ENV: test
         run: |
-          set -e
-          if [ -f "client/package.json" ]; then
-            (cd client && npm run test --if-present --silent) || echo "Client tests exited non-zero (see output above)"
-          else
-            echo "No client package.json, skipping client tests"
-          fi
+          cd client && npm test --if-present || true
+          cd ../Server && npm test --if-present
 
-          if [ -f "Server/package.json" ]; then
-            (cd Server && npm run test --if-present --silent) || { echo "Server tests failed — ensure tests are adjusted for CI"; exit 1; }
-          else
-            echo "No Server package.json, skipping server tests"
-          fi
-
-      - name: Prepare deployment files (source deploy)
+      # ---- Create Combined Deploy Folder ----
+      - name: Create Deployment Bundle
         run: |
-          # We will deploy source and let Azure build (SCM_DO_BUILD_DURING_DEPLOYMENT=true)
-          echo "Preparing source for Azure deployment (no heavy artifact upload)..."
-          # (Optionally strip local caches that are unnecessary for source deploy)
-          rm -rf client/.next/cache || true
-          echo "Ready."
+          mkdir deploy
+          
+          # Copy server
+          cp -R Server/* deploy/
+
+          # Copy client next output
+          mkdir -p deploy/client/.next
+          cp -R client/.next deploy/client/
+          cp -R client/public deploy/client/
+          cp client/package.json deploy/client/
+
+          # Root package.json must exist for Azure
+          cp Server/package.json deploy/
+
+          # Cleanup
+          rm -rf deploy/**/*.test.* || true
+
+      - name: Zip deployment folder
+        run: |
+          cd deploy
+          zip -r ../deploy.zip .
+          cd ..
+
+      - name: Upload deployment artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: fullstack-app
+          path: deploy.zip
+          retention-days: 3
 
   deploy:
-    name: Deploy to Azure Web App (source deploy, Azure will build)
     runs-on: ubuntu-latest
     needs: build
-    timeout-minutes: 25
-
-    permissions:
-      id-token: write
-      contents: read
+    name: Deploy to Azure
 
     steps:
-      - name: Checkout repository (shallow)
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
+      - uses: actions/checkout@v4
 
-      - name: Login to Azure (OIDC / Service Principal fallback)
+      - name: Download bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: fullstack-app
+          path: .
+
+      - name: Login to Azure
         uses: azure/login@v2
         with:
-          # Preferred: OIDC (no secrets), but you can also keep service principal secrets if you use them.
-          # If you have set up OIDC federated credentials you can omit client-id/tenant/subscription here.
           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_590830FF75664EA1BF5D7DF0E9C1963D }}
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_99406FEA6DE74B5EB356BA1CAD7B1C2D }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_CBE9DEB1A36B4792AE601A767B1BD1C2 }}
 
-      - name: Configure Azure App Settings for build-on-deploy
-        run: |
-          az webapp config appsettings set \
-            --resource-group Green_Community \
-            --name ${{ env.AZURE_WEBAPP_NAME }} \
-            --settings SCM_DO_BUILD_DURING_DEPLOYMENT=true \
-                       WEBSITE_NODE_DEFAULT_VERSION=22.x \
-                       NODE_ENV=production \
-                       WEBSITE_ENABLE_SYNC_UPDATE_SITE=true \
-                       WEBSITE_RUN_FROM_PACKAGE=0
-
-      - name: Deploy to Azure Web App (deploy source, Oryx will build)
+      - name: Deploy zipped package
         uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
-          # deploy root (repository) — azure action will zip and push
-          package: .
-          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          clean: true
-          restart: true
-
-      - name: Warm up and Health check
-        run: |
-          URL="https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net"
-          echo "Warming up $URL ..."
-          for i in 1 2 3 4 5; do
-            if curl -fsS --max-time 10 "$URL" >/dev/null 2>&1; then
-              echo "Application responded on attempt $i"
-              break
-            else
-              echo "Attempt $i: not ready yet - sleeping 10s"
-              sleep 10
-            fi
-          done
-          if ! curl -fsS --max-time 10 "$URL" >/dev/null 2>&1; then
-            echo "::warning::Application may not be ready — check Azure logs."
-          fi
+          package: deploy.zip
