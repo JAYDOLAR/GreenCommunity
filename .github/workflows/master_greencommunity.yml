@@ -15,12 +15,13 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
-    name: Build Application
+  build-and-deploy:
+    name: Build and Deploy Application
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
 
     permissions:
+      id-token: write
       contents: read
 
     steps:
@@ -64,6 +65,11 @@ jobs:
           npm run build
 
       - name: Run tests (if available)
+        env:
+          GOOGLE_CLIENT_ID: "test-client-id"
+          GOOGLE_CLIENT_SECRET: "test-secret"
+          GOOGLE_CALLBACK: "http://localhost/callback"
+          NODE_ENV: test
         run: |
           if [ -f "client/package.json" ] && npm --prefix client run test --if-present --passWithNoTests; then
             echo "Client tests completed"
@@ -142,53 +148,31 @@ jobs:
           find . -name ".git*" -delete 2>/dev/null || true
           find . -name "*.log" -delete 2>/dev/null || true
 
-      - name: Create deployment archive
+      - name: Optimize deployment package
+        working-directory: deployment-package
         run: |
-          cd deployment-package
-          echo "Creating compressed deployment archive..."
-          tar -czf ../deployment.tar.gz .
-          cd ..
-          echo "Archive size: $(du -h deployment.tar.gz | cut -f1)"
-
-      - name: Upload deployment artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: node-app
-          path: deployment.tar.gz
-          retention-days: 7
-          compression-level: 1  # Already compressed
-
-  deploy:
-    name: Deploy to Azure Web App
-    runs-on: ubuntu-latest
-    needs: build
-    timeout-minutes: 25
-
-    permissions:
-      id-token: write
-      contents: read
-
-    steps:
-      - name: Download deployment artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: node-app
-          path: .
-
-      - name: Extract deployment package
-        run: |
-          echo "Extracting deployment package..."
-          tar -xzf deployment.tar.gz
-          rm deployment.tar.gz
-          echo "Extraction complete"
+          echo "Optimizing package size..."
+          
+          # Remove caches
+          rm -rf client/node_modules/.cache 2>/dev/null || true
+          rm -rf node_modules/.cache 2>/dev/null || true
+          rm -rf client/.next/cache 2>/dev/null || true
+          
+          # Remove source maps (optional - comment out if you need them for debugging)
+          find . -name "*.map" -type f -delete 2>/dev/null || true
+          
+          echo "Final package size:"
+          du -sh .
 
       - name: Verify deployment structure
+        working-directory: deployment-package
         run: |
           echo "📦 Deployment package contents:"
           ls -la
+          echo ""
           echo "📄 Package.json files found:"
           find . -name "package.json" -type f -exec echo "  - {}" \;
-          
+          echo ""
           if [ -d "client" ]; then
             echo "✅ Client directory exists"
             echo "📁 Client contents:"
@@ -206,15 +190,15 @@ jobs:
 
       - name: Configure Azure App Service settings
         run: |
-          echo "Configuring app settings for better deployment..."
+          echo "Configuring app settings..."
           az webapp config appsettings set \
             --resource-group Green_Community \
             --name Green-community \
             --settings \
-            SCM_DO_BUILD_DURING_DEPLOYMENT=true \
+            SCM_DO_BUILD_DURING_DEPLOYMENT=false \
             WEBSITE_NODE_DEFAULT_VERSION=22.x \
             NODE_ENV=production \
-            WEBSITE_RUN_FROM_PACKAGE=1 \
+            WEBSITE_RUN_FROM_PACKAGE=0 \
             WEBSITE_ENABLE_SYNC_UPDATE_SITE=true
 
       - name: Stop Azure Web App
@@ -228,9 +212,8 @@ jobs:
         timeout-minutes: 15
         with:
           app-name: Green-community
-          package: .
-          clean: true  # Clean deployment
-          restart: false  # We'll restart manually
+          package: ./deployment-package
+          clean: true
 
       - name: Start Azure Web App
         run: |
@@ -263,41 +246,9 @@ jobs:
             echo "Check logs at: https://green-community.scm.azurewebsites.net/api/logs/docker"
           fi
 
-  cleanup:
-    name: Cleanup
-    runs-on: ubuntu-latest
-    needs: [build, deploy]
-    if: always()
-
-    permissions:
-      actions: write
-      contents: read
-
-    steps:
-      - name: Cleanup old artifacts
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const { data: artifacts } = await github.rest.actions.listWorkflowRunArtifacts({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              run_id: context.runId,
-            });
-            
-            const sorted = artifacts.artifacts.sort((a, b) => 
-              new Date(b.created_at) - new Date(a.created_at)
-            );
-            
-            // Keep only the 3 most recent artifacts
-            for (let i = 3; i < sorted.length; i++) {
-              try {
-                await github.rest.actions.deleteArtifact({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  artifact_id: sorted[i].id,
-                });
-                console.log(`✅ Deleted artifact: ${sorted[i].name}`);
-              } catch (error) {
-                console.log(`❌ Failed to delete artifact: ${error.message}`);
-              }
-            }
+      - name: Cleanup workspace
+        if: always()
+        run: |
+          echo "Cleaning up deployment package from workspace..."
+          rm -rf deployment-package
+          echo "✅ Cleanup complete"
