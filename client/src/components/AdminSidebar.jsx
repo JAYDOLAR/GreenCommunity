@@ -171,9 +171,28 @@ const AdminSidebar = ({ isOpen = false, onClose = () => {} }) => {
     }
   };
 
-  const handleLogout = () => {
-    // Add logout logic here
-    router.push("/login");
+  const handleLogout = async () => {
+    try {
+      // Call server logout endpoint to clear cookies
+      await fetch('/api/admin/logout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Continue with logout even if API call fails
+    } finally {
+      // Clear all admin-related localStorage items
+      localStorage.removeItem('adminAuthenticated');
+      localStorage.removeItem('adminToken');
+      localStorage.removeItem('adminEmail');
+      localStorage.removeItem('adminUser');
+      
+      // Redirect to admin login page
+      router.push("/admin/login");
+    }
   };
 
   if (!mounted) {

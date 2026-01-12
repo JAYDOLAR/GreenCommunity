@@ -2,6 +2,7 @@ import express from 'express';
 import { 
   adminLogin, 
   adminVerify, 
+  adminLogout,
   getUsers, 
   updateUser, 
   deleteUser, 
@@ -38,6 +39,7 @@ const requireAdmin = (req, res, next) => {
 // Admin authentication routes
 router.post('/auth', adminLogin);
 router.get('/verify', authenticate, adminVerify);
+router.post('/logout', adminLogout);
 
 // Admin dashboard routes
 router.get('/dashboard/stats', authenticateAdmin, requireAdmin, getDashboardStats);

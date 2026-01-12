@@ -85,9 +85,8 @@ async function createServer() {
     origin: function (origin, callback) {
       const allowedOrigins = [
         "http://localhost:3000",
-        "http://localhost:3001",
-        "http://localhost:3002",
-        "http://127.0.0.1:3000",
+        "https://www.green-community.app",
+        "https://green-community.azurewebsites.net",
         process.env.CLIENT_URL,
       ].filter(Boolean);
 
@@ -117,7 +116,7 @@ async function createServer() {
   // Session configuration
   app.use(
     session({
-      secret: process.env.SESSION_SECRET || "your-super-secret-key-change-in-production",
+      secret: process.env.SESSION_SECRET || "e1439b2d322dd209c548e286e01c4f27d05bf43be19d9936662b75f5aac8838eee9095d1731ccde27e88524c1f0a11bcb5999f9baefc42fbb20e39e87c51a23g",
       resave: false,
       saveUninitialized: false,
       cookie: {

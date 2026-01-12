@@ -124,6 +124,24 @@ export const adminVerify = asyncHandler(async (req, res) => {
 });
 
 /**
+ * Admin logout handler
+ * This clears the admin token cookie and logs out the admin
+ */
+export const adminLogout = asyncHandler(async (req, res) => {
+  // Clear the admin token cookie
+  res.clearCookie('adminToken', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax'
+  });
+  
+  return res.status(200).json({
+    success: true,
+    message: 'Admin logged out successfully'
+  });
+});
+
+/**
  * Update user
  * This allows admins to update user details
  */
