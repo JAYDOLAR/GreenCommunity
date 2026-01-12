@@ -1,13 +1,19 @@
 "use client";
 
-import ProductView from '@/components/ProductView';
+import ProductView from "@/components/ProductView";
 
-import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
+import { useState, useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import {
   ArrowLeft,
   ShoppingCart,
@@ -22,213 +28,137 @@ import {
   Shield,
   Heart,
   Share2,
-  CheckCircle
-} from 'lucide-react';
-import AuthGuard from '@/components/AuthGuard';
-
-const USD_TO_INR = 83;
-
-// Product data (same as marketplace)
-const products = [
-  {
-    id: 1,
-    name: 'Bamboo Toothbrush Set',
-    price: 300,
-    originalPrice: 399,
-    rating: 4.8,
-    reviews: 156,
-    image: '/marketplace/1.jpeg',
-    category: 'personal-care',
-    vendor: 'EcoLife',
-    vendorType: 'Certified',
-    tags: ['Plastic-Free', 'Biodegradable', 'Organic'],
-    co2Saved: 0.5,
-    description: 'Set of 4 bamboo toothbrushes with soft bristles',
-    inStock: true,
-    featured: true,
-    detailedDescription: 'Our premium bamboo toothbrush set includes 4 eco-friendly toothbrushes made from sustainable bamboo. Each brush features soft, BPA-free bristles that are gentle on gums while effectively cleaning teeth. The bamboo handle is naturally antibacterial and biodegradable, making it the perfect sustainable alternative to plastic toothbrushes.',
-    specifications: {
-      'Material': 'Bamboo handle, BPA-free bristles',
-      'Quantity': '4 toothbrushes per set',
-      'Bristle Type': 'Soft',
-      'Handle Length': '18cm',
-      'Certification': 'FSC Certified Bamboo',
-      'Packaging': '100% Recycled Cardboard'
-    },
-    benefits: [
-      'Reduces plastic waste',
-      'Biodegradable and compostable',
-      'Naturally antibacterial',
-      'Gentle on gums',
-      'FSC certified sustainable bamboo'
-    ],
-    shipping: {
-      'Standard': '3-5 business days',
-      'Express': '1-2 business days',
-      'Free Shipping': 'Orders over ₹2000'
-    }
-  },
-  {
-    id: 2,
-    name: 'Reusable Water Bottle',
-    price: 350,
-    rating: 4.9,
-    reviews: 298,
-    image: '/marketplace/2.jpeg',
-    category: 'personal-care',
-    vendor: 'HydroGreen',
-    vendorType: 'Local',
-    tags: ['BPA-Free', 'Recycled Steel', 'Lifetime Warranty'],
-    co2Saved: 2.1,
-    description: 'Insulated stainless steel water bottle, 32oz',
-    inStock: true,
-    featured: false,
-    detailedDescription: 'Stay hydrated while saving the planet with our premium insulated stainless steel water bottle. This 32oz bottle keeps drinks cold for up to 24 hours and hot for up to 12 hours. Made from food-grade 18/8 stainless steel with a BPA-free lid, it\'s perfect for daily use, gym sessions, or outdoor adventures.',
-    specifications: {
-      'Capacity': '32oz (946ml)',
-      'Material': '18/8 Stainless Steel',
-      'Insulation': 'Double-wall vacuum insulation',
-      'Lid Type': 'BPA-free screw cap',
-      'Dimensions': '10.5" x 3.5"',
-      'Weight': '450g'
-    },
-    benefits: [
-      'Eliminates single-use plastic bottles',
-      'Keeps drinks cold for 24 hours',
-      'Keeps drinks hot for 12 hours',
-      'Lifetime warranty',
-      'Made from recycled materials'
-    ],
-    shipping: {
-      'Standard': '3-5 business days',
-      'Express': '1-2 business days',
-      'Free Shipping': 'Orders over ₹2000'
-    }
-  },
-  {
-    id: 3,
-    name: 'Organic Cotton Tote Bag',
-    price: 200,
-    rating: 4.7,
-    reviews: 87,
-    image: '/marketplace/3.jpeg',
-    category: 'clothing',
-    vendor: 'FairTrade Co',
-    vendorType: 'Nonprofit',
-    tags: ['Fair Trade', 'Organic Cotton', 'Reusable'],
-    co2Saved: 1.2,
-    description: 'Durable organic cotton shopping bag',
-    inStock: true,
-    featured: true,
-    detailedDescription: 'Make a sustainable choice with our organic cotton tote bag. Made from 100% certified organic cotton, this durable shopping bag is perfect for groceries, library books, or everyday use. The reinforced handles and spacious interior make it both practical and environmentally friendly.',
-    specifications: {
-      'Material': '100% Organic Cotton',
-      'Dimensions': '16" x 14" x 4"',
-      'Weight Capacity': 'Up to 20 lbs',
-      'Certification': 'GOTS Certified',
-      'Care': 'Machine washable',
-      'Origin': 'Fair Trade Certified'
-    },
-    benefits: [
-      'Replaces single-use plastic bags',
-      'Supports fair trade practices',
-      'Made from organic materials',
-      'Durable and long-lasting',
-      'Supports local communities'
-    ],
-    shipping: {
-      'Standard': '3-5 business days',
-      'Express': '1-2 business days',
-      'Free Shipping': 'Orders over ₹2000'
-    }
-  },
-  {
-    id: 5,
-    name: 'Beeswax Food Wraps',
-    price: 220,
-    rating: 4.5,
-    reviews: 203,
-    image: '/marketplace/5.jpeg',
-    category: 'food-drink',
-    vendor: 'BeeNatural',
-    vendorType: 'Local',
-    tags: ['Beeswax', 'Reusable', 'Plastic-Free'],
-    co2Saved: 0.8,
-    description: 'Set of 6 reusable beeswax food wraps',
-    inStock: true,
-    featured: true,
-    detailedDescription: 'Keep your food fresh while reducing plastic waste with our natural beeswax food wraps. Made from organic cotton infused with beeswax, jojoba oil, and tree resin, these wraps are a sustainable alternative to plastic cling film. They\'re reusable, washable, and biodegradable.',
-    specifications: {
-      'Material': 'Organic cotton with beeswax',
-      'Set Contents': '6 wraps (various sizes)',
-      'Sizes': 'Small, Medium, Large',
-      'Care': 'Hand wash with cold water',
-      'Lifespan': '6-12 months with proper care',
-      'Certification': 'Organic cotton certified'
-    },
-    benefits: [
-      'Replaces plastic cling film',
-      'Natural and biodegradable',
-      'Reusable and washable',
-      'Keeps food fresh longer',
-      'Supports local beekeepers'
-    ],
-    shipping: {
-      'Standard': '3-5 business days',
-      'Express': '1-2 business days',
-      'Free Shipping': 'Orders over ₹2000'
-    }
-  },
-  {
-    id: 6,
-    name: 'Bamboo Cutlery Set',
-    price: 950,
-    rating: 4.4,
-    reviews: 89,
-    image: '/marketplace/6.jpeg',
-    category: 'food-drink',
-    vendor: 'EcoUtensils',
-    vendorType: 'Certified',
-    tags: ['Bamboo', 'Travel-Friendly', 'Compostable'],
-    co2Saved: 1.0,
-    description: 'Portable bamboo cutlery set with carrying case',
-    inStock: true,
-    featured: false,
-    detailedDescription: 'Ditch disposable plastic cutlery with our portable bamboo cutlery set. This travel-friendly set includes a fork, knife, spoon, and chopsticks, all made from sustainable bamboo. The included carrying case keeps your utensils clean and organized.',
-    specifications: {
-      'Material': 'Bamboo',
-      'Set Contents': 'Fork, Knife, Spoon, Chopsticks',
-      'Case': 'Included carrying case',
-      'Length': '7.5 inches',
-      'Weight': 'Lightweight',
-      'Care': 'Hand wash with mild soap'
-    },
-    benefits: [
-      'Eliminates single-use plastic cutlery',
-      'Lightweight and portable',
-      'Durable and long-lasting',
-      'Compostable at end of life',
-      'Perfect for travel and picnics'
-    ],
-    shipping: {
-      'Standard': '3-5 business days',
-      'Express': '1-2 business days',
-      'Free Shipping': 'Orders over ₹2000'
-    }
-  }
-];
+  CheckCircle,
+} from "lucide-react";
+import AuthGuard from "@/components/AuthGuard";
+import { marketplaceApi } from "@/lib/marketplaceApi";
 
 const ProductDetail = ({ params }) => {
-  const productId = parseInt(params.id);
-  const product = products.find(p => p.id === productId);
+  const router = useRouter();
+  const urlParams = useParams();
+  const [product, setProduct] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [selectedImage, setSelectedImage] = useState(0);
+  const [quantity, setQuantity] = useState(1);
+  const [rawId, setRawId] = useState(null);
+  const [relatedProducts, setRelatedProducts] = useState([]);
 
-  if (!product) {
+  // Resolve params (handles Promise in Next.js 15)
+  useEffect(() => {
+    let cancelled = false;
+    const resolveParams = async () => {
+      try {
+        if (params && typeof params.then === "function") {
+          const resolved = await params;
+          if (!cancelled) setRawId(resolved?.id || urlParams?.id);
+        } else {
+          if (!cancelled) setRawId(params?.id || urlParams?.id);
+        }
+      } catch (e) {
+        console.error("Failed to resolve route params:", e);
+        if (!cancelled) setRawId(urlParams?.id || null);
+      }
+    };
+    resolveParams();
+    return () => {
+      cancelled = true;
+    };
+  }, [params, urlParams]);
+
+  // Fetch product from API
+  useEffect(() => {
+    if (!rawId) return;
+
+    const fetchProduct = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        // Fetch from API
+        const response = await marketplaceApi.getProductById(rawId);
+        if (response && response.data) {
+          // Transform API data to match expected format
+          const apiProduct = {
+            ...response.data,
+            detailedDescription:
+              response.data.description ||
+              response.data._original?.description ||
+              "",
+            specifications: response.data._original?.specifications || {
+              Material: "Eco-friendly materials",
+              Certification:
+                response.data.tags?.join(", ") || "Certified sustainable",
+            },
+            benefits: response.data._original?.benefits || [
+              "Reduces environmental impact",
+              "Sustainable and eco-friendly",
+              "High quality materials",
+              "Supports green initiatives",
+            ],
+            shipping: response.data._original?.shipping || {
+              Standard: "3-5 business days",
+              Express: "1-2 business days",
+              "Free Shipping": "Orders over ₹2000",
+            },
+          };
+          setProduct(apiProduct);
+
+          // Fetch related products (same category)
+          if (response.data.category) {
+            try {
+              const relatedResponse = await marketplaceApi.getProducts({
+                category: response.data.category,
+                limit: 4,
+              });
+              if (
+                relatedResponse &&
+                relatedResponse.data &&
+                relatedResponse.data.products
+              ) {
+                setRelatedProducts(
+                  relatedResponse.data.products.filter((p) => p.id !== rawId)
+                );
+              }
+            } catch (relatedError) {
+              console.error("Failed to fetch related products:", relatedError);
+            }
+          }
+        } else {
+          setError("Product not found");
+        }
+      } catch (err) {
+        console.error("Failed to fetch product:", err);
+        setError("Failed to load product. Please try again.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProduct();
+  }, [rawId]);
+
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-foreground mb-4">Product Not Found</h1>
-          <p className="text-muted-foreground mb-6">The product you're looking for doesn't exist.</p>
-          <Button onClick={() => router.push('/marketplace')}>
+          <div className="h-12 w-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading product...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !product) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-foreground mb-4">
+            {error || "Product Not Found"}
+          </h1>
+          <p className="text-muted-foreground mb-6">
+            The product you're looking for doesn't exist or has been removed.
+          </p>
+          <Button onClick={() => router.push("/marketplace")}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Marketplace
           </Button>
@@ -237,8 +167,11 @@ const ProductDetail = ({ params }) => {
     );
   }
 
-
-  const images = [product.image]; // In a real app, you'd have multiple images
+  const images = product.image ? [product.image] : ["/tree1.jpg"]; // In a real app, you'd have multiple images from API
+  
+  // Log for debugging
+  console.log('Product images:', images);
+  console.log('Selected image:', images[selectedImage]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -248,7 +181,7 @@ const ProductDetail = ({ params }) => {
           <div className="flex items-center justify-between">
             <Button
               variant="ghost"
-              onClick={() => router.push('/marketplace')}
+              onClick={() => router.push("/marketplace")}
               className="flex items-center gap-2"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -270,13 +203,17 @@ const ProductDetail = ({ params }) => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Product Images */}
           <div className="space-y-4">
-            <div className="aspect-square overflow-hidden rounded-lg border">
+            <div className="aspect-square overflow-hidden rounded-lg border bg-muted/10">
               <img
                 src={images[selectedImage]}
                 alt={product.name}
                 className="w-full h-full object-cover"
                 onError={(e) => {
-                  e.target.src = '/marketplace/1.jpeg'; // Fallback
+                  console.error('Image failed to load:', images[selectedImage]);
+                  e.target.src = "/tree1.jpg"; // Fallback
+                }}
+                onLoad={() => {
+                  console.log('Image loaded successfully:', images[selectedImage]);
                 }}
               />
             </div>
@@ -286,13 +223,19 @@ const ProductDetail = ({ params }) => {
                   <button
                     key={index}
                     onClick={() => setSelectedImage(index)}
-                    className={`aspect-square w-20 overflow-hidden rounded-lg border-2 ${selectedImage === index ? 'border-primary' : 'border-border'
-                      }`}
+                    className={`aspect-square w-20 overflow-hidden rounded-lg border-2 ${
+                      selectedImage === index
+                        ? "border-primary"
+                        : "border-border"
+                    }`}
                   >
                     <img
                       src={image}
                       alt={`${product.name} ${index + 1}`}
                       className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.target.src = "/tree1.jpg"; // Fallback
+                      }}
                     />
                   </button>
                 ))}
@@ -306,7 +249,7 @@ const ProductDetail = ({ params }) => {
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <Badge variant="outline" className="text-xs">
-                  {product.category.replace('-', ' ').toUpperCase()}
+                  {product.category.replace("-", " ").toUpperCase()}
                 </Badge>
                 {product.featured && (
                   <Badge className="bg-primary text-primary-foreground text-xs">
@@ -323,11 +266,15 @@ const ProductDetail = ({ params }) => {
                 <div className="flex items-center gap-1">
                   <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                   <span className="font-medium">{product.rating}</span>
-                  <span className="text-muted-foreground">({product.reviews} reviews)</span>
+                  <span className="text-muted-foreground">
+                    ({product.reviews} reviews)
+                  </span>
                 </div>
                 <div className="flex items-center gap-1 text-green-600">
                   <Leaf className="h-4 w-4" />
-                  <span className="text-sm">Saves {product.co2Saved}kg CO₂</span>
+                  <span className="text-sm">
+                    Saves {product.co2Saved}kg CO₂
+                  </span>
                 </div>
               </div>
 
@@ -344,7 +291,12 @@ const ProductDetail = ({ params }) => {
                 </div>
                 {product.originalPrice && (
                   <Badge className="bg-green-100 text-green-800">
-                    {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% OFF
+                    {Math.round(
+                      ((product.originalPrice - product.price) /
+                        product.originalPrice) *
+                        100
+                    )}
+                    % OFF
                   </Badge>
                 )}
               </div>
@@ -352,7 +304,9 @@ const ProductDetail = ({ params }) => {
 
             {/* Description */}
             <div>
-              <h3 className="font-semibold text-foreground mb-2">Description</h3>
+              <h3 className="font-semibold text-foreground mb-2">
+                Description
+              </h3>
               <p className="text-muted-foreground leading-relaxed">
                 {product.detailedDescription}
               </p>
@@ -372,13 +326,18 @@ const ProductDetail = ({ params }) => {
 
             {/* Stock Status */}
             <div>
-              <h3 className="font-semibold text-foreground mb-2">Availability</h3>
+              <h3 className="font-semibold text-foreground mb-2">
+                Availability
+              </h3>
               <div className="flex items-center gap-2">
-                <span className={`text-sm font-medium px-3 py-1 rounded-full ${product.inStock
-                  ? 'bg-green-100 text-green-800'
-                  : 'bg-red-100 text-red-800'
-                  }`}>
-                  {product.inStock ? 'In Stock' : 'Out of Stock'}
+                <span
+                  className={`text-sm font-medium px-3 py-1 rounded-full ${
+                    product.inStock
+                      ? "bg-green-100 text-green-800"
+                      : "bg-red-100 text-red-800"
+                  }`}
+                >
+                  {product.inStock ? "In Stock" : "Out of Stock"}
                 </span>
               </div>
             </div>
@@ -408,16 +367,25 @@ const ProductDetail = ({ params }) => {
         <div className="mt-12 space-y-8">
           {/* Specifications */}
           <div>
-            <h2 className="text-xl font-bold text-foreground mb-4">Specifications</h2>
+            <h2 className="text-xl font-bold text-foreground mb-4">
+              Specifications
+            </h2>
             <Card>
               <CardContent className="p-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {Object.entries(product.specifications).map(([key, value]) => (
-                    <div key={key} className="flex justify-between py-2 border-b border-border/30 last:border-b-0">
-                      <span className="text-sm text-muted-foreground">{key}</span>
-                      <span className="text-sm font-medium">{value}</span>
-                    </div>
-                  ))}
+                  {Object.entries(product.specifications).map(
+                    ([key, value]) => (
+                      <div
+                        key={key}
+                        className="flex justify-between py-2 border-b border-border/30 last:border-b-0"
+                      >
+                        <span className="text-sm text-muted-foreground">
+                          {key}
+                        </span>
+                        <span className="text-sm font-medium">{value}</span>
+                      </div>
+                    )
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -425,7 +393,9 @@ const ProductDetail = ({ params }) => {
 
           {/* Benefits */}
           <div>
-            <h2 className="text-xl font-bold text-foreground mb-4">Environmental Benefits</h2>
+            <h2 className="text-xl font-bold text-foreground mb-4">
+              Environmental Benefits
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {product.benefits.map((benefit, index) => (
                 <Card key={index}>
@@ -444,17 +414,24 @@ const ProductDetail = ({ params }) => {
 
           {/* Shipping */}
           <div>
-            <h2 className="text-xl font-bold text-foreground mb-4">Shipping Information</h2>
+            <h2 className="text-xl font-bold text-foreground mb-4">
+              Shipping Information
+            </h2>
             <Card>
               <CardContent className="p-6">
                 <div className="space-y-3">
                   {Object.entries(product.shipping).map(([type, info]) => (
-                    <div key={type} className="flex items-center justify-between py-2 border-b border-border/30 last:border-b-0">
+                    <div
+                      key={type}
+                      className="flex items-center justify-between py-2 border-b border-border/30 last:border-b-0"
+                    >
                       <div className="flex items-center gap-2">
                         <Truck className="h-4 w-4 text-muted-foreground" />
                         <span className="text-sm font-medium">{type}</span>
                       </div>
-                      <span className="text-sm text-muted-foreground">{info}</span>
+                      <span className="text-sm text-muted-foreground">
+                        {info}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -463,83 +440,93 @@ const ProductDetail = ({ params }) => {
           </div>
 
           {/* More Products */}
-          <div>
-            <h2 className="text-xl font-bold text-foreground mb-4">More Products You Might Like</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-              {products
-                .filter(p => p.id !== product.id) // Exclude current product
-                .slice(0, 4) // Show only 4 products
-                .map((relatedProduct) => (
-                  <Card
-                    key={relatedProduct.id}
-                    className="cursor-pointer hover:shadow-lg transition-shadow"
-                    onClick={() => router.push(`/marketplace/${relatedProduct.id}`)}
-                  >
-                    <div className="relative">
-                      <div className="aspect-square overflow-hidden rounded-t-lg">
-                        <img
-                          src={relatedProduct.image}
-                          alt={relatedProduct.name}
-                          className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                          onError={(e) => {
-                            e.target.src = '/marketplace/1.jpeg'; // Fallback
-                          }}
-                        />
-                      </div>
-                      {relatedProduct.featured && (
-                        <Badge className="absolute top-2 left-2 bg-success text-white text-xs">
-                          Featured
-                        </Badge>
-                      )}
-                      {!relatedProduct.inStock && (
-                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-t-lg">
-                          <Badge variant="secondary">Out of Stock</Badge>
+          {relatedProducts && relatedProducts.length > 0 && (
+            <div>
+              <h2 className="text-xl font-bold text-foreground mb-4">
+                More Products You Might Like
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                {relatedProducts
+                  .slice(0, 4) // Show only 4 products
+                  .map((relatedProduct) => (
+                    <Card
+                      key={relatedProduct.id}
+                      className="cursor-pointer hover:shadow-lg transition-shadow"
+                      onClick={() =>
+                        router.push(`/marketplace/${relatedProduct.id}`)
+                      }
+                    >
+                      <div className="relative">
+                        <div className="aspect-square overflow-hidden rounded-t-lg bg-muted/10">
+                          <img
+                            src={relatedProduct.image}
+                            alt={relatedProduct.name}
+                            className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                            onError={(e) => {
+                              console.error('Related product image failed:', relatedProduct.image);
+                              e.target.src = "/tree1.jpg"; // Fallback
+                            }}
+                          />
                         </div>
-                      )}
-                    </div>
-                    <CardContent className="p-3">
-                      <div className="space-y-2">
-                        <div>
-                          <h3 className="font-semibold text-foreground text-sm leading-tight line-clamp-2">
-                            {relatedProduct.name}
-                          </h3>
-                          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                            {relatedProduct.description}
-                          </p>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-1">
-                            <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                            <span className="text-xs font-medium">{relatedProduct.rating}</span>
+                        {relatedProduct.featured && (
+                          <Badge className="absolute top-2 left-2 bg-success text-white text-xs">
+                            Featured
+                          </Badge>
+                        )}
+                        {!relatedProduct.inStock && (
+                          <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-t-lg">
+                            <Badge variant="secondary">Out of Stock</Badge>
                           </div>
-                          <span className="font-bold text-foreground text-sm">
-                            ₹{relatedProduct.price}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-center">
-                          <div className="flex items-center gap-1 text-green-600">
-                            <Leaf className="h-3 w-3" />
-                            <span className="text-xs">-{relatedProduct.co2Saved}kg CO₂</span>
+                        )}
+                      </div>
+                      <CardContent className="p-3">
+                        <div className="space-y-2">
+                          <div>
+                            <h3 className="font-semibold text-foreground text-sm leading-tight line-clamp-2">
+                              {relatedProduct.name}
+                            </h3>
+                            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                              {relatedProduct.description}
+                            </p>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1">
+                              <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                              <span className="text-xs font-medium">
+                                {relatedProduct.rating}
+                              </span>
+                            </div>
+                            <span className="font-bold text-foreground text-sm">
+                              ₹{relatedProduct.price}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-center">
+                            <div className="flex items-center gap-1 text-green-600">
+                              <Leaf className="h-3 w-3" />
+                              <span className="text-xs">
+                                -{relatedProduct.co2Saved}kg CO₂
+                              </span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                      </CardContent>
+                    </Card>
+                  ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
   );
 };
 
-const ProductDetailPage = () => {
+const ProductDetailPage = ({ params }) => {
   return (
     <AuthGuard intent="marketplace-product">
-      <ProductDetail />
+      <ProductDetail params={params} />
     </AuthGuard>
   );
 };
 
-export default ProductDetailPage; 
+export default ProductDetailPage;

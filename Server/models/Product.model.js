@@ -209,13 +209,17 @@ const productSchema = new mongoose.Schema({
     maxlength: [100, 'Subcategory cannot exceed 100 characters']
   },
   images: [{
-    type: String,
-    required: true,
-    validate: {
-      validator: function(v) {
-        return /^https?:\/\/.+\.(jpg|jpeg|png|webp|gif)$/i.test(v);
-      },
-      message: 'Image must be a valid URL ending with .jpg, .jpeg, .png, .webp, or .gif'
+    url: {
+      type: String,
+      required: true
+    },
+    publicId: {
+      type: String,
+      required: true
+    },
+    uploadedAt: {
+      type: Date,
+      default: Date.now
     }
   }],
   pricing: {

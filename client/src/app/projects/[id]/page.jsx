@@ -1,15 +1,23 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import ProjectView from '@/components/ProjectView';
-import { useParams, useRouter } from 'next/navigation';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Slider } from '@/components/ui/slider';
-import { Label } from '@/components/ui/label';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import React, { useState, useEffect } from "react";
+import ProjectView from "@/components/ProjectView";
+import { useParams, useRouter } from "next/navigation";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Slider } from "@/components/ui/slider";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import {
   ArrowLeft,
   Heart,
@@ -23,106 +31,10 @@ import {
   Sun,
   Droplets,
   Award,
-  CheckCircle
-} from 'lucide-react';
-import AuthGuard from '@/components/AuthGuard';
-import Layout from '@/components/Layout';
-
-// Demo fallback data (used only if numeric id and API not available)
-const demoProjects = [
-  {
-    id: 1,
-    name: 'Sundarbans Mangrove Restoration',
-    location: 'West Bengal, India',
-    type: 'forestry',
-    image: "/tree1.jpg",
-    description: 'Large-scale mangrove restoration project in the Sundarbans, protecting vital ecosystems.',
-    co2Removed: 142000,
-    co2PerRupee: 0.0005,
-    totalFunding: 165000000,
-    currentFunding: 123750000,
-    contributors: 12500,
-    timeRemaining: '14 months',
-    verified: true,
-    certifications: ['UN Climate', 'WWF', 'Forest Stewardship Council'],
-    featured: true,
-    benefits: [
-      'Coastal protection',
-      'Biodiversity preservation',
-      'Community livelihood support',
-      'Carbon sequestration'
-    ]
-  },
-  {
-    id: 2,
-    name: 'Himachal Solar Farm Initiative',
-    location: 'Himachal Pradesh, India',
-    type: 'solar',
-    image: "/tree2.jpg",
-    description: 'Community-driven solar energy project providing clean electricity to remote mountain villages.',
-    co2Removed: 89000,
-    co2PerRupee: 0.00047,
-    totalFunding: 95000000,
-    currentFunding: 71250000,
-    contributors: 8900,
-    timeRemaining: '8 months',
-    verified: true,
-    certifications: ['IREDA', 'MNRE'],
-    featured: false,
-    benefits: [
-      'Clean energy access',
-      'Rural electrification',
-      'Reduced fossil fuel dependency',
-      'Job creation'
-    ]
-  },
-  {
-    id: 3,
-    name: 'Rajasthan Wind Energy Collective',
-    location: 'Rajasthan, India',
-    type: 'wind',
-    image: "/tree3.jpg",
-    description: 'Large-scale wind energy project harnessing desert winds to power sustainable development.',
-    co2Removed: 156000,
-    co2PerRupee: 0.00052,
-    totalFunding: 185000000,
-    currentFunding: 129500000,
-    contributors: 15600,
-    timeRemaining: '18 months',
-    verified: true,
-    certifications: ['GWEC', 'Clean Energy Council'],
-    featured: true,
-    benefits: [
-      'Renewable energy generation',
-      'Desert land utilization',
-      'Economic development',
-      'Environmental protection'
-    ]
-  },
-  {
-    id: 4,
-    name: 'Kerala Rainwater Harvesting Network',
-    location: 'Kerala, India',
-    type: 'water',
-    image: "/tree4.jpg",
-    description: 'Community-based rainwater harvesting system improving water security and conservation.',
-    co2Removed: 34000,
-    co2PerRupee: 0.00044,
-    totalFunding: 102000000,
-    currentFunding: 76500000,
-    contributors: 6890,
-    timeRemaining: '11 months',
-    verified: true,
-    certifications: ['WWF', 'Govt of India'],
-    featured: true,
-    benefits: [
-      'Biodiversity conservation',
-      'Carbon storage',
-      'Community livelihoods',
-      'Climate resilience'
-    ]
-  }
-];
+  CheckCircle,
+} from "lucide-react";
+import AuthGuard from "@/components/AuthGuard";
+import Layout from "@/components/Layout";
 
 const ProjectDetail = () => {
   const params = useParams();
@@ -147,19 +59,21 @@ const ProjectDetailContent = ({ params }) => {
     let cancelled = false;
     const resolveParams = async () => {
       try {
-        if (params && typeof params.then === 'function') {
+        if (params && typeof params.then === "function") {
           const resolved = await params; // await the promise
           if (!cancelled) setRawId(resolved?.id || urlParams?.id);
         } else {
           if (!cancelled) setRawId(params?.id || urlParams?.id);
         }
       } catch (e) {
-        console.error('Failed to resolve route params:', e);
+        console.error("Failed to resolve route params:", e);
         if (!cancelled) setRawId(urlParams?.id || null);
       }
     };
     resolveParams();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [params, urlParams]);
 
   useEffect(() => {
@@ -169,27 +83,23 @@ const ProjectDetailContent = ({ params }) => {
       setLoadingProject(true);
       setFetchError(null);
       try {
-        // numeric demo id support
-        if (/^\d+$/.test(rawId)) {
-          const demo = demoProjects.find(d => d.id === parseInt(rawId, 10));
-            if (demo) setProject(demo);
-        }
         const res = await fetch(`/api/projects/${rawId}`);
         if (res.ok) {
           const text = await res.text();
           if (text) {
             const data = JSON.parse(text);
-            const apiProject = data?.data?.name || data?.data?._id ? data.data : data;
+            const apiProject =
+              data?.data?.name || data?.data?._id ? data.data : data;
             if (apiProject && !cancelled) setProject(apiProject);
           }
         } else if (res.status === 404) {
-          if (!project) setFetchError('Project not found');
+          if (!project) setFetchError("Project not found");
         } else {
           throw new Error(`Failed to fetch project (${res.status})`);
         }
       } catch (err) {
         if (!cancelled) {
-          console.error('Project fetch error:', err);
+          console.error("Project fetch error:", err);
           setFetchError(err.message);
         }
       } finally {
@@ -197,14 +107,18 @@ const ProjectDetailContent = ({ params }) => {
       }
     };
     fetchProject();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [rawId]);
 
   if (loadingProject) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <p className="text-muted-foreground animate-pulse">Loading project details...</p>
+          <p className="text-muted-foreground animate-pulse">
+            Loading project details...
+          </p>
         </div>
       </div>
     );
@@ -214,9 +128,14 @@ const ProjectDetailContent = ({ params }) => {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center max-w-md">
-          <h1 className="text-2xl font-bold text-foreground mb-3">Project Not Found</h1>
-          <p className="text-muted-foreground mb-6 text-sm">{fetchError || 'The project you are looking for does not exist or may have been removed.'}</p>
-          <Button onClick={() => router.push('/projects')}>
+          <h1 className="text-2xl font-bold text-foreground mb-3">
+            Project Not Found
+          </h1>
+          <p className="text-muted-foreground mb-6 text-sm">
+            {fetchError ||
+              "The project you are looking for does not exist or may have been removed."}
+          </p>
+          <Button onClick={() => router.push("/projects")}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Projects
           </Button>
@@ -225,25 +144,36 @@ const ProjectDetailContent = ({ params }) => {
     );
   }
 
-  const fundingPercentage = (project.currentFunding / project.totalFunding) * 100;
+  const fundingPercentage =
+    (project.currentFunding / project.totalFunding) * 100;
 
   const getProjectIcon = (type) => {
     switch (type) {
-      case 'forestry': return Trees;
-      case 'solar': return Sun;
-      case 'wind': return Wind;
-      case 'water': return Droplets;
-      default: return Trees;
+      case "forestry":
+        return Trees;
+      case "solar":
+        return Sun;
+      case "wind":
+        return Wind;
+      case "water":
+        return Droplets;
+      default:
+        return Trees;
     }
   };
 
   const getTypeColor = (type) => {
     switch (type) {
-      case 'forestry': return 'text-green-600';
-      case 'solar': return 'text-yellow-600';
-      case 'wind': return 'text-blue-600';
-      case 'water': return 'text-cyan-600';
-      default: return 'text-green-600';
+      case "forestry":
+        return "text-green-600";
+      case "solar":
+        return "text-yellow-600";
+      case "wind":
+        return "text-blue-600";
+      case "water":
+        return "text-cyan-600";
+      default:
+        return "text-green-600";
     }
   };
 
@@ -261,7 +191,7 @@ const ProjectDetailContent = ({ params }) => {
           <div className="flex items-center justify-between">
             <Button
               variant="ghost"
-              onClick={() => router.push('/projects')}
+              onClick={() => router.push("/projects")}
               className="flex items-center gap-2"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -289,7 +219,7 @@ const ProjectDetailContent = ({ params }) => {
                 alt={project.name}
                 className="w-full h-full object-cover"
                 onError={(e) => {
-                  e.target.src = '/tree1.jpg'; // Fallback
+                  e.target.src = "/tree1.jpg"; // Fallback
                 }}
               />
             </div>
@@ -299,34 +229,52 @@ const ProjectDetailContent = ({ params }) => {
               {/* Project Overview */}
               <Card>
                 <CardContent className="p-4">
-                  <h3 className="font-semibold text-foreground mb-3">Project Overview</h3>
+                  <h3 className="font-semibold text-foreground mb-3">
+                    Project Overview
+                  </h3>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="flex items-center gap-2">
                       <MapPin className="h-4 w-4 text-muted-foreground" />
                       <div>
-                        <p className="text-xs text-muted-foreground">Location</p>
-                        <p className="text-sm font-medium">{project.location}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Location
+                        </p>
+                        <p className="text-sm font-medium">
+                          {project.location}
+                        </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
                       <Target className="h-4 w-4 text-green-600" />
                       <div>
-                        <p className="text-xs text-muted-foreground">CO₂ Offset</p>
-                        <p className="text-sm font-medium text-green-600">-{(project.co2Removed || 0).toLocaleString()} tons</p>
+                        <p className="text-xs text-muted-foreground">
+                          CO₂ Offset
+                        </p>
+                        <p className="text-sm font-medium text-green-600">
+                          -{(project.co2Removed || 0).toLocaleString()} tons
+                        </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
                       <Users className="h-4 w-4 text-muted-foreground" />
                       <div>
-                        <p className="text-xs text-muted-foreground">Contributors</p>
-                        <p className="text-sm font-medium">{(project.contributors || 0).toLocaleString()}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Contributors
+                        </p>
+                        <p className="text-sm font-medium">
+                          {(project.contributors || 0).toLocaleString()}
+                        </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
                       <Calendar className="h-4 w-4 text-muted-foreground" />
                       <div>
-                        <p className="text-xs text-muted-foreground">Time Left</p>
-                        <p className="text-sm font-medium">{project.timeRemaining}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Time Left
+                        </p>
+                        <p className="text-sm font-medium">
+                          {project.timeRemaining}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -336,18 +284,31 @@ const ProjectDetailContent = ({ params }) => {
               {/* Quick Stats */}
               <Card>
                 <CardContent className="p-4">
-                  <h3 className="font-semibold text-foreground mb-3">Quick Stats</h3>
+                  <h3 className="font-semibold text-foreground mb-3">
+                    Quick Stats
+                  </h3>
                   <div className="grid grid-cols-3 gap-4 text-center">
                     <div>
-                      <p className="text-2xl font-bold text-green-600">{fundingPercentage.toFixed(0)}%</p>
+                      <p className="text-2xl font-bold text-green-600">
+                        {fundingPercentage.toFixed(0)}%
+                      </p>
                       <p className="text-xs text-muted-foreground">Funded</p>
                     </div>
                     <div>
-                      <p className="text-2xl font-bold text-blue-600">₹{(project.currentFunding / 10000000).toFixed(1)}Cr</p>
+                      <p className="text-2xl font-bold text-blue-600">
+                        ₹{(project.currentFunding / 10000000).toFixed(1)}Cr
+                      </p>
                       <p className="text-xs text-muted-foreground">Raised</p>
                     </div>
                     <div>
-                      <p className="text-2xl font-bold text-orange-600">₹{((project.totalFunding - project.currentFunding) / 10000000).toFixed(1)}Cr</p>
+                      <p className="text-2xl font-bold text-orange-600">
+                        ₹
+                        {(
+                          (project.totalFunding - project.currentFunding) /
+                          10000000
+                        ).toFixed(1)}
+                        Cr
+                      </p>
                       <p className="text-xs text-muted-foreground">Needed</p>
                     </div>
                   </div>
@@ -357,7 +318,9 @@ const ProjectDetailContent = ({ params }) => {
               {/* Project Highlights */}
               <Card>
                 <CardContent className="p-4">
-                  <h3 className="font-semibold text-foreground mb-3">Project Highlights</h3>
+                  <h3 className="font-semibold text-foreground mb-3">
+                    Project Highlights
+                  </h3>
                   <div className="space-y-2">
                     {project.benefits.slice(0, 3).map((benefit, index) => (
                       <div key={index} className="flex items-center gap-2">
@@ -377,7 +340,7 @@ const ProjectDetailContent = ({ params }) => {
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <Badge variant="outline" className="text-xs">
-                  {project.type.replace('-', ' ').toUpperCase()}
+                  {project.type.replace("-", " ").toUpperCase()}
                 </Badge>
                 {project.featured && (
                   <Badge className="bg-primary text-primary-foreground text-xs">
@@ -398,34 +361,45 @@ const ProjectDetailContent = ({ params }) => {
               <div className="flex items-center gap-4 mb-4">
                 <div className="flex items-center gap-1">
                   <MapPin className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-muted-foreground">{project.location}</span>
+                  <span className="text-muted-foreground">
+                    {project.location}
+                  </span>
                 </div>
                 <div className="flex items-center gap-1 text-green-600">
                   <Target className="h-4 w-4" />
-                  <span className="font-medium">-{(project.co2Removed || 0).toLocaleString()} tons CO₂</span>
+                  <span className="font-medium">
+                    -{(project.co2Removed || 0).toLocaleString()} tons CO₂
+                  </span>
                 </div>
               </div>
 
               <div className="flex items-center gap-4 mb-4">
                 <div className="flex items-center gap-1">
                   <Users className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-muted-foreground">{project.contributors.toLocaleString()} contributors</span>
+                  <span className="text-muted-foreground">
+                    {project.contributors.toLocaleString()} contributors
+                  </span>
                 </div>
                 <div className="flex items-center gap-1">
                   <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-muted-foreground">{project.timeRemaining} remaining</span>
+                  <span className="text-muted-foreground">
+                    {project.timeRemaining} remaining
+                  </span>
                 </div>
               </div>
             </div>
 
             {/* Funding Progress */}
             <div>
-              <h3 className="font-semibold text-foreground mb-2">Funding Progress</h3>
+              <h3 className="font-semibold text-foreground mb-2">
+                Funding Progress
+              </h3>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Current Funding</span>
                   <span className="font-medium">
-                    ₹{(project.currentFunding / 10000000).toFixed(1)}Cr / ₹{(project.totalFunding / 10000000).toFixed(1)}Cr
+                    ₹{(project.currentFunding / 10000000).toFixed(1)}Cr / ₹
+                    {(project.totalFunding / 10000000).toFixed(1)}Cr
                   </span>
                 </div>
                 <Progress value={fundingPercentage} className="h-3" />
@@ -437,7 +411,9 @@ const ProjectDetailContent = ({ params }) => {
 
             {/* Description */}
             <div id="project-description">
-              <h3 className="font-semibold text-foreground mb-2">Description</h3>
+              <h3 className="font-semibold text-foreground mb-2">
+                Description
+              </h3>
               <p className="text-muted-foreground leading-relaxed">
                 {project.description}
               </p>
@@ -445,7 +421,9 @@ const ProjectDetailContent = ({ params }) => {
 
             {/* Benefits */}
             <div>
-              <h3 className="font-semibold text-foreground mb-2">Environmental Benefits</h3>
+              <h3 className="font-semibold text-foreground mb-2">
+                Environmental Benefits
+              </h3>
               <div className="flex flex-wrap gap-2">
                 {project.benefits.map((benefit) => (
                   <Badge key={benefit} variant="secondary" className="text-xs">
@@ -457,10 +435,15 @@ const ProjectDetailContent = ({ params }) => {
 
             {/* Contribution */}
             <div>
-              <h3 className="font-semibold text-foreground mb-2">Make a Contribution</h3>
+              <h3 className="font-semibold text-foreground mb-2">
+                Make a Contribution
+              </h3>
               <div className="space-y-4">
                 <div>
-                  <Label className="text-sm">Contribution Amount: ₹{(contributionAmount[0] * 83).toLocaleString()}</Label>
+                  <Label className="text-sm">
+                    Contribution Amount: ₹
+                    {(contributionAmount[0] * 83).toLocaleString()}
+                  </Label>
                   <Slider
                     value={contributionAmount}
                     onValueChange={setContributionAmount}
@@ -472,11 +455,15 @@ const ProjectDetailContent = ({ params }) => {
                 </div>
                 <div className="p-4 bg-primary/10 rounded-lg">
                   <div className="text-center">
-                    <div className="text-sm text-muted-foreground">Your Impact</div>
+                    <div className="text-sm text-muted-foreground">
+                      Your Impact
+                    </div>
                     <div className="text-2xl font-bold text-primary">
                       {calculateImpact(contributionAmount[0])} tons CO₂
                     </div>
-                    <div className="text-sm text-muted-foreground">will be offset</div>
+                    <div className="text-sm text-muted-foreground">
+                      will be offset
+                    </div>
                   </div>
                 </div>
               </div>
@@ -499,14 +486,20 @@ const ProjectDetailContent = ({ params }) => {
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
-                    <DialogTitle className="text-lg sm:text-xl">Support {project.name}</DialogTitle>
+                    <DialogTitle className="text-lg sm:text-xl">
+                      Support {project.name}
+                    </DialogTitle>
                     <DialogDescription className="text-sm">
-                      Choose your contribution amount to help offset carbon emissions
+                      Choose your contribution amount to help offset carbon
+                      emissions
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4 py-4">
                     <div>
-                      <Label className="text-sm">Contribution Amount: ₹{(contributionAmount[0] * 83).toLocaleString()}</Label>
+                      <Label className="text-sm">
+                        Contribution Amount: ₹
+                        {(contributionAmount[0] * 83).toLocaleString()}
+                      </Label>
                       <Slider
                         value={contributionAmount}
                         onValueChange={setContributionAmount}
@@ -518,11 +511,15 @@ const ProjectDetailContent = ({ params }) => {
                     </div>
                     <div className="p-4 bg-primary/10 rounded-lg">
                       <div className="text-center">
-                        <div className="text-sm text-muted-foreground">Your Impact</div>
+                        <div className="text-sm text-muted-foreground">
+                          Your Impact
+                        </div>
                         <div className="text-2xl font-bold text-primary">
                           {calculateImpact(contributionAmount[0])} tons CO₂
                         </div>
-                        <div className="text-sm text-muted-foreground">will be offset</div>
+                        <div className="text-sm text-muted-foreground">
+                          will be offset
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -532,15 +529,23 @@ const ProjectDetailContent = ({ params }) => {
                       onClick={() => {
                         setIsLoading(true);
                         try {
-                          router.push(`/payment?project=${encodeURIComponent(project.name)}&amount=${contributionAmount[0] * 83}`);
+                          router.push(
+                            `/payment?project=${encodeURIComponent(
+                              project.name
+                            )}&amount=${contributionAmount[0] * 83}`
+                          );
                         } catch (error) {
-                          console.error('Navigation error:', error);
+                          console.error("Navigation error:", error);
                           setIsLoading(false);
                         }
                       }}
                       disabled={isLoading}
                     >
-                      {isLoading ? 'Processing...' : `Contribute ₹${(contributionAmount[0] * 83).toLocaleString()}`}
+                      {isLoading
+                        ? "Processing..."
+                        : `Contribute ₹${(
+                            contributionAmount[0] * 83
+                          ).toLocaleString()}`}
                     </Button>
                   </DialogFooter>
                 </DialogContent>
@@ -549,8 +554,9 @@ const ProjectDetailContent = ({ params }) => {
                 variant="outline"
                 className="flex-1"
                 onClick={() => {
-                  const desc = document.getElementById('project-description');
-                  if (desc) desc.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  const desc = document.getElementById("project-description");
+                  if (desc)
+                    desc.scrollIntoView({ behavior: "smooth", block: "start" });
                 }}
               >
                 Learn More
@@ -578,20 +584,29 @@ const ProjectDetailContent = ({ params }) => {
         {/* More Projects */}
         <div className="mt-12 space-y-6">
           <div>
-            <h2 className="text-xl font-bold text-foreground mb-4">More Projects You Might Like</h2>
+            <h2 className="text-xl font-bold text-foreground mb-4">
+              More Projects You Might Like
+            </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
               {demoProjects
-                .filter(p => p.id !== project.id) // Exclude current project
+                .filter((p) => p.id !== project.id) // Exclude current project
                 .slice(0, 4) // Show only 4 projects
                 .map((relatedProject) => {
-                  const relatedFundingPercentage = (relatedProject.currentFunding / relatedProject.totalFunding) * 100;
-                  const RelatedProjectIcon = getProjectIcon(relatedProject.type);
+                  const relatedFundingPercentage =
+                    (relatedProject.currentFunding /
+                      relatedProject.totalFunding) *
+                    100;
+                  const RelatedProjectIcon = getProjectIcon(
+                    relatedProject.type
+                  );
 
                   return (
                     <Card
                       key={relatedProject.id}
                       className="cursor-pointer hover:shadow-lg transition-shadow"
-                      onClick={() => router.push(`/projects/${relatedProject.id}`)}
+                      onClick={() =>
+                        router.push(`/projects/${relatedProject.id}`)
+                      }
                     >
                       <div className="relative">
                         <div className="aspect-video overflow-hidden rounded-t-lg">
@@ -600,7 +615,7 @@ const ProjectDetailContent = ({ params }) => {
                             alt={relatedProject.name}
                             className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                             onError={(e) => {
-                              e.target.src = '/tree1.jpg'; // Fallback
+                              e.target.src = "/tree1.jpg"; // Fallback
                             }}
                           />
                         </div>
@@ -619,9 +634,15 @@ const ProjectDetailContent = ({ params }) => {
                         <div className="space-y-2">
                           <div>
                             <div className="flex items-center gap-2 mb-1">
-                              <RelatedProjectIcon className={`h-4 w-4 ${getTypeColor(relatedProject.type)}`} />
+                              <RelatedProjectIcon
+                                className={`h-4 w-4 ${getTypeColor(
+                                  relatedProject.type
+                                )}`}
+                              />
                               <Badge variant="outline" className="text-xs">
-                                {relatedProject.type.replace('-', ' ').toUpperCase()}
+                                {relatedProject.type
+                                  .replace("-", " ")
+                                  .toUpperCase()}
                               </Badge>
                             </div>
                             <h3 className="font-semibold text-foreground text-sm leading-tight line-clamp-2">
@@ -634,26 +655,41 @@ const ProjectDetailContent = ({ params }) => {
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-1">
                               <MapPin className="h-3 w-3 text-muted-foreground" />
-                              <span className="text-xs text-muted-foreground">{relatedProject.location}</span>
+                              <span className="text-xs text-muted-foreground">
+                                {relatedProject.location}
+                              </span>
                             </div>
                             <div className="flex items-center gap-1 text-green-600">
                               <Target className="h-3 w-3" />
-                              <span className="text-xs">-{(relatedProject.co2Removed || 0).toLocaleString()} tons CO₂</span>
+                              <span className="text-xs">
+                                -
+                                {(
+                                  relatedProject.co2Removed || 0
+                                ).toLocaleString()}{" "}
+                                tons CO₂
+                              </span>
                             </div>
                           </div>
                           <div className="space-y-1">
                             <div className="flex justify-between text-xs">
-                              <span className="text-muted-foreground">Progress</span>
+                              <span className="text-muted-foreground">
+                                Progress
+                              </span>
                               <span className="font-medium">
                                 {relatedFundingPercentage.toFixed(0)}%
                               </span>
                             </div>
-                            <Progress value={relatedFundingPercentage} className="h-1" />
+                            <Progress
+                              value={relatedFundingPercentage}
+                              className="h-1"
+                            />
                           </div>
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-1">
                               <Users className="h-3 w-3 text-muted-foreground" />
-                              <span className="text-xs text-muted-foreground">{relatedProject.contributors.toLocaleString()}</span>
+                              <span className="text-xs text-muted-foreground">
+                                {relatedProject.contributors.toLocaleString()}
+                              </span>
                             </div>
                             <Button
                               size="sm"
@@ -690,4 +726,4 @@ const ProjectDetailPage = ({ params }) => {
   );
 };
 
-export default ProjectDetailPage; 
+export default ProjectDetailPage;

@@ -7,15 +7,25 @@ import {
   calculateCO2Savings
 } from '@/config/marketplaceConfig';
 
-// Convert Google Drive share links to direct-view links
+// Convert Google Drive share links to direct-view links with better CORS handling
 const normalizeDriveLink = (url) => {
   if (!url) return url;
   try {
-    // Already a direct link
-    if (/^https?:\/\//i.test(url) && url.includes('drive.google.com/uc')) return url;
+    // Already a direct link with uc?export=view
+    if (/^https?:\/\//i.test(url) && url.includes('drive.google.com/uc?export=view')) return url;
+    
+    // Already a direct link with uc?id=
+    if (/^https?:\/\//i.test(url) && url.includes('drive.google.com/uc?id=')) {
+      // Convert to export=view format for better compatibility
+      const idMatch = url.match(/[?&]id=([^&]+)/);
+      if (idMatch && idMatch[1]) {
+        return `https://drive.google.com/uc?export=view&id=${idMatch[1]}`;
+      }
+      return url;
+    }
 
-    // Matches: https://drive.google.com/file/d/<FILE_ID>/view?usp=sharing
-    const fileMatch = url.match(/drive\.google\.com\/file\/d\/([^/]+)/);
+    // Matches: https://drive.google.com/file/d/<FILE_ID>/view?usp=sharing or similar
+    const fileMatch = url.match(/drive\.google\.com\/file\/d\/([^/?]+)/);
     if (fileMatch && fileMatch[1]) {
       return `https://drive.google.com/uc?export=view&id=${fileMatch[1]}`;
     }
@@ -27,7 +37,8 @@ const normalizeDriveLink = (url) => {
     }
 
     return url;
-  } catch {
+  } catch (error) {
+    console.error('Error normalizing drive link:', error);
     return url;
   }
 };
@@ -42,15 +53,37 @@ const transformProduct = (backendProduct) => {
   // Determine vendor type based on certifications
   const vendorType = getVendorType(backendProduct.sustainability?.certifications);
 
-  // Resolve image url (supports absolute and relative paths, and object forms)
+  // Resolve image url - backend images are always full URLs (validated in schema)
   const firstImage = backendProduct.images?.[0];
-  const rawImage = typeof firstImage === 'string' ? firstImage : (firstImage?.url || firstImage?.path || '');
-  const resolvedImageRaw = rawImage
-    ? (rawImage.startsWith('http')
-        ? rawImage
-        : `${API_BASE_URL}${rawImage.startsWith('/') ? '' : '/'}${rawImage}`)
-    : DEFAULT_PRODUCT_IMAGE;
-  const resolvedImage = normalizeDriveLink(resolvedImageRaw);
+  let resolvedImage = DEFAULT_PRODUCT_IMAGE;
+  
+  if (firstImage) {
+    if (typeof firstImage === 'string') {
+      // Images from backend are full URLs
+      if (firstImage.startsWith('http')) {
+        // Normalize Google Drive links for better compatibility
+        resolvedImage = normalizeDriveLink(firstImage);
+      } else {
+        // Fallback: if somehow a relative path exists, convert it
+        resolvedImage = `${API_BASE_URL}${firstImage.startsWith('/') ? '' : '/'}${firstImage}`;
+      }
+    } else if (typeof firstImage === 'object') {
+      // Handle object format (url or path property)
+      const imageUrl = firstImage?.url || firstImage?.path || '';
+      if (imageUrl) {
+        resolvedImage = imageUrl.startsWith('http') 
+          ? normalizeDriveLink(imageUrl)
+          : `${API_BASE_URL}${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}`;
+      }
+    }
+  }
+  
+  // Log for debugging
+  console.log('Product image transformation:', {
+    productName: backendProduct.name,
+    originalImage: firstImage,
+    resolvedImage: resolvedImage
+  });
 
   return {
     id: backendProduct._id,

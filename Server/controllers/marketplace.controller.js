@@ -2,6 +2,7 @@ import asyncHandler from '../utils/asyncHandler.js';
 import { getProductModel } from '../models/Product.model.js';
 import { validationResult } from 'express-validator';
 import mongoose from 'mongoose';
+import { deleteImages } from '../config/cloudinary.marketplace.js';
 
 // Get all products with filtering, sorting, and pagination
 export const getProducts = asyncHandler(async (req, res) => {
@@ -171,10 +172,44 @@ export const createProduct = asyncHandler(async (req, res) => {
 
   const Product = await getProductModel();
   
+  // Check if images were uploaded
+  if (!req.files || req.files.length === 0) {
+    return res.status(400).json({
+      success: false,
+      message: 'At least one product image is required'
+    });
+  }
+
+  // Process uploaded images from Cloudinary
+  const images = req.files.map(file => ({
+    url: file.path, // Cloudinary URL
+    publicId: file.filename, // Cloudinary public ID
+    uploadedAt: new Date()
+  }));
+
+  // Parse JSON fields if they were sent as strings (multipart/form-data)
   const productData = {
     ...req.body,
-    seller_id: req.user.id
+    seller_id: req.user.id,
+    images: images
   };
+
+  // Parse nested objects if sent as strings
+  if (typeof productData.pricing === 'string') {
+    productData.pricing = JSON.parse(productData.pricing);
+  }
+  if (typeof productData.inventory === 'string') {
+    productData.inventory = JSON.parse(productData.inventory);
+  }
+  if (typeof productData.sustainability === 'string') {
+    productData.sustainability = JSON.parse(productData.sustainability);
+  }
+  if (typeof productData.shipping === 'string') {
+    productData.shipping = JSON.parse(productData.shipping);
+  }
+  if (typeof productData.tags === 'string') {
+    productData.tags = JSON.parse(productData.tags);
+  }
 
   const product = new Product(productData);
   const savedProduct = await product.save();
@@ -227,9 +262,58 @@ export const updateProduct = asyncHandler(async (req, res) => {
     });
   }
 
+  // Prepare update data
+  const updateData = { ...req.body };
+
+  // Parse nested objects if sent as strings (multipart/form-data)
+  if (typeof updateData.pricing === 'string') {
+    updateData.pricing = JSON.parse(updateData.pricing);
+  }
+  if (typeof updateData.inventory === 'string') {
+    updateData.inventory = JSON.parse(updateData.inventory);
+  }
+  if (typeof updateData.sustainability === 'string') {
+    updateData.sustainability = JSON.parse(updateData.sustainability);
+  }
+  if (typeof updateData.shipping === 'string') {
+    updateData.shipping = JSON.parse(updateData.shipping);
+  }
+  if (typeof updateData.tags === 'string') {
+    updateData.tags = JSON.parse(updateData.tags);
+  }
+
+  // Handle new image uploads
+  if (req.files && req.files.length > 0) {
+    // Delete old images from Cloudinary
+    if (product.images && product.images.length > 0) {
+      const oldPublicIds = product.images
+        .filter(img => img.publicId)
+        .map(img => img.publicId);
+      
+      if (oldPublicIds.length > 0) {
+        try {
+          await deleteImages(oldPublicIds);
+          console.log('Old product images deleted from Cloudinary');
+        } catch (deleteError) {
+          console.error('Error deleting old images:', deleteError);
+          // Continue with update even if deletion fails
+        }
+      }
+    }
+
+    // Add new images
+    updateData.images = req.files.map(file => ({
+      url: file.path,
+      publicId: file.filename,
+      uploadedAt: new Date()
+    }));
+  }
+
+  updateData.updated_at = Date.now();
+
   const updatedProduct = await Product.findByIdAndUpdate(
     id,
-    { ...req.body, updated_at: Date.now() },
+    updateData,
     { new: true, runValidators: true }
   ).populate('seller_id', 'name email');
 
@@ -267,6 +351,23 @@ export const deleteProduct = asyncHandler(async (req, res) => {
       success: false,
       message: 'Not authorized to delete this product'
     });
+  }
+
+  // Delete product images from Cloudinary
+  if (product.images && product.images.length > 0) {
+    const publicIds = product.images
+      .filter(img => img.publicId)
+      .map(img => img.publicId);
+    
+    if (publicIds.length > 0) {
+      try {
+        await deleteImages(publicIds);
+        console.log('Product images deleted from Cloudinary');
+      } catch (deleteError) {
+        console.error('Error deleting images from Cloudinary:', deleteError);
+        // Continue with deletion even if image deletion fails
+      }
+    }
   }
 
   await Product.findByIdAndDelete(id);

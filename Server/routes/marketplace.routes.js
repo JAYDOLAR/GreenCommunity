@@ -29,6 +29,7 @@ import {
 } from '../middleware/marketplace.validation.js';
 
 import { authenticate, authorize, optionalAuth } from '../middleware/auth.js';
+import { uploadProductImages } from '../config/cloudinary.marketplace.js';
 
 const router = express.Router();
 
@@ -156,11 +157,12 @@ router.get('/nearby-vendors',
  * @route   POST /api/marketplace/products
  * @desc    Create new product
  * @access  Private (Authenticated users)
- * @body    Complete product object
+ * @body    Complete product object + images (multipart/form-data)
  */
 router.post('/products', 
   authenticate,
   createProductLimiter,
+  uploadProductImages.array('images', 5), // Upload up to 5 images
   validateCreateProduct, 
   createProduct
 );
@@ -169,11 +171,12 @@ router.post('/products',
  * @route   PUT /api/marketplace/products/:id
  * @desc    Update product
  * @access  Private (Product owner or admin)
- * @body    Product fields to update
+ * @body    Product fields to update + new images (multipart/form-data)
  */
 router.put('/products/:id', 
   authenticate,
   updateLimiter,
+  uploadProductImages.array('images', 5), // Upload up to 5 new images
   validateUpdateProduct, 
   updateProduct
 );

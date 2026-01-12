@@ -7,7 +7,11 @@ const projectSchema = new mongoose.Schema({
   type: { type: String, required: true, trim: true },
   region: { type: String, required: true, trim: true },
   description: { type: String, trim: true },
-  image: { type: String },
+  image: {
+    url: { type: String },
+    publicId: { type: String },
+    uploadedAt: { type: Date }
+  },
   impact: {
     carbonOffset: { type: Number, default: 0 }, // in tons CO2
     area: { type: Number, default: 0 }, // in hectares or sq km

@@ -4,6 +4,7 @@ import { registerProjectOnChain, grantFiatCredits, getProjectOnChain } from '../
 import mongoose from 'mongoose';
 import { ethers } from 'ethers';
 import { getProvider, getMarketplace, getCertificate } from '../services/blockchain.service.js';
+import { deleteImage } from '../config/cloudinary.marketplace.js';
 
 // Get all projects with filtering and pagination
 export const getProjects = asyncHandler(async (req, res) => {
@@ -479,3 +480,141 @@ export const getProjectStats = asyncHandler(async (req, res) => {
     });
   }
 });
+
+// Create new project with Cloudinary image upload
+export const createProject = asyncHandler(async (req, res) => {
+  try {
+    const Project = await getProjectModel();
+
+    // Prepare project data
+    const projectData = { ...req.body };
+
+    // Parse nested objects if sent as strings (multipart/form-data)
+    if (typeof projectData.impact === 'string') {
+      projectData.impact = JSON.parse(projectData.impact);
+    }
+    if (typeof projectData.verification === 'string') {
+      projectData.verification = JSON.parse(projectData.verification);
+    }
+    if (typeof projectData.blockchain === 'string') {
+      projectData.blockchain = JSON.parse(projectData.blockchain);
+    }
+    if (typeof projectData.coordinates === 'string') {
+      projectData.coordinates = JSON.parse(projectData.coordinates);
+    }
+    if (typeof projectData.organization === 'string') {
+      projectData.organization = JSON.parse(projectData.organization);
+    }
+
+    // Handle image upload from Cloudinary
+    if (req.file) {
+      projectData.image = {
+        url: req.file.path, // Cloudinary URL
+        publicId: req.file.filename, // Cloudinary public ID
+        uploadedAt: new Date()
+      };
+    }
+
+    const project = new Project(projectData);
+    const savedProject = await project.save();
+
+    res.status(201).json({
+      success: true,
+      message: 'Project created successfully',
+      data: savedProject
+    });
+  } catch (error) {
+    console.error('Error creating project:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create project',
+      error: error.message
+    });
+  }
+});
+
+// Update project with optional Cloudinary image upload
+export const updateProject = asyncHandler(async (req, res) => {
+  try {
+    const Project = await getProjectModel();
+    const { id } = req.params;
+
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid project ID'
+      });
+    }
+
+    const project = await Project.findById(id);
+    
+    if (!project) {
+      return res.status(404).json({
+        success: false,
+        message: 'Project not found'
+      });
+    }
+
+    // Prepare update data
+    const updateData = { ...req.body };
+
+    // Parse nested objects if sent as strings (multipart/form-data)
+    if (typeof updateData.impact === 'string') {
+      updateData.impact = JSON.parse(updateData.impact);
+    }
+    if (typeof updateData.verification === 'string') {
+      updateData.verification = JSON.parse(updateData.verification);
+    }
+    if (typeof updateData.blockchain === 'string') {
+      updateData.blockchain = JSON.parse(updateData.blockchain);
+    }
+    if (typeof updateData.coordinates === 'string') {
+      updateData.coordinates = JSON.parse(updateData.coordinates);
+    }
+    if (typeof updateData.organization === 'string') {
+      updateData.organization = JSON.parse(updateData.organization);
+    }
+
+    // Handle new image upload
+    if (req.file) {
+      // Delete old image from Cloudinary if exists
+      if (project.image?.publicId) {
+        try {
+          await deleteImage(project.image.publicId);
+          console.log('Old project image deleted from Cloudinary');
+        } catch (deleteError) {
+          console.error('Error deleting old image:', deleteError);
+          // Continue with update even if deletion fails
+        }
+      }
+
+      updateData.image = {
+        url: req.file.path,
+        publicId: req.file.filename,
+        uploadedAt: new Date()
+      };
+    }
+
+    updateData.updated_at = Date.now();
+
+    const updatedProject = await Project.findByIdAndUpdate(
+      id,
+      updateData,
+      { new: true, runValidators: true }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: 'Project updated successfully',
+      data: updatedProject
+    });
+  } catch (error) {
+    console.error('Error updating project:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update project',
+      error: error.message
+    });
+  }
+});
+
