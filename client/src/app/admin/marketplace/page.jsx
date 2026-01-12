@@ -8,6 +8,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import { 
   ShoppingBag, 
   Package, 
@@ -38,6 +41,11 @@ const MarketplacePage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [editForm, setEditForm] = useState({});
+  const [editImages, setEditImages] = useState([]);
+  const [isSaving, setIsSaving] = useState(false);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -89,41 +97,136 @@ const MarketplacePage = () => {
 
   const handleStatusChange = async (productId, newStatus) => {
     try {
-      const product = products.find(p => p.id === productId);
-      if (product) {
-        const updatedProduct = { ...product, status: newStatus };
-        const response = await fetch('/api/admin/marketplace', {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(updatedProduct),
-        });
-        
-        if (response.ok) {
-          setProducts(products.map(product => 
-            product.id === productId ? { ...product, status: newStatus } : product
-          ));
-        }
+      // Optimistically update UI
+      setProducts(products.map(product => 
+        product.id === productId ? { ...product, status: newStatus } : product
+      ));
+
+      const response = await marketplaceApi.updateProduct(productId, { status: newStatus });
+      
+      if (!response.success) {
+        // Revert on failure
+        await fetchMarketplaceData();
+        alert('Failed to update product status');
       }
     } catch (error) {
       console.error('Failed to update product status:', error);
+      await fetchMarketplaceData(); // Revert
+      alert('Failed to update product status: ' + error.message);
     }
   };
 
   const handleDeleteProduct = async (productId) => {
-    if (confirm('Are you sure you want to delete this product?')) {
+    if (confirm('Are you sure you want to delete this product? This will also delete all associated images from Cloudinary.')) {
       try {
-        const response = await fetch(`/api/admin/marketplace?id=${productId}`, {
-          method: 'DELETE',
-        });
-        
-        if (response.ok) {
-          setProducts(products.filter(product => product.id !== productId));
-        }
+        // Optimistically update UI
+        const previousProducts = [...products];
+        setProducts(products.filter(product => product.id !== productId));
+
+        await marketplaceApi.deleteProduct(productId);
       } catch (error) {
         console.error('Failed to delete product:', error);
+        // Revert on failure
+        await fetchMarketplaceData();
+        alert('Failed to delete product: ' + error.message);
       }
+    }
+  };
+
+  const handleEditProduct = (product) => {
+    setEditingProduct(product);
+    setEditForm({
+      name: product.name || '',
+      description: product.description || '',
+      price: product.price || '',
+      stock: product.inventory?.quantity || product.stock || '',
+      category: product.category || '',
+      status: product.status || 'active',
+    });
+    setEditImages([]);
+    setEditDialogOpen(true);
+  };
+
+  const handleEditFormChange = (field, value) => {
+    setEditForm(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleEditImageUpload = (event) => {
+    const files = Array.from(event.target.files || []);
+    const validFiles = [];
+    
+    for (const file of files) {
+      if (!file.type.startsWith('image/')) {
+        alert(`${file.name} is not an image file`);
+        continue;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        alert(`${file.name} exceeds 5MB limit`);
+        continue;
+      }
+      validFiles.push(file);
+    }
+
+    if (editImages.length + validFiles.length > 5) {
+      alert('Maximum 5 images allowed');
+      return;
+    }
+
+    const newImages = validFiles.map(file => ({
+      file,
+      preview: URL.createObjectURL(file)
+    }));
+
+    setEditImages(prev => [...prev, ...newImages]);
+  };
+
+  const handleRemoveEditImage = (index) => {
+    setEditImages(prev => {
+      const updated = [...prev];
+      URL.revokeObjectURL(updated[index].preview);
+      updated.splice(index, 1);
+      return updated;
+    });
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editForm.name || !editForm.price) {
+      alert('Name and price are required');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const updateData = {
+        name: editForm.name,
+        description: editForm.description,
+        price: parseFloat(editForm.price),
+        category: editForm.category,
+        status: editForm.status,
+        inventory: {
+          quantity: parseInt(editForm.stock) || 0,
+        },
+      };
+
+      const imageFiles = editImages.length > 0 ? editImages.map(img => img.file) : null;
+      
+      const response = await marketplaceApi.updateProduct(editingProduct.id, updateData, imageFiles);
+      
+      if (response.success) {
+        await fetchMarketplaceData();
+        setEditDialogOpen(false);
+        setEditingProduct(null);
+        setEditForm({});
+        setEditImages([]);
+        alert('Product updated successfully!');
+      } else {
+        throw new Error(response.message || 'Failed to update product');
+      }
+    } catch (error) {
+      console.error('Failed to update product:', error);
+      alert('Failed to update product: ' + error.message);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -345,7 +448,12 @@ const MarketplacePage = () => {
                     <Eye className="h-4 w-4" />
                   </Button>
                   
-                  <Button variant="ghost" size="sm" title="Edit Product">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => handleEditProduct(product)}
+                    title="Edit Product"
+                  >
                     <Edit className="h-4 w-4" />
                   </Button>
                   
@@ -445,6 +553,178 @@ const MarketplacePage = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Edit Product Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Product</DialogTitle>
+            <DialogDescription>
+              Update product details and images (up to 5 images, 5MB each)
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-name">Product Name *</Label>
+                <Input
+                  id="edit-name"
+                  value={editForm.name || ''}
+                  onChange={(e) => handleEditFormChange('name', e.target.value)}
+                  placeholder="Enter product name"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-price">Price (₹) *</Label>
+                <Input
+                  id="edit-price"
+                  type="number"
+                  value={editForm.price || ''}
+                  onChange={(e) => handleEditFormChange('price', e.target.value)}
+                  placeholder="Enter price"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-description">Description</Label>
+              <Textarea
+                id="edit-description"
+                value={editForm.description || ''}
+                onChange={(e) => handleEditFormChange('description', e.target.value)}
+                placeholder="Enter product description"
+                rows={3}
+              />
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-category">Category</Label>
+                <Select
+                  value={editForm.category || ''}
+                  onValueChange={(value) => handleEditFormChange('category', value)}
+                >
+                  <SelectTrigger id="edit-category">
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="solar">Solar Products</SelectItem>
+                    <SelectItem value="reusable">Reusable Items</SelectItem>
+                    <SelectItem value="zero_waste">Zero Waste</SelectItem>
+                    <SelectItem value="local">Local Products</SelectItem>
+                    <SelectItem value="organic">Organic</SelectItem>
+                    <SelectItem value="eco_fashion">Eco Fashion</SelectItem>
+                    <SelectItem value="green_tech">Green Tech</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-stock">Stock Quantity</Label>
+                <Input
+                  id="edit-stock"
+                  type="number"
+                  value={editForm.stock || ''}
+                  onChange={(e) => handleEditFormChange('stock', e.target.value)}
+                  placeholder="Stock"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-status">Status</Label>
+                <Select
+                  value={editForm.status || 'active'}
+                  onValueChange={(value) => handleEditFormChange('status', value)}
+                >
+                  <SelectTrigger id="edit-status">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>New Images (optional)</Label>
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleEditImageUpload}
+                  className="hidden"
+                  id="edit-image-upload"
+                />
+                <label
+                  htmlFor="edit-image-upload"
+                  className="cursor-pointer flex flex-col items-center gap-2"
+                >
+                  <Plus className="h-8 w-8 text-muted-foreground" />
+                  <p className="text-sm font-medium">
+                    {editImages.length > 0 ? 'Add More Images' : 'Upload Images'}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {editImages.length}/5 images • PNG, JPG up to 5MB each
+                  </p>
+                </label>
+              </div>
+
+              {editImages.length > 0 && (
+                <div className="grid grid-cols-5 gap-2 mt-2">
+                  {editImages.map((img, index) => (
+                    <div key={index} className="relative">
+                      <img
+                        src={img.preview}
+                        alt={`Preview ${index + 1}`}
+                        className="w-full h-20 object-cover rounded"
+                      />
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleRemoveEditImage(index)}
+                        className="absolute -top-2 -right-2 h-6 w-6 p-0 rounded-full"
+                      >
+                        ×
+                      </Button>
+                      {index === 0 && (
+                        <Badge className="absolute bottom-1 left-1 text-xs">Primary</Badge>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground mt-2">
+                {editImages.length > 0 
+                  ? 'New images will replace existing ones. Leave empty to keep current images.'
+                  : 'Current images will be kept if you don\'t upload new ones.'}
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setEditDialogOpen(false);
+                setEditingProduct(null);
+                setEditForm({});
+                setEditImages([]);
+              }}
+              disabled={isSaving}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleSaveEdit} disabled={isSaving}>
+              {isSaving ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

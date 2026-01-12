@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { projectsApi } from '@/lib/projectsApi';
 import {
   Card,
   CardContent,
@@ -38,7 +39,7 @@ const AddProjectPage = () => {
   const router = useRouter();
   const fileInputRef = useRef(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [uploadedImage, setUploadedImage] = useState(null);
+  const [uploadedImage, setUploadedImage] = useState(null); // { file, preview }
   const [project, setProject] = useState({
     name: "",
     location: "",
@@ -71,9 +72,9 @@ const AddProjectPage = () => {
         return;
       }
 
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        alert("Image size should be less than 5MB");
+      // Validate file size (max 10MB for projects)
+      if (file.size > 10 * 1024 * 1024) {
+        alert("Image size should be less than 10MB");
         return;
       }
 
@@ -83,7 +84,6 @@ const AddProjectPage = () => {
           file: file,
           preview: e.target.result,
         });
-        setProject((prev) => ({ ...prev, image: e.target.result }));
       };
       reader.readAsDataURL(file);
     }
@@ -91,7 +91,6 @@ const AddProjectPage = () => {
 
   const handleRemoveImage = () => {
     setUploadedImage(null);
-    setProject((prev) => ({ ...prev, image: "" }));
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -186,44 +185,25 @@ const AddProjectPage = () => {
       const projectData = {
         ...base,
         totalFunding: parseFloat(project.totalFunding),
-        teamSize: project.teamSize ? parseInt(project.teamSize) : null,
+        teamSize: project.teamSize ? parseInt(project.teamSize) : undefined,
         carbonOffsetTarget: project.carbonOffsetTarget
           ? parseInt(project.carbonOffsetTarget)
-          : null,
+          : undefined,
         credits: computedCredits,
       };
-      // Attach documents as base64 to send; server will push to IPFS
-      if (documents?.length) {
-        const toBase64 = (arrayBuffer) => {
-          // Browser-friendly base64 (avoids relying on Node Buffer in Next.js edge/client)
-            let binary = '';
-            const bytes = new Uint8Array(arrayBuffer);
-            const len = bytes.byteLength;
-            for (let i = 0; i < len; i++) binary += String.fromCharCode(bytes[i]);
-            return btoa(binary);
-        };
-        projectData.documents = await Promise.all(documents.map(async d => {
-          try {
-            if (!d.file || typeof d.file.arrayBuffer !== 'function') {
-              return { name: d.name, size: d.size, skipped: true, reason: 'original file reference lost' };
-            }
-            const buf = await d.file.arrayBuffer();
-            return { name: d.name, size: d.size, base64: toBase64(buf) };
-          } catch (err) {
-            console.error('Doc encode failed', d.name, err);
-            return { name: d.name, size: d.size, error: err.message };
-          }
-        }));
+
+      // Use projectsApi with image file (single image for projects)
+      const response = await projectsApi.createProject(
+        projectData,
+        uploadedImage?.file || null
+      );
+
+      if (response.success) {
+        alert('Project created successfully!');
+        router.push("/admin/projects");
+      } else {
+        throw new Error(response.message || 'Failed to create project');
       }
-      const response = await fetch("/api/admin/projects", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(projectData),
-      });
-      if (!response.ok) throw new Error("Failed to save project");
-      const json = await response.json();
-      setSavedDocs(json.documents || []);
-      router.push("/admin/projects");
     } catch (e) {
       console.error(e);
       alert(e.message || "Failed to save project");

@@ -1,14 +1,17 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { projectsApi } from '@/lib/projectsApi';
+import { blockchainApi } from '@/lib/blockchainApi';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
 import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 import { 
   TreePine, 
   Search, 
@@ -37,6 +40,7 @@ import { blockchainApi } from '@/lib/blockchainApi';
 
 const ProjectsPage = () => {
   const router = useRouter();
+  const editImageInputRef = useRef(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
@@ -44,11 +48,11 @@ const ProjectsPage = () => {
   const [selectedProject, setSelectedProject] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [editingProject, setEditingProject] = useState({});
+  const [editImageFile, setEditImageFile] = useState(null);
+  const [editImagePreview, setEditImagePreview] = useState(null);
   const [projects, setProjects] = useState([]);
   const [syncingId, setSyncingId] = useState(null);
-  // Removed blockchain registration UI (now automatic in backend)
   const [saving, setSaving] = useState(false);
-  // Registration flow moved to Add Project page
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -81,16 +85,16 @@ const ProjectsPage = () => {
   const fetchProjects = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/projects?limit=1000&page=1', { cache: 'no-store' });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const text = await response.text();
-      const json = text ? JSON.parse(text) : {};
-      const list = (json?.data?.projects || json?.projects || []).map(p => ({ ...p, id: p._id || p.id }));
+      const response = await projectsApi.getProjects({ limit: 1000, page: 1 });
+      const list = response?.data?.projects || [];
       setProjects(list);
     } catch (e) {
       console.error('Fetch projects failed', e);
       setProjects([]);
-    } finally { setIsLoading(false); }
+      alert('Failed to fetch projects: ' + e.message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Generic partial updater
@@ -103,15 +107,9 @@ const ProjectsPage = () => {
       setProjects(prev => prev.map(p => p.id === id ? { ...p, ...patch } : p));
     }
     try {
-      const res = await fetch('/api/admin/projects', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, ...patch })
-      });
-      if (!res.ok) throw new Error(`Update failed ${res.status}`);
-      const data = await res.json().catch(()=>({}));
-      if (data.project) {
-        setProjects(prev => prev.map(p => p.id === id ? { ...p, ...data.project, id: data.project._id || data.project.id || id } : p));
+      const response = await projectsApi.updateProject(id, patch);
+      if (response.success && response.data) {
+        setProjects(prev => prev.map(p => p.id === id ? { ...p, ...response.data } : p));
       }
       return true;
     } catch (e) {
@@ -183,16 +181,17 @@ const ProjectsPage = () => {
       teamSize: (project.teamSize || 0).toString(),
       carbonOffsetTarget: (project.carbonOffsetTarget || 0).toString()
     });
+    setEditImageFile(null);
+    setEditImagePreview(null);
     setShowEditProject(true);
   };
 
   const handleDeleteProject = async (projectId) => {
-    if (!confirm('Delete this project?')) return;
+    if (!confirm('Delete this project? This will also delete the project image from Cloudinary.')) return;
     const prev = projects;
     setProjects(prev.filter(p => p.id !== projectId));
     try {
-      const res = await fetch(`/api/admin/projects?id=${projectId}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error(`Delete failed ${res.status}`);
+      await projectsApi.deleteProject(projectId);
     } catch (e) {
       console.error('Delete project failed', e);
       alert(e.message || 'Delete failed');
@@ -200,39 +199,80 @@ const ProjectsPage = () => {
     }
   };
 
+  const handleEditImageUpload = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file');
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      alert('Image size should be less than 10MB');
+      return;
+    }
+
+    setEditImageFile(file);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setEditImagePreview(e.target.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveEditImage = () => {
+    setEditImageFile(null);
+    setEditImagePreview(null);
+    if (editImageInputRef.current) {
+      editImageInputRef.current.value = '';
+    }
+  };
+
   const handleUpdateProject = async () => {
-    if (selectedProject && editingProject.name && editingProject.location && editingProject.type) {
-      try {
-        setSaving(true);
-        const payload = {
-          name: editingProject.name,
-          location: editingProject.location,
-            type: editingProject.type,
-            description: editingProject.description,
-            totalFunding: parseFloat(editingProject.totalFunding),
-            teamSize: editingProject.teamSize ? parseInt(editingProject.teamSize) : null,
-            carbonOffsetTarget: editingProject.carbonOffsetTarget ? parseInt(editingProject.carbonOffsetTarget) : null,
-            status: editingProject.status,
-            image: editingProject.image,
-            verified: editingProject.verified !== undefined ? editingProject.verified : selectedProject.verified,
-            featured: editingProject.featured !== undefined ? editingProject.featured : selectedProject.featured,
-            expectedCompletion: editingProject.expectedCompletion
-        };
-        const ok = await updateProjectPartial(selectedProject.id, payload, { optimistic: false });
-        if (ok) {
-          setShowEditProject(false);
-          setSelectedProject(null);
-          setEditingProject({});
-          await fetchProjects(); // refresh to show any auto-registration
-        }
-      } catch (error) {
-        console.error('Failed to update project:', error);
-        alert('Failed to update project. Please try again.');
-      } finally {
-        setSaving(false);
+    if (!selectedProject || !editingProject.name || !editingProject.location || !editingProject.type) {
+      alert('Please fill in all required fields (Name, Location, Type)');
+      return;
+    }
+
+    try {
+      setSaving(true);
+      const payload = {
+        name: editingProject.name,
+        location: editingProject.location,
+        type: editingProject.type,
+        description: editingProject.description,
+        totalFunding: parseFloat(editingProject.totalFunding) || 0,
+        teamSize: editingProject.teamSize ? parseInt(editingProject.teamSize) : undefined,
+        carbonOffsetTarget: editingProject.carbonOffsetTarget ? parseInt(editingProject.carbonOffsetTarget) : undefined,
+        status: editingProject.status,
+        verified: editingProject.verified,
+        featured: editingProject.featured,
+        expectedCompletion: editingProject.expectedCompletion
+      };
+
+      const response = await projectsApi.updateProject(
+        selectedProject.id,
+        payload,
+        editImageFile || null
+      );
+
+      if (response.success) {
+        setShowEditProject(false);
+        setSelectedProject(null);
+        setEditingProject({});
+        setEditImageFile(null);
+        setEditImagePreview(null);
+        await fetchProjects();
+        alert('Project updated successfully!');
+      } else {
+        throw new Error(response.message || 'Failed to update project');
       }
-    } else {
-      alert('Please fill in all required fields');
+    } catch (error) {
+      console.error('Failed to update project:', error);
+      alert('Failed to update project: ' + error.message);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -627,22 +667,94 @@ const ProjectsPage = () => {
                   </Select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Image</label>
-                  <Select 
-                    value={editingProject.image || selectedProject.image}
-                    onValueChange={(value) => setEditingProject(prev => ({ ...prev, image: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="/tree1.jpg">Tree 1</SelectItem>
-                      <SelectItem value="/tree2.jpg">Tree 2</SelectItem>
-                      <SelectItem value="/tree3.jpg">Tree 3</SelectItem>
-                      <SelectItem value="/tree4.jpg">Tree 4</SelectItem>
-                      <SelectItem value="/tree5.jpg">Tree 5</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <label className="block text-sm font-medium mb-1">Expected Completion</label>
+                  <Input 
+                    type="date"
+                    value={editingProject.expectedCompletion || selectedProject.expectedCompletion || ''}
+                    onChange={(e) => setEditingProject(prev => ({ ...prev, expectedCompletion: e.target.value }))}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Team Size</label>
+                  <Input 
+                    type="number"
+                    value={editingProject.teamSize || selectedProject.teamSize || ''}
+                    onChange={(e) => setEditingProject(prev => ({ ...prev, teamSize: e.target.value }))}
+                    placeholder="Number of team members"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Carbon Offset Target (kg)</label>
+                  <Input 
+                    type="number"
+                    value={editingProject.carbonOffsetTarget || selectedProject.carbonOffsetTarget || ''}
+                    onChange={(e) => setEditingProject(prev => ({ ...prev, carbonOffsetTarget: e.target.value }))}
+                    placeholder="Target CO₂ reduction"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">Project Image</label>
+                <div className="space-y-2">
+                  {/* Current Image Display */}
+                  {!editImagePreview && selectedProject.image && (
+                    <div className="relative w-full h-32 bg-gray-100 rounded-lg overflow-hidden">
+                      <img
+                        src={selectedProject.image}
+                        alt="Current project"
+                        className="w-full h-full object-cover"
+                      />
+                      <Badge className="absolute top-2 left-2">Current Image</Badge>
+                    </div>
+                  )}
+
+                  {/* New Image Preview */}
+                  {editImagePreview && (
+                    <div className="relative w-full h-32 bg-gray-100 rounded-lg overflow-hidden">
+                      <img
+                        src={editImagePreview}
+                        alt="New project"
+                        className="w-full h-full object-cover"
+                      />
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={handleRemoveEditImage}
+                        className="absolute top-2 right-2 h-6 w-6 p-0"
+                      >
+                        ×
+                      </Button>
+                      <Badge className="absolute top-2 left-2 bg-blue-600">New Image</Badge>
+                    </div>
+                  )}
+
+                  {/* Upload Button */}
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+                    <input
+                      ref={editImageInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleEditImageUpload}
+                      className="hidden"
+                      id="edit-image-upload"
+                    />
+                    <label
+                      htmlFor="edit-image-upload"
+                      className="cursor-pointer flex flex-col items-center gap-2"
+                    >
+                      <Upload className="h-6 w-6 text-muted-foreground" />
+                      <p className="text-sm font-medium">
+                        {editImageFile ? 'Change Image' : editImagePreview ? 'Upload Different Image' : 'Upload New Image'}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        PNG, JPG up to 10MB • Leave empty to keep current image
+                      </p>
+                    </label>
+                  </div>
                 </div>
               </div>
 

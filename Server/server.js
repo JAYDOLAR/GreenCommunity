@@ -1,50 +1,52 @@
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import fs from 'fs';
 import createServer from './app.js';
 
-// Fix __dirname in ES Modules
+// Fix __dirname in ESM
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Force dotenv to load
-dotenv.config({ path: path.join(__dirname, '.env') });
-
-console.log('🔍 Debug: MONGO_URI loaded?', !!process.env.MONGO_URI);
-console.log('✅ MONGO_URI found in environment variables');
-console.log('📁 Current directory:', __dirname);
-console.log('📁 Client directory will be:', process.env.NODE_ENV !== "production" ? path.resolve(__dirname, '../client') : path.resolve(__dirname, './client'));
-
-// Check if client directory exists
-const clientDir = process.env.NODE_ENV !== "production" ? path.resolve(__dirname, '../client') : path.resolve(__dirname, './client');
-console.log('📁 Checking client directory:', clientDir);
-
-import fs from 'fs';
-try {
-  const clientDirContents = fs.readdirSync(clientDir);
-  console.log('📋 Client directory contents:', clientDirContents);
-  
-  const srcPath = path.join(clientDir, 'src');
-  if (fs.existsSync(srcPath)) {
-    const srcContents = fs.readdirSync(srcPath);
-    console.log('📋 src directory contents:', srcContents);
+// Load .env ONLY in development (Azure does NOT use .env)
+if (process.env.NODE_ENV !== 'production') {
+  const envPath = path.join(__dirname, '.env');
+  if (fs.existsSync(envPath)) {
+    dotenv.config({ path: envPath });
+    console.log('🟢 Loaded .env from:', envPath);
   } else {
-    console.log('❌ src directory not found at:', srcPath);
+    console.log('⚠️ No .env file found in development.');
   }
-} catch (error) {
-  console.log('❌ Error reading client directory:', error.message);
+} else {
+  console.log('🟢 Production mode detected (Azure). Using App Service settings.');
 }
 
-console.log('MONGO_URI from .env:', process.env.MONGO_URI); // keep this debug
+// Validate environment variables
+console.log('🔍 MONGO_URI available?', !!process.env.MONGO_URI);
 
+// Correct client directory (Next.js build output)
+const clientDir = path.resolve(__dirname, 'client');
+console.log('📁 Client directory:', clientDir);
+
+// Check basic client folders (not src/)
+try {
+  const contents = fs.readdirSync(clientDir);
+  console.log('📋 Client folder contents:', contents);
+} catch (err) {
+  console.log('❌ Cannot read client directory:', err.message);
+}
+
+// Server port (Azure injects PORT)
 const PORT = process.env.PORT || 5000;
 
-// Initialize the server with Next.js
-createServer().then((app) => {
-  app.listen(PORT, () => {
-    console.log(`🚀 Server running on http://localhost:${PORT}`);
+// Start Express + Next.js
+createServer()
+  .then((app) => {
+    app.listen(PORT, () =>
+      console.log(`🚀 Server running → http://localhost:${PORT}`)
+    );
+  })
+  .catch((err) => {
+    console.error('❌ Error starting server:', err);
+    process.exit(1);
   });
-}).catch((err) => {
-  console.error('Error starting server:', err);
-  process.exit(1);
-});
