@@ -332,10 +332,95 @@ export const authAPI = {
     });
   },
 
-  exportUserData: async () => {
-    return apiRequest('/api/auth/export-data', {
-      method: 'POST',
-    });
+  exportUserData: async (format = 'json') => {
+    const fmt = (format === 'zip' ? 'zip' : 'json');
+    const base = `${API_BASE_URL}/api/auth/export-data?format=${encodeURIComponent(fmt)}`;
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+
+    const doFetch = async (method) => {
+      return fetch(base, {
+        method,
+        headers: {
+          ...(token && { Authorization: `Bearer ${token}` }),
+          Accept: fmt === 'zip' ? 'application/zip' : 'application/json',
+        },
+        credentials: 'include',
+      });
+    };
+
+    // Try POST first, then fallback to GET if server expects GET
+    let res = await doFetch('POST');
+    if (!res.ok && (res.status === 404 || res.status === 405)) {
+      res = await doFetch('GET');
+    }
+
+    // If still not ok, try to parse a message
+    if (!res.ok) {
+      let message = `Failed to export data (HTTP ${res.status})`;
+      try {
+        const text = await res.text();
+        const json = JSON.parse(text);
+        message = json.message || json.error || message;
+      } catch {}
+      const err = new Error(message);
+      err.status = res.status;
+      throw err;
+    }
+
+    const ct = (res.headers.get('content-type') || '').toLowerCase();
+
+    // If server returns JSON with a URL to download
+    if (ct.includes('application/json')) {
+      try {
+        const data = await res.json();
+        const url = data.url || data.downloadUrl || data.href;
+        if (url) {
+          const win = window.open(url, '_blank');
+          if (!win) {
+            // Fallback to programmatic fetch+blob if popup blocked
+            const dlRes = await fetch(url, { credentials: 'include' });
+            const blob = await dlRes.blob();
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = (fmt === 'zip' ? 'my-data.zip' : 'my-data.json');
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+          }
+          return { success: true };
+        }
+        // If JSON data is the export itself, download it as a file
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'my-data.json';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        return { success: true };
+      } catch {
+        // If JSON parsing fails unexpectedly, fall through to blob handling
+      }
+    }
+
+    // Otherwise treat as blob stream (zip or json)
+    const disposition = res.headers.get('content-disposition') || '';
+    let filename = fmt === 'zip' ? 'my-data.zip' : 'my-data.json';
+    const match = disposition.match(/filename\*=UTF-8''([^;\s]+)/) || disposition.match(/filename="?([^";]+)"?/);
+    if (match && match[1]) filename = decodeURIComponent(match[1]);
+    else if (ct.includes('zip')) filename = 'my-data.zip';
+    else if (ct.includes('json')) filename = 'my-data.json';
+
+    const blob = await res.blob();
+    const href = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = href;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(href);
+    return { success: true };
   },
 
   deleteUserAccount: async () => {

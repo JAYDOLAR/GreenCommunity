@@ -45,6 +45,8 @@ import {
 } from "lucide-react";
 import { usePreferences, useTranslation } from "@/context/PreferencesContext";
 import { authAPI } from "@/lib/api";
+import { footprintLogAPI } from "@/lib/footprintlogApi";
+import { challengesAPI } from "@/lib/api";
 import { useUser } from "@/context/UserContext";
 import toast from "react-hot-toast";
 
@@ -365,12 +367,46 @@ const Settings = () => {
 
   const exportData = async () => {
     try {
-      const response = await authAPI.exportUserData();
-      toast.success(
-        "Your data export has been prepared and sent to your email."
-      );
+      const results = await Promise.allSettled([
+        authAPI.getUserSettings(),
+        footprintLogAPI.getUserLogs(),
+        challengesAPI.me(),
+        authAPI.getTrustedDevices(),
+        challengesAPI.groups(),
+        challengesAPI.events(),
+      ]);
+
+      const [settingsRes, logsRes, challengesRes, devicesRes, groupsRes, eventsRes] = results;
+
+      const exportPayload = {
+        generatedAt: new Date().toISOString(),
+        profile: settingsRes.status === 'fulfilled' ? settingsRes.value?.user || settingsRes.value : null,
+        settings: settingsRes.status === 'fulfilled' ? {
+          notifications: settingsRes.value?.user?.userInfo?.notifications || settingsRes.value?.user?.profile?.notificationPreferences || null,
+          preferences: settingsRes.value?.user?.userInfo?.preferences || settingsRes.value?.user?.profile?.appPreferences || null,
+        } : null,
+        carbonFootprint: logsRes.status === 'fulfilled' ? logsRes.value : [],
+        challenges: challengesRes.status === 'fulfilled' ? challengesRes.value : null,
+        trustedDevices: devicesRes.status === 'fulfilled' ? devicesRes.value : [],
+        community: {
+          groups: groupsRes.status === 'fulfilled' ? groupsRes.value : [],
+          events: eventsRes.status === 'fulfilled' ? eventsRes.value : [],
+        },
+        purchases: [],
+        payments: [],
+      };
+
+      const blob = new Blob([JSON.stringify(exportPayload, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'my-data.json';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(a.href);
+      toast.success('Downloaded JSON data');
     } catch (error) {
-      toast.error("Failed to export data. Please try again.");
+      toast.error(error?.message || 'Failed to export data. Please try again.');
     }
   };
 
@@ -664,52 +700,6 @@ const Settings = () => {
               Data & Privacy
             </TabsTrigger>
           </TabsList>
-
-          {/* Navigation buttons for mobile */}
-          <div className="absolute top-1/2 -translate-y-1/2 left-0 right-0 flex justify-between pointer-events-none sm:hidden">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigateTab("prev")}
-              className="pointer-events-auto -ml-2 h-8 w-8 rounded-full bg-background/80 backdrop-blur-sm shadow-md hover:bg-background"
-              aria-label="Previous tab"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <polyline points="15 18 9 12 15 6"></polyline>
-              </svg>
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigateTab("next")}
-              className="pointer-events-auto -mr-2 h-8 w-8 rounded-full bg-background/80 backdrop-blur-sm shadow-md hover:bg-background"
-              aria-label="Next tab"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <polyline points="9 18 15 12 9 6"></polyline>
-              </svg>
-            </Button>
-          </div>
         </div>
         <TabsContent
           key={`profile-${activeTab === "profile" ? Date.now() : "hidden"}`}
@@ -1222,14 +1212,16 @@ const Settings = () => {
                 <p className="text-xs md:text-sm text-muted-foreground">
                   {t("Export Includes Profile Info")}
                 </p>
-                <Button
-                  onClick={exportData}
-                  variant="outline"
-                  className="w-full"
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  {t("Download My Data")}
-                </Button>
+                <div>
+                  <Button
+                    onClick={() => exportData('json')}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Download My Data
+                  </Button>
+                </div>
               </CardContent>
             </Card>
             <Card className="card-gradient border-destructive/20">

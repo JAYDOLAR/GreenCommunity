@@ -479,17 +479,17 @@ const ReportsPage = () => {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Reports</h1>
           <p className="text-muted-foreground">Generate and manage comprehensive reports</p>
         </div>
-        <div className="flex gap-3">
-          <Button variant="outline">
+        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+          <Button variant="outline" className="w-full sm:w-auto justify-center">
             <Filter className="h-4 w-4 mr-2" />
             Filter Reports
           </Button>
-          <Button onClick={generateReport} disabled={isGenerating}>
+          <Button variant="default" className="w-full sm:w-auto justify-center" onClick={generateReport} disabled={isGenerating}>
             <FileText className="h-4 w-4 mr-2" />
             {isGenerating ? 'Generating...' : 'Generate Report'}
           </Button>
@@ -618,13 +618,13 @@ const ReportsPage = () => {
             <CardContent>
               <div className="space-y-4">
                 {[...generatedReports, ...reports].map((report) => (
-                  <div key={report.id} className="flex items-center gap-4 p-4 border rounded-lg hover:bg-accent/50 transition-colors">
-                    <div className="w-12 h-12 bg-accent rounded-lg flex items-center justify-center">
+                  <div key={report.id} className="relative flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 p-4 border rounded-lg hover:bg-accent/50 transition-colors overflow-hidden">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-accent rounded-lg flex items-center justify-center flex-shrink-0">
                       <FileText className="h-5 w-5 text-primary" />
                     </div>
 
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
+                    <div className="flex-1 min-w-0 w-full">
+                      <div className="flex flex-wrap items-center gap-2 mb-1 min-w-0">
                         <h3 className="font-medium">{report.name}</h3>
                         <Badge className={getStatusColor(report.status)}>
                           {report.status}
@@ -633,21 +633,21 @@ const ReportsPage = () => {
                           {report.format}
                         </Badge>
                       </div>
-                      <div className="text-sm text-muted-foreground mb-2">
+                      <div className="text-sm text-muted-foreground mb-2 break-words">
                         {report.description}
                       </div>
-                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
+                      <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1 whitespace-nowrap">
                           <Calendar className="h-3 w-3" />
                           Generated {report.lastGenerated}
                         </span>
-                        <span>Size: {report.size}</span>
-                        <span>Format: {report.format}</span>
+                        <span className="whitespace-nowrap">Size: {report.size}</span>
+                        <span className="whitespace-nowrap">Format: {report.format}</span>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                      <Button variant="ghost" size="sm" onClick={() => viewReport(report)}>
+                    <div className="mt-2 sm:mt-0 flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+                      <Button variant="ghost" size="sm" onClick={() => viewReport(report)} title="View">
                         <Eye className="h-4 w-4" />
                       </Button>
                       <div className="relative">
@@ -701,63 +701,59 @@ const ReportsPage = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <div className="flex items-center gap-4 p-4 border rounded-lg">
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+            <div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 p-4 border rounded-lg overflow-hidden">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
                 <Calendar className="h-5 w-5 text-green-600" />
               </div>
 
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
+              <div className="flex-1 min-w-0 w-full">
+                <div className="flex items-center gap-2 mb-1 min-w-0">
                   <h3 className="font-medium">Weekly User Activity Report</h3>
-                  <Badge className="bg-green-100 text-green-800">
-                    Active
-                  </Badge>
+                  <Badge className="bg-green-100 text-green-800">Active</Badge>
                 </div>
-                <div className="text-sm text-muted-foreground">
+                <div className="text-sm text-muted-foreground break-words">
                   Generated every Monday at 9:00 AM
                 </div>
-                <div className="flex items-center gap-4 text-xs text-muted-foreground mt-1">
-                  <span>Next: Monday, Jan 22, 2024</span>
-                  <span>Recipients: 3</span>
+                <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs text-muted-foreground mt-1">
+                  <span className="whitespace-nowrap">Next: Monday, Jan 22, 2024</span>
+                  <span className="whitespace-nowrap">Recipients: 3</span>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
-                <Button variant="ghost" size="sm">
+              <div className="mt-2 sm:mt-0 flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+                <Button variant="ghost" size="sm" title="View">
                   <Eye className="h-4 w-4" />
                 </Button>
-                <Button variant="ghost" size="sm">
+                <Button variant="ghost" size="sm" title="Download">
                   <Download className="h-4 w-4" />
                 </Button>
               </div>
             </div>
 
-            <div className="flex items-center gap-4 p-4 border rounded-lg">
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+            <div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 p-4 border rounded-lg overflow-hidden">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
                 <Calendar className="h-5 w-5 text-blue-600" />
               </div>
 
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
+              <div className="flex-1 min-w-0 w-full">
+                <div className="flex items-center gap-2 mb-1 min-w-0">
                   <h3 className="font-medium">Monthly Revenue Report</h3>
-                  <Badge className="bg-blue-100 text-blue-800">
-                    Active
-                  </Badge>
+                  <Badge className="bg-blue-100 text-blue-800">Active</Badge>
                 </div>
-                <div className="text-sm text-muted-foreground">
+                <div className="text-sm text-muted-foreground break-words">
                   Generated on the 1st of every month at 6:00 AM
                 </div>
-                <div className="flex items-center gap-4 text-xs text-muted-foreground mt-1">
-                  <span>Next: Feb 1, 2024</span>
-                  <span>Recipients: 5</span>
+                <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs text-muted-foreground mt-1">
+                  <span className="whitespace-nowrap">Next: Feb 1, 2024</span>
+                  <span className="whitespace-nowrap">Recipients: 5</span>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
-                <Button variant="ghost" size="sm">
+              <div className="mt-2 sm:mt-0 flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+                <Button variant="ghost" size="sm" title="View">
                   <Eye className="h-4 w-4" />
                 </Button>
-                <Button variant="ghost" size="sm">
+                <Button variant="ghost" size="sm" title="Download">
                   <Download className="h-4 w-4" />
                 </Button>
               </div>

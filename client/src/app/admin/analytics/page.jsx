@@ -59,6 +59,13 @@ const AnalyticsPage = () => {
   const exportMenuRef = useRef(null);
   const [userChartType, setUserChartType] = useState('area');
   const [revenueChartType, setRevenueChartType] = useState('line');
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const update = () => setIsMobile(window.innerWidth < 640);
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
 
   const [metrics, setMetrics] = useState({
     users: {
@@ -405,7 +412,7 @@ const AnalyticsPage = () => {
 
     const commonProps = {
       data,
-      margin: { top: 5, right: 30, left: 20, bottom: 5 },
+      margin: isMobile ? { top: 4, right: 8, left: 8, bottom: 8 } : { top: 5, right: 30, left: 20, bottom: 10 },
     };
 
     const tooltipStyle = {
@@ -420,8 +427,8 @@ const AnalyticsPage = () => {
          return (
            <AreaChart {...commonProps}>
              <CartesianGrid strokeDasharray="3 3" />
-             <XAxis dataKey={userChartMonth === -1 ? "month" : "day"} tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
-             <YAxis tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
+             <XAxis dataKey={userChartMonth === -1 ? "month" : "day"} interval="preserveStartEnd" tickCount={isMobile ? 3 : 6} tick={{ fontSize: isMobile ? 10 : 12 }} tickLine={false} axisLine={false} />
+             <YAxis tick={{ fontSize: isMobile ? 10 : 12 }} tickLine={false} axisLine={false} domain={[0, 'auto']} allowDecimals={false} />
              <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: 'hsl(var(--muted-foreground))' }} formatter={(value) => [`${value} users`, 'Users']} />
              <Area 
                type="monotone" 
@@ -572,8 +579,8 @@ const AnalyticsPage = () => {
          return (
            <LineChart {...commonProps}>
              <CartesianGrid strokeDasharray="3 3" />
-             <XAxis dataKey={revenueChartMonth === -1 ? "month" : "day"} tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
-             <YAxis tick={{ fontSize: 12 }} tickLine={false} axisLine={false} tickFormatter={(value) => `₹${value}k`} />
+             <XAxis dataKey={revenueChartMonth === -1 ? "month" : "day"} interval="preserveStartEnd" tickCount={isMobile ? 3 : 6} tick={{ fontSize: isMobile ? 10 : 12 }} tickLine={false} axisLine={false} />
+             <YAxis tick={{ fontSize: isMobile ? 10 : 12 }} tickLine={false} axisLine={false} domain={[0, 'auto']} allowDecimals={false} tickFormatter={(value) => `₹${value}k`} />
              <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: 'hsl(var(--muted-foreground))' }} formatter={(value) => [`₹${value}k`, 'Revenue']} />
              <Line 
                type="monotone" 
@@ -590,8 +597,8 @@ const AnalyticsPage = () => {
          return (
            <AreaChart {...commonProps}>
              <CartesianGrid strokeDasharray="3 3" />
-             <XAxis dataKey={revenueChartMonth === -1 ? "month" : "day"} tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
-             <YAxis tick={{ fontSize: 12 }} tickLine={false} axisLine={false} tickFormatter={(value) => `₹${value}k`} />
+             <XAxis dataKey={revenueChartMonth === -1 ? "month" : "day"} interval="preserveStartEnd" tickCount={isMobile ? 3 : 6} tick={{ fontSize: isMobile ? 10 : 12 }} tickLine={false} axisLine={false} />
+             <YAxis tick={{ fontSize: isMobile ? 10 : 12 }} tickLine={false} axisLine={false} domain={[0, 'auto']} allowDecimals={false} tickFormatter={(value) => `₹${value}k`} />
              <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: 'hsl(var(--muted-foreground))' }} formatter={(value) => [`₹${value}k`, 'Revenue']} />
              <Area 
                type="monotone" 
@@ -608,8 +615,8 @@ const AnalyticsPage = () => {
          return (
            <BarChart {...commonProps}>
              <CartesianGrid strokeDasharray="3 3" />
-             <XAxis dataKey={revenueChartMonth === -1 ? "month" : "day"} tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
-             <YAxis tick={{ fontSize: 12 }} tickLine={false} axisLine={false} tickFormatter={(value) => `₹${value}k`} />
+             <XAxis dataKey={revenueChartMonth === -1 ? "month" : "day"} interval="preserveStartEnd" tickCount={isMobile ? 3 : 6} tick={{ fontSize: isMobile ? 10 : 12 }} tickLine={false} axisLine={false} />
+             <YAxis tick={{ fontSize: isMobile ? 10 : 12 }} tickLine={false} axisLine={false} domain={[0, 'auto']} allowDecimals={false} tickFormatter={(value) => `₹${value}k`} />
              <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: 'hsl(var(--muted-foreground))' }} formatter={(value) => [`₹${value}k`, 'Revenue']} />
              <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
            </BarChart>
@@ -619,8 +626,8 @@ const AnalyticsPage = () => {
          return (
            <ComposedChart {...commonProps}>
              <CartesianGrid strokeDasharray="3 3" />
-             <XAxis dataKey={revenueChartMonth === -1 ? "month" : "day"} tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
-             <YAxis tick={{ fontSize: 12 }} tickLine={false} axisLine={false} tickFormatter={(value) => `₹${value}k`} />
+             <XAxis dataKey={revenueChartMonth === -1 ? "month" : "day"} interval="preserveStartEnd" tickCount={isMobile ? 3 : 6} tick={{ fontSize: isMobile ? 10 : 12 }} tickLine={false} axisLine={false} />
+             <YAxis tick={{ fontSize: isMobile ? 10 : 12 }} tickLine={false} axisLine={false} domain={[0, 'auto']} allowDecimals={false} tickFormatter={(value) => `₹${value}k`} />
              <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: 'hsl(var(--muted-foreground))' }} formatter={(value) => [`₹${value}k`, 'Revenue']} />
              <Area 
                type="monotone" 
@@ -703,8 +710,8 @@ const AnalyticsPage = () => {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-                 <div>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
            <h1 className="text-3xl font-bold text-foreground">Analytics</h1>
            <p className="text-muted-foreground">Comprehensive insights and performance metrics</p>
            {timeRange === 'custom' && (
@@ -713,9 +720,9 @@ const AnalyticsPage = () => {
              </p>
            )}
          </div>
-                 <div className="flex gap-3">
+                <div className="flex flex-wrap gap-2 w-full sm:w-auto">
            <Select value={timeRange} onValueChange={setTimeRange}>
-             <SelectTrigger className="w-32">
+             <SelectTrigger className="w-full sm:w-32">
                <SelectValue />
              </SelectTrigger>
              <SelectContent>
@@ -760,23 +767,23 @@ const AnalyticsPage = () => {
             variant="outline" 
             onClick={fetchRealTimeData}
             disabled={isLoading}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 w-full sm:w-auto justify-center"
           >
             {isLoading ? (
               <RefreshCw className="h-4 w-4 animate-spin" />
             ) : (
               <RefreshCw className="h-4 w-4" />
             )}
-            Refresh
+            Refresh Data
           </Button>
-          <div className="relative" ref={exportMenuRef}>
+          <div className="relative w-full sm:w-auto" ref={exportMenuRef}>
             <Button 
-              variant="outline" 
+              variant="default" 
               onClick={() => setShowExportMenu(!showExportMenu)}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 w-full sm:w-auto justify-center"
             >
               <Download className="h-4 w-4" />
-              Export Data
+              Generate Report
               <ChevronDown className="h-4 w-4" />
             </Button>
             
@@ -795,7 +802,7 @@ const AnalyticsPage = () => {
                       }}
                       className="w-full text-left px-2 py-2 text-sm hover:bg-accent rounded-md transition-colors"
                     >
-                      CSV File
+                      Export as Excel
                     </button>
                     <button
                       onClick={() => {
@@ -805,7 +812,7 @@ const AnalyticsPage = () => {
                       }}
                       className="w-full text-left px-2 py-2 text-sm hover:bg-accent rounded-md transition-colors"
                     >
-                      PDF Report
+                      Export as PDF
                     </button>
                     <button
                       onClick={() => {
@@ -945,7 +952,7 @@ const AnalyticsPage = () => {
               </div>
            </CardHeader>
            <CardContent>
-             <div className="h-56 sm:h-64 md:h-72">
+             <div className="h-48 sm:h-64 md:h-72">
                <ResponsiveContainer width="100%" height="100%">
                  {renderUserChart(userChartType)}
                </ResponsiveContainer>
@@ -1018,40 +1025,42 @@ const AnalyticsPage = () => {
         <CardContent>
           <div className="space-y-4">
             {topProjects.map((project, index) => (
-              <div key={index} className="flex items-center gap-4 p-4 border rounded-lg">
-                <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-bold">
+              <div key={index} className="relative flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 p-4 border rounded-lg hover:bg-accent/50 transition-colors overflow-hidden">
+                <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-bold flex-shrink-0">
                   {index + 1}
                 </div>
                 
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
+                <div className="flex-1 min-w-0 w-full">
+                  <div className="flex items-center gap-2 mb-1 min-w-0">
                     <h3 className="font-medium">{project.name}</h3>
                     <Badge variant="secondary">
                       +{project.growth}%
                     </Badge>
                   </div>
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                    <span className="flex items-center gap-1">
+                  <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-sm text-muted-foreground">
+                    <span className="flex items-center gap-1 whitespace-nowrap">
                       <Target className="h-3 w-3" />
                       {project.carbonOffset.toLocaleString()} kg CO₂
                     </span>
-                    <span className="flex items-center gap-1">
+                    <span className="flex items-center gap-1 whitespace-nowrap">
                       <DollarSign className="h-3 w-3" />
                       {project.funding}% funded
                     </span>
-                    <span className="flex items-center gap-1">
+                    <span className="flex items-center gap-1 whitespace-nowrap">
                       <Users className="h-3 w-3" />
                       {project.contributors.toLocaleString()} contributors
                     </span>
                   </div>
                 </div>
 
-                <div className="text-right">
-                  <div className="text-lg font-bold text-green-600">
-                    +{project.growth}%
-                  </div>
+                {/* Right growth block for larger screens */}
+                <div className="hidden sm:block text-right">
+                  <div className="text-lg font-bold text-green-600">+{project.growth}%</div>
                   <div className="text-xs text-muted-foreground">Growth</div>
                 </div>
+
+                {/* Floating growth badge on mobile to avoid overflow */}
+                <Badge className="sm:hidden absolute top-2 right-2 bg-green-100 text-green-800">+{project.growth}%</Badge>
               </div>
             ))}
           </div>
@@ -1066,31 +1075,33 @@ const AnalyticsPage = () => {
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full text-xs sm:text-sm">
               <thead>
                 <tr className="border-b">
-                  <th className="text-left py-2 font-medium">Date</th>
-                  <th className="text-left py-2 font-medium">New Users</th>
-                  <th className="text-left py-2 font-medium">Active Users</th>
-                  <th className="text-left py-2 font-medium">Contributions</th>
-                  <th className="text-left py-2 font-medium">Growth</th>
+                  <th className="text-left py-2 px-2 font-medium whitespace-nowrap">Date</th>
+                  <th className="text-left py-2 px-2 font-medium whitespace-nowrap">New</th>
+                  <th className="text-left py-2 px-2 font-medium whitespace-nowrap">Active</th>
+                  <th className="text-left py-2 px-2 font-medium whitespace-nowrap">Contrib</th>
+                  <th className="text-right py-2 px-2 font-medium whitespace-nowrap">Growth</th>
                 </tr>
               </thead>
-                             <tbody>
-                 {getFilteredData().userActivity.map((day, index) => (
-                   <tr key={index} className="border-b hover:bg-accent/50">
-                     <td className="py-2">{day.date}</td>
-                     <td className="py-2">{day.newUsers}</td>
-                     <td className="py-2">{day.activeUsers}</td>
-                     <td className="py-2">{day.contributions}</td>
-                     <td className="py-2">
-                       <Badge variant="secondary">
-                         +{Math.floor(Math.random() * 20 + 5)}%
-                       </Badge>
-                     </td>
-                   </tr>
-                 ))}
-               </tbody>
+              <tbody>
+                {getFilteredData().userActivity.map((day, index) => (
+                  <tr key={index} className="border-b hover:bg-accent/50">
+                    <td className="py-2 px-2 whitespace-nowrap">{day.date}</td>
+                    <td className="py-2 px-2">{day.newUsers}</td>
+                    <td className="py-2 px-2">{day.activeUsers}</td>
+                    <td className="py-2 px-2">{day.contributions}</td>
+                    <td className="py-2 px-2">
+                      <div className="flex justify-end">
+                        <Badge variant="secondary" className="text-[10px] sm:text-xs">
+                          +{Math.floor(Math.random() * 20 + 5)}%
+                        </Badge>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
             </table>
           </div>
         </CardContent>

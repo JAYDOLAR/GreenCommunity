@@ -37,31 +37,26 @@ export default function Layout({ children }) {
   const pathname = usePathname();
   const isMobile = useMediaQuery({ maxWidth: 767 });
   const isTablet = useMediaQuery({ minWidth: 768, maxWidth: 1024 });
+  
+  const storageKey = `notifications_${user?.id || user?._id || 'guest'}`;
 
-  // Sample notification data
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      title: "New Challenge Available",
-      message: "Join the 'Green Week' challenge and reduce your carbon footprint!",
-      time: "2 minutes ago",
-      unread: true
-    },
-    {
-      id: 2,
-      title: "Goal Achievement",
-      message: "Congratulations! You've reached 75% of your monthly goal.",
-      time: "1 hour ago",
-      unread: true
-    },
-    {
-      id: 3,
-      title: "Community Update",
-      message: "Your community has saved 500kg of CO2 this week!",
-      time: "3 hours ago",
-      unread: false
+  const [notifications, setNotifications] = useState(() => {
+    const fallback = [
+      { id: 1, title: "New Challenge Available", message: "Join the 'Green Week' challenge and reduce your carbon footprint!", time: "2 minutes ago", unread: true },
+      { id: 2, title: "Goal Achievement", message: "Congratulations! You've reached 75% of your monthly goal.", time: "1 hour ago", unread: true },
+      { id: 3, title: "Community Update", message: "Your community has saved 500kg of CO2 this week!", time: "3 hours ago", unread: false }
+    ];
+    if (typeof window === 'undefined') return fallback;
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (!raw) return fallback;
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : fallback;
+    } catch {
+      return fallback;
     }
-  ]);
+  });
+  const [notificationsHydrated, setNotificationsHydrated] = useState(false);
 
   const unreadCount = notifications.filter(n => n.unread).length;
 
@@ -72,6 +67,30 @@ export default function Layout({ children }) {
   const markAllAsRead = () => {
     setNotifications((prev) => prev.map(n => ({ ...n, unread: false })));
   };
+  
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    setNotificationsHydrated(false);
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          setNotifications(parsed);
+        }
+      }
+    } catch {}
+    setNotificationsHydrated(true);
+  }, [storageKey]);
+
+  
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!notificationsHydrated) return;
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(notifications));
+    } catch {}
+  }, [notifications, storageKey, notificationsHydrated]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -187,14 +206,14 @@ export default function Layout({ children }) {
                   <PopoverTrigger asChild>
                     <Button variant="ghost" size="icon" className="relative p-2">
                       <Bell className="h-5 w-5 text-muted-foreground" />
-                      {unreadCount > 0 && (
+                      {notificationsHydrated && unreadCount > 0 && (
                         <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
                           {unreadCount}
                         </span>
                       )}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-80 p-0" align="end" side="bottom" sideOffset={8}>
+                  <PopoverContent className="w-80 max-w-[90vw] p-0" align="end" side="bottom" sideOffset={8} collisionPadding={8} avoidCollisions={false}>
                     <div className="p-4 border-b">
                       <h3 className="font-semibold text-sm">Notifications</h3>
                     </div>
@@ -214,9 +233,11 @@ export default function Layout({ children }) {
                         </div>
                       ))}
                     </div>
-                    <div className="p-3 border-t">
-                      <Button variant="ghost" className="w-full text-xs" onClick={markAllAsRead}>Mark all as read</Button>
-                    </div>
+                    {unreadCount > 0 && (
+                      <div className="p-3 border-t">
+                        <Button variant="ghost" className="w-full text-xs" onClick={markAllAsRead}>Mark all as read</Button>
+                      </div>
+                    )}
                   </PopoverContent>
                 </Popover>
                 <Popover>
@@ -306,14 +327,14 @@ export default function Layout({ children }) {
                 <PopoverTrigger asChild>
                   <Button variant="ghost" size="icon" className="relative p-2">
                     <Bell className="h-5 w-5 text-muted-foreground" />
-                    {unreadCount > 0 && (
+                    {notificationsHydrated && unreadCount > 0 && (
                       <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
                         {unreadCount}
                       </span>
                     )}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-80 p-0" align="end" side="bottom" sideOffset={8}>
+                <PopoverContent className="w-80 max-w-[90vw] p-0" align="end" side="bottom" sideOffset={8} collisionPadding={8}>
                   <div className="p-4 border-b">
                     <h3 className="font-semibold text-sm">Notifications</h3>
                   </div>
@@ -333,9 +354,11 @@ export default function Layout({ children }) {
                       </div>
                     ))}
                   </div>
-                  <div className="p-3 border-t">
-                    <Button variant="ghost" className="w-full text-xs" onClick={markAllAsRead}>Mark all as read</Button>
-                  </div>
+                  {unreadCount > 0 && (
+                    <div className="p-3 border-t">
+                      <Button variant="ghost" className="w-full text-xs" onClick={markAllAsRead}>Mark all as read</Button>
+                    </div>
+                  )}
                 </PopoverContent>
               </Popover>
               {/* User Profile Dropdown */}

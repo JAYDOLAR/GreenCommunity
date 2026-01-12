@@ -29,40 +29,27 @@ const AdminSidebar = ({ isOpen = false, onClose = () => {} }) => {
   const bellRef = useRef(null);
   const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
   const [isDesktop, setIsDesktop] = useState(true);
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      type: "user",
-      title: "New User Registration",
-      message: "John Doe has joined the platform",
-      time: "2 minutes ago",
-      read: false,
-    },
-    {
-      id: 2,
-      type: "project",
-      title: "Project Milestone",
-      message: "Urban Garden Project reached 50% completion",
-      time: "1 hour ago",
-      read: false,
-    },
-    {
-      id: 3,
-      type: "order",
-      title: "New Marketplace Order",
-      message: "Order #12345 for Eco-friendly Water Bottle",
-      time: "3 hours ago",
-      read: true,
-    },
-    {
-      id: 4,
-      type: "system",
-      title: "System Update",
-      message: "Platform maintenance completed successfully",
-      time: "1 day ago",
-      read: true,
-    },
-  ]);
+  const [notifications, setNotifications] = useState(() => {
+    const fallback = [
+      { id: 1, type: "user", title: "New User Registration", message: "John Doe has joined the platform", time: "2 minutes ago", read: false },
+      { id: 2, type: "project", title: "Project Milestone", message: "Urban Garden Project reached 50% completion", time: "1 hour ago", read: false },
+      { id: 3, type: "order", title: "New Marketplace Order", message: "Order #12345 for Eco-friendly Water Bottle", time: "3 hours ago", read: true },
+      { id: 4, type: "system", title: "System Update", message: "Platform maintenance completed successfully", time: "1 day ago", read: true },
+    ];
+    if (typeof window === 'undefined') return fallback;
+    try {
+      const raw = localStorage.getItem('admin_notifications');
+      if (!raw) return fallback;
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : fallback;
+    } catch {
+      return fallback;
+    }
+  });
+  const [notificationsHydrated, setNotificationsHydrated] = useState(false);
+
+  // Persist notifications across refresh/login
+  const storageKey = `admin_notifications`;
 
   const pathname = usePathname();
   const router = useRouter();
@@ -70,6 +57,21 @@ const AdminSidebar = ({ isOpen = false, onClose = () => {} }) => {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Hydrate notifications from localStorage
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          setNotifications(parsed);
+        }
+      }
+    } catch {}
+    setNotificationsHydrated(true);
+  }, [storageKey]);
 
   // Track desktop vs mobile for responsive behavior
   useEffect(() => {
@@ -99,6 +101,14 @@ const AdminSidebar = ({ isOpen = false, onClose = () => {} }) => {
       window.removeEventListener("scroll", updatePosition, true);
     };
   }, [showNotifications, isDesktop]);
+
+  // Persist notifications on change
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(notifications));
+    } catch {}
+  }, [notifications, storageKey]);
 
   // Close on outside click
   useEffect(() => {
@@ -206,7 +216,7 @@ const AdminSidebar = ({ isOpen = false, onClose = () => {} }) => {
       aria-hidden={!isDesktop && !isOpen}
       aria-label="Admin sidebar"
     >
-      {/* Header with notification button inline */}
+      {/* Header without notification button */}
       <div className="p-4 border-b border-gray-200 bg-white">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 min-w-0">
@@ -219,24 +229,6 @@ const AdminSidebar = ({ isOpen = false, onClose = () => {} }) => {
             </div>
           </div>
           <div className="flex items-center gap-1">
-            <div className="relative" ref={bellRef}>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowNotifications(!showNotifications)}
-                className="relative hover:bg-green-50 focus-visible:ring-2 focus-visible:ring-green-400"
-                aria-label={`Notifications${unreadCount ? ' – ' + unreadCount + ' unread' : ''}`}
-              >
-                <Bell className="h-5 w-5" />
-                {unreadCount > 0 && (
-                  <span
-                    className="absolute -top-1 -right-1 min-w-[1.05rem] h-[1.05rem] px-1 rounded-full bg-green-600 text-white text-[10px] font-semibold flex items-center justify-center shadow ring-1 ring-white/70 animate-in fade-in"
-                  >
-                    {unreadCount > 99 ? '99+' : unreadCount}
-                  </span>
-                )}
-              </Button>
-            </div>
             {!isDesktop && (
               <button
                 onClick={onClose}
@@ -261,14 +253,14 @@ const AdminSidebar = ({ isOpen = false, onClose = () => {} }) => {
               <div className="flex items-center gap-2">
                 <Bell className="h-4 w-4 text-gray-600" />
                 <h3 className="font-semibold text-gray-900">Notifications</h3>
-                {unreadCount > 0 && (
+                {notificationsHydrated && unreadCount > 0 && (
                   <Badge variant="secondary" className="text-xs">
                     {unreadCount} new
                   </Badge>
                 )}
               </div>
               <div className="flex items-center gap-3">
-                {unreadCount > 0 && (
+                {notificationsHydrated && unreadCount > 0 && (
                   <button
                     onClick={markAllAsRead}
                     className="text-xs text-green-600 hover:text-green-700 font-medium"
@@ -367,14 +359,14 @@ const AdminSidebar = ({ isOpen = false, onClose = () => {} }) => {
             <div className="flex items-center gap-2">
               <Bell className="h-4 w-4 text-gray-600" />
               <h3 className="font-semibold text-gray-900">Notifications</h3>
-              {unreadCount > 0 && (
+              {notificationsHydrated && unreadCount > 0 && (
                 <Badge variant="secondary" className="text-xs">
                   {unreadCount} new
                 </Badge>
               )}
             </div>
             <div className="flex items-center gap-2">
-              {unreadCount > 0 && (
+              {notificationsHydrated && unreadCount > 0 && (
                 <button
                   onClick={markAllAsRead}
                   className="text-xs text-green-600 hover:text-green-700 font-medium"
@@ -479,6 +471,7 @@ const AdminSidebar = ({ isOpen = false, onClose = () => {} }) => {
                     : "hover:bg-gray-100 text-gray-600 hover:text-gray-900"
                 }
               `}
+                onClick={() => { if (!isDesktop) onClose(); }}
               >
                 <Icon className="h-4 w-4 flex-shrink-0" />
                 <span className="flex-1">{item.title}</span>
@@ -515,7 +508,7 @@ const AdminSidebar = ({ isOpen = false, onClose = () => {} }) => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => router.push("/admin/settings")}
+              onClick={() => { router.push("/admin/settings"); if (!isDesktop) onClose(); }}
               className="flex-1"
             >
               <Settings className="h-4 w-4 mr-2" />
@@ -523,7 +516,7 @@ const AdminSidebar = ({ isOpen = false, onClose = () => {} }) => {
             </Button>
             <Button
               size="sm"
-              onClick={handleLogout}
+              onClick={() => { handleLogout(); if (!isDesktop) onClose(); }}
               className="flex-1 text-white bg-red-600 hover:bg-red-700 font-medium shadow-sm focus:ring-2 focus:ring-red-400 focus:ring-offset-1"
             >
               <LogOut className="h-4 w-4 mr-2 text-white" />

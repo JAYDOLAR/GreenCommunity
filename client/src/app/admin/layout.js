@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import AdminSidebar from '@/components/AdminSidebar';
+import { Bell } from 'lucide-react';
 
 const AdminLayout = ({ children }) => {
   const router = useRouter();
@@ -11,6 +12,36 @@ const AdminLayout = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [mobileOpen, setMobileOpen] = useState(false); // must be before any conditional return
+  const [showNotifications, setShowNotifications] = useState(false);
+  const bellRef = useRef(null);
+  const notifPanelRef = useRef(null);
+  const [notifications, setNotifications] = useState(() => {
+    const fallback = [
+      { id: 1, type: 'user', title: 'New User Registration', message: 'John Doe has joined the platform', time: '2 minutes ago', read: false },
+      { id: 2, type: 'project', title: 'Project Milestone', message: 'Urban Garden Project reached 50% completion', time: '1 hour ago', read: false },
+      { id: 3, type: 'order', title: 'New Marketplace Order', message: 'Order #12345 for Eco-friendly Water Bottle', time: '3 hours ago', read: true },
+    ];
+    if (typeof window === 'undefined') return fallback;
+    try {
+      const raw = localStorage.getItem('admin_notifications');
+      if (!raw) return fallback;
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : fallback;
+    } catch {
+      return fallback;
+    }
+  });
+  const [notificationsHydrated, setNotificationsHydrated] = useState(false);
+
+  const unreadCount = notifications.filter(n => !n.read).length;
+
+  const markAsRead = (id) => {
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+  };
+
+  const markAllAsRead = () => {
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  };
 
   useEffect(() => {
     const checkAuth = () => {
@@ -56,6 +87,36 @@ const AdminLayout = ({ children }) => {
       }
     };
   }, [pathname, router]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const raw = localStorage.getItem('admin_notifications');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) setNotifications(parsed);
+      }
+    } catch {}
+    setNotificationsHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      localStorage.setItem('admin_notifications', JSON.stringify(notifications));
+    } catch {}
+  }, [notifications]);
+
+  useEffect(() => {
+    if (!showNotifications) return;
+    const handler = (e) => {
+      if (bellRef.current && bellRef.current.contains(e.target)) return;
+      if (notifPanelRef.current && notifPanelRef.current.contains(e.target)) return;
+      setShowNotifications(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showNotifications]);
 
   // Show loading spinner while checking authentication
   if (isLoading) {
@@ -112,11 +173,11 @@ const AdminLayout = ({ children }) => {
       {/* Sidebar */}
       <AdminSidebar isOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
 
-      {/* Mobile top bar */}
-      <div className="lg:hidden sticky top-0 z-30 flex items-center gap-3 bg-white/80 backdrop-blur px-4 py-3 border-b border-gray-200">
+      {/* Mobile top bar (fixed for persistent visibility during scroll) */}
+      <div className="lg:hidden fixed top-0 inset-x-0 z-40 flex items-center gap-3 bg-white/80 backdrop-blur px-4 py-3 border-b border-gray-200">
         <button
           onClick={() => setMobileOpen(true)}
-          className="p-2 rounded-md bg-green-500 text-white focus:outline-none focus:ring-2 focus:ring-green-400"
+          className="p-2 rounded-md text-gray-600 hover:text-gray-800 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-300"
           aria-label="Open sidebar"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -124,6 +185,54 @@ const AdminLayout = ({ children }) => {
           </svg>
         </button>
         <h1 className="font-semibold text-gray-800 text-sm">Admin Panel</h1>
+        <div className="ml-auto flex items-center">
+          <button
+            ref={bellRef}
+            onClick={() => setShowNotifications((v) => !v)}
+            className="relative p-2 rounded-md text-gray-600 hover:text-gray-800 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-300"
+            aria-label="Notifications"
+          >
+            <Bell className="h-5 w-5" />
+            {notificationsHydrated && unreadCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 h-4 min-w-4 px-1 rounded-full bg-red-500 text-white text-[10px] leading-4 text-center">{unreadCount}</span>
+            )}
+          </button>
+        </div>
+        {showNotifications && (
+          <div
+            ref={notifPanelRef}
+            className="absolute right-3 top-12 w-80 max-w-[90vw] bg-white border border-gray-200 rounded-lg shadow-lg z-40 overflow-hidden"
+          >
+            <div className="p-3 border-b flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold text-gray-900">Notifications</span>
+                {notificationsHydrated && unreadCount > 0 && (
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">{unreadCount} new</span>
+                )}
+              </div>
+              {notificationsHydrated && unreadCount > 0 && (
+                <button onClick={markAllAsRead} className="text-xs text-green-600 hover:text-green-700 font-medium">Mark all</button>
+              )}
+            </div>
+            <div className="max-h-64 overflow-y-auto">
+              {notifications.length === 0 ? (
+                <div className="p-6 text-center text-gray-600 text-sm">No notifications</div>
+              ) : (
+                notifications.map((n) => (
+                  <div
+                    key={n.id}
+                    onClick={() => markAsRead(n.id)}
+                    className={`p-3 border-b last:border-b-0 cursor-pointer ${n.read ? 'bg-white' : 'bg-gray-50'}`}
+                  >
+                    <div className="text-sm font-medium text-gray-900">{n.title}</div>
+                    <div className="text-xs text-gray-600 mt-1">{n.message}</div>
+                    <div className="text-[11px] text-gray-500 mt-1">{n.time}</div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Overlay for mobile */}
@@ -137,7 +246,7 @@ const AdminLayout = ({ children }) => {
 
       {/* Main content */}
       <div className="lg:ml-64">
-        <main className="min-h-screen w-full px-4 md:px-8 pb-16 pt-4">
+        <main className="min-h-screen w-full px-4 md:px-8 pb-16 pt-16 lg:pt-4">
           {children}
         </main>
       </div>

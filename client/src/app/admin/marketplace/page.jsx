@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { marketplaceApi } from '@/lib/marketplaceApi';
@@ -23,6 +24,9 @@ import {
   Plus,
   Download,
   RefreshCw,
+  FileSpreadsheet,
+  FileText as FileTextIcon,
+  BarChart3,
   Truck,
   CheckCircle,
   Clock,
@@ -30,6 +34,7 @@ import {
 } from 'lucide-react';
 
 const MarketplacePage = () => {
+  const STATUS_OVERRIDES_KEY = 'admin_marketplace_status_overrides';
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
@@ -38,6 +43,10 @@ const MarketplacePage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
+  const [showExportOptions, setShowExportOptions] = useState(false);
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(false);
+  const exportRef = useRef(null);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -75,11 +84,25 @@ const MarketplacePage = () => {
     return matchesSearch && matchesStatus;
   });
 
+  const applyStatusOverrides = (list) => {
+    try {
+      const raw = localStorage.getItem(STATUS_OVERRIDES_KEY);
+      if (!raw) return list;
+      const overrides = JSON.parse(raw || '{}');
+      return list.map(p => {
+        const pid = p.id || p._id;
+        return overrides[pid] ? { ...p, status: overrides[pid] } : p;
+      });
+    } catch {
+      return list;
+    }
+  };
+
   const fetchMarketplaceData = async () => {
     try {
       const result = await marketplaceApi.getProducts({ page: 1, limit: 1000, inStock: true });
       const list = result?.data?.products || [];
-      setProducts(list);
+      setProducts(applyStatusOverrides(list));
       setOrders([]);
     } catch (error) {
       console.error('Failed to fetch marketplace data:', error);
@@ -88,26 +111,44 @@ const MarketplacePage = () => {
   };
 
   const handleStatusChange = async (productId, newStatus) => {
+    const prevProducts = products;
+    // Normalize id
+    const normalize = (p) => (p.id || p._id);
+    // Optimistic UI update
+    setProducts(prev => prev.map(p => (normalize(p) === (productId || normalize(p)) && normalize(p) === (productId) ? { ...p, status: newStatus } : (normalize(p) === productId ? { ...p, status: newStatus } : p))));
+
+    // Persist override locally for refresh fallback
     try {
-      const product = products.find(p => p.id === productId);
-      if (product) {
-        const updatedProduct = { ...product, status: newStatus };
-        const response = await fetch('/api/admin/marketplace', {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(updatedProduct),
-        });
-        
-        if (response.ok) {
-          setProducts(products.map(product => 
-            product.id === productId ? { ...product, status: newStatus } : product
-          ));
-        }
-      }
+      const raw = localStorage.getItem(STATUS_OVERRIDES_KEY);
+      const overrides = raw ? JSON.parse(raw) : {};
+      overrides[productId] = newStatus;
+      localStorage.setItem(STATUS_OVERRIDES_KEY, JSON.stringify(overrides));
+    } catch {}
+    try {
+      const product = prevProducts.find(p => (p.id || p._id) === productId);
+      if (!product) return;
+      const updatedProduct = { ...product, id: productId, status: newStatus };
+      const response = await fetch(`/api/admin/marketplace?id=${encodeURIComponent(productId)}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedProduct),
+      });
+      if (!response.ok) throw new Error('Non-200 response');
+      // Sync with server
+      await fetchMarketplaceData();
     } catch (error) {
       console.error('Failed to update product status:', error);
+      // Revert on failure
+      setProducts(prevProducts);
+      // Remove bad override
+      try {
+        const raw = localStorage.getItem(STATUS_OVERRIDES_KEY);
+        const overrides = raw ? JSON.parse(raw) : {};
+        delete overrides[productId];
+        localStorage.setItem(STATUS_OVERRIDES_KEY, JSON.stringify(overrides));
+      } catch {}
     }
   };
 
@@ -159,6 +200,69 @@ const MarketplacePage = () => {
     document.body.removeChild(a);
   };
 
+  const handleGenerateReport = async (type) => {
+    try {
+      setIsGeneratingReport(true);
+      if (type === 'excel') {
+        const csvContent = [
+          ['Product Name', 'Category', 'Price', 'Stock', 'Sold', 'Status', 'Rating', 'Reviews'],
+          ...products.map(product => [
+            product.name,
+            product.category,
+            product.price,
+            product.stock,
+            product.sold,
+            product.status,
+            product.rating,
+            product.reviews
+          ])
+        ].map(row => row.join(',')).join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `marketplace-report-${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      } else if (type === 'pdf') {
+        const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Marketplace Report</title></head><body><h1>Marketplace Report</h1><table border="1" cellspacing="0" cellpadding="6"><thead><tr><th>Product</th><th>Category</th><th>Price</th><th>Stock</th><th>Sold</th><th>Status</th><th>Rating</th><th>Reviews</th></tr></thead><tbody>${products.map(p => `<tr><td>${p.name}</td><td>${p.category}</td><td>${p.price}</td><td>${p.stock}</td><td>${p.sold}</td><td>${p.status}</td><td>${p.rating}</td><td>${p.reviews}</td></tr>`).join('')}</tbody></table></body></html>`;
+        const blob = new Blob([html], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `marketplace-report-${new Date().toISOString().split('T')[0]}.html`;
+        document.body.appendChild(a);
+        a.click();
+        URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      }
+      setShowExportOptions(false);
+    } finally {
+      setIsGeneratingReport(false);
+    }
+  };
+
+  const handleViewAnalytics = async () => {
+    try {
+      setIsLoadingAnalytics(true);
+      router.push('/admin/analytics?source=marketplace');
+    } finally {
+      setIsLoadingAnalytics(false);
+    }
+  };
+
+  useEffect(() => {
+    const onClick = (e) => {
+      if (exportRef.current && !exportRef.current.contains(e.target)) {
+        setShowExportOptions(false);
+      }
+    };
+    document.addEventListener('mousedown', onClick);
+    return () => document.removeEventListener('mousedown', onClick);
+  }, []);
+
   const handleAddProduct = () => {
     router.push('/admin/marketplace/add');
   };
@@ -169,26 +273,80 @@ const MarketplacePage = () => {
 
   return (
     <div className="p-6 space-y-6 min-h-full">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Marketplace Management</h1>
           <p className="text-muted-foreground">Manage products and orders</p>
         </div>
-        <div className="flex gap-2">
+        <div className="hidden md:grid grid-cols-4 gap-2">
           <Button variant="outline" onClick={handleRefreshData} disabled={isLoading}>
             <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-            Refresh
+            Refresh Data
           </Button>
-          <Button variant="outline" onClick={handleExportData}>
-            <Download className="h-4 w-4 mr-2" />
-            Export
+          <div className="relative" ref={exportRef}>
+            <Button onClick={() => setShowExportOptions(!showExportOptions)} disabled={isGeneratingReport}>
+              <Download className="h-4 w-4 mr-2" />
+              {isGeneratingReport ? 'Generating...' : 'Generate Report'}
+            </Button>
+            {showExportOptions && (
+              <div className="absolute top-full left-0 mt-2 w-56 bg-white border rounded-lg shadow-lg z-50">
+                <div className="p-2">
+                  <Button variant="ghost" className="w-full justify-start" onClick={() => handleGenerateReport('excel')} disabled={isGeneratingReport}>
+                    <FileSpreadsheet className="h-4 w-4 mr-2" />
+                    Export as Excel
+                  </Button>
+                  <Button variant="ghost" className="w-full justify-start" onClick={() => handleGenerateReport('pdf')} disabled={isGeneratingReport}>
+                    <FileTextIcon className="h-4 w-4 mr-2" />
+                    Export as PDF
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+          <Button onClick={handleViewAnalytics} disabled={isLoadingAnalytics}>
+            <BarChart3 className="h-4 w-4 mr-2" />
+            {isLoadingAnalytics ? 'Loading...' : 'View Analytics'}
           </Button>
           <Button onClick={handleAddProduct}>
             <Plus className="h-4 w-4 mr-2" />
             Add Product
           </Button>
         </div>
+      </div>
+
+      <div className="md:hidden grid grid-cols-1 sm:grid-cols-4 gap-2">
+        <Button variant="outline" onClick={handleRefreshData} disabled={isLoading} className="w-full justify-center">
+          <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+          Refresh Data
+        </Button>
+        <div className="relative" ref={exportRef}>
+          <Button onClick={() => setShowExportOptions(!showExportOptions)} disabled={isGeneratingReport} className="w-full justify-center">
+            <Download className="h-4 w-4 mr-2" />
+            {isGeneratingReport ? 'Generating...' : 'Generate Report'}
+          </Button>
+          {showExportOptions && (
+            <div className="absolute top-full left-0 mt-2 w-56 bg-white border rounded-lg shadow-lg z-50">
+              <div className="p-2">
+                <Button variant="ghost" className="w-full justify-start" onClick={() => handleGenerateReport('excel')} disabled={isGeneratingReport}>
+                  <FileSpreadsheet className="h-4 w-4 mr-2" />
+                  Export as Excel
+                </Button>
+                <Button variant="ghost" className="w-full justify-start" onClick={() => handleGenerateReport('pdf')} disabled={isGeneratingReport}>
+                  <FileTextIcon className="h-4 w-4 mr-2" />
+                  Export as PDF
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+        <Button onClick={handleViewAnalytics} disabled={isLoadingAnalytics} className="w-full justify-center">
+          <BarChart3 className="h-4 w-4 mr-2" />
+          {isLoadingAnalytics ? 'Loading...' : 'View Analytics'}
+        </Button>
+        <Button onClick={handleAddProduct} className="w-full justify-center">
+          <Plus className="h-4 w-4 mr-2" />
+          Add Product
+        </Button>
       </div>
 
       {/* Stats Cards */}
@@ -294,14 +452,14 @@ const MarketplacePage = () => {
         <CardContent>
           <div className="space-y-4">
             {filteredProducts.map((product) => (
-              <div key={product.id} className="flex items-center gap-4 p-4 border rounded-lg hover:bg-accent/50 transition-colors">
+              <div key={product.id || product._id} className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 p-4 border rounded-lg hover:bg-accent/50 transition-colors overflow-hidden">
                 <div className="w-16 h-16 bg-accent rounded-lg overflow-hidden flex-shrink-0">
                   <img src={product.image || '/Marketplace/1.jpeg'} alt={product.name} className="w-full h-full object-cover" onError={(e) => { e.target.src = '/Marketplace/1.jpeg'; }} />
                 </div>
                 
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-medium">{product.name}</h3>
+                <div className="flex-1 min-w-0 w-full">
+                  <div className="flex flex-wrap items-center gap-2 mb-1 min-w-0">
+                    <h3 className="font-medium leading-tight break-words max-w-full sm:max-w-[260px]">{product.name}</h3>
                     <Badge className={getStatusColor(product.status)}>
                       {product.status}
                     </Badge>
@@ -309,8 +467,8 @@ const MarketplacePage = () => {
                       {product.category}
                     </Badge>
                   </div>
-                  <p className="text-sm text-muted-foreground mb-2">{product.description}</p>
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground mb-2 break-words">{product.description}</p>
+                  <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-sm text-muted-foreground">
                     <span className="flex items-center gap-1">
                       <DollarSign className="h-3 w-3" />
                       ₹{product.price}
@@ -330,10 +488,10 @@ const MarketplacePage = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <Select value={product.status} onValueChange={(value) => handleStatusChange(product.id, value)}>
-                    <SelectTrigger className="w-32">
-                      <SelectValue />
+                <div className="mt-3 sm:mt-0 flex flex-wrap sm:flex-nowrap items-center gap-2 w-full sm:w-auto">
+                  <Select value={product.status || 'inactive'} onValueChange={(value) => handleStatusChange(product.id || product._id, value)}>
+                    <SelectTrigger className="w-full sm:w-36 min-w-[130px] justify-between bg-white">
+                      <SelectValue placeholder={(product.status ? (product.status.charAt(0).toUpperCase() + product.status.slice(1)) : 'Status')} />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="active">Active</SelectItem>
@@ -352,7 +510,7 @@ const MarketplacePage = () => {
                   <Button 
                     variant="ghost" 
                     size="sm" 
-                    onClick={() => handleDeleteProduct(product.id)}
+                    onClick={() => handleDeleteProduct(product.id || product._id)}
                     title="Delete Product"
                   >
                     <Trash2 className="h-4 w-4" />

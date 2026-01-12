@@ -161,17 +161,17 @@ const SecurityPage = () => {
   return (
     <div className="p-6 space-y-6 min-h-full">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Security</h1>
           <p className="text-muted-foreground">Monitor threats and manage security policies</p>
         </div>
-        <div className="flex gap-3">
-          <Button variant="outline">
+        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+          <Button variant="outline" className="w-full sm:w-auto justify-center">
             <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh
+            Refresh Data
           </Button>
-          <Button>
+          <Button variant="default" className="w-full sm:w-auto justify-center">
             <Download className="h-4 w-4 mr-2" />
             Export Logs
           </Button>
@@ -238,16 +238,16 @@ const SecurityPage = () => {
           <CardContent>
             <div className="space-y-4">
               {securityThreats.map((threat) => (
-                <div key={threat.id} className="flex items-center gap-4 p-4 border rounded-lg hover:bg-accent/50 transition-colors">
+                <div key={threat.id} className="relative flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 p-4 border rounded-lg hover:bg-accent/50 transition-colors overflow-hidden">
                   <div className={`w-3 h-3 rounded-full ${
                     threat.severity === 'critical' ? 'bg-red-500' :
                     threat.severity === 'high' ? 'bg-orange-500' :
                     threat.severity === 'medium' ? 'bg-yellow-500' : 'bg-blue-500'
                   }`} />
                   
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-medium">{threat.description}</h3>
+                  <div className="flex-1 min-w-0 w-full">
+                    <div className="flex flex-wrap items-center gap-2 mb-1 min-w-0">
+                      <h3 className="font-medium break-words">{threat.description}</h3>
                       <Badge className={getSeverityColor(threat.severity)}>
                         {threat.severity}
                       </Badge>
@@ -258,23 +258,23 @@ const SecurityPage = () => {
                     <div className="text-sm text-muted-foreground mb-2">
                       IP: {threat.ipAddress} • User: {threat.user}
                     </div>
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1">
+                    <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1 whitespace-nowrap">
                         <Clock className="h-3 w-3" />
                         {threat.timestamp}
                       </span>
-                      <span className="flex items-center gap-1">
+                      <span className="flex items-center gap-1 whitespace-nowrap">
                         <MapPin className="h-3 w-3" />
                         {threat.location}
                       </span>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="sm">
+                  <div className="mt-2 sm:mt-0 flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+                    <Button variant="ghost" size="sm" title="View">
                       <Eye className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="sm">
+                    <Button variant="ghost" size="sm" title="Block">
                       <Ban className="h-4 w-4" />
                     </Button>
                   </div>
@@ -296,7 +296,7 @@ const SecurityPage = () => {
           <CardContent>
             <div className="space-y-4">
               {accessLogs.map((log) => (
-                <div key={log.id} className="flex items-center gap-4 p-4 border rounded-lg hover:bg-accent/50 transition-colors">
+                <div key={log.id} className="relative flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 p-4 border rounded-lg hover:bg-accent/50 transition-colors overflow-hidden">
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
                     log.status === 'success' ? 'bg-green-100' : 'bg-red-100'
                   }`}>
@@ -307,9 +307,9 @@ const SecurityPage = () => {
                     )}
                   </div>
                   
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-medium">{log.user}</h3>
+                  <div className="flex-1 min-w-0 w-full">
+                    <div className="flex flex-wrap items-center gap-2 mb-1 min-w-0">
+                      <h3 className="font-medium break-words">{log.user}</h3>
                       <Badge className={getActionColor(log.action)}>
                         {log.action}
                       </Badge>
@@ -317,22 +317,22 @@ const SecurityPage = () => {
                         {log.status}
                       </Badge>
                     </div>
-                    <div className="text-sm text-muted-foreground mb-2">
+                    <div className="text-sm text-muted-foreground mb-2 break-words">
                       IP: {log.ipAddress} • {log.location}
                     </div>
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1">
+                    <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1 whitespace-nowrap">
                         <Clock className="h-3 w-3" />
                         {log.timestamp}
                       </span>
-                      <span className="truncate max-w-32">
+                      <span className="truncate max-w-[200px] sm:max-w-[320px]">
                         {log.userAgent}
                       </span>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="sm">
+                  <div className="mt-2 sm:mt-0 flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+                    <Button variant="ghost" size="sm" title="View">
                       <Eye className="h-4 w-4" />
                     </Button>
                   </div>

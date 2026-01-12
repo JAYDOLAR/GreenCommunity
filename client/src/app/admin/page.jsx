@@ -265,12 +265,13 @@ const AdminDashboard = () => {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
           <p className="text-muted-foreground">Welcome back! Here's what's happening with your platform.</p>
         </div>
-        <div className="flex gap-2">
+        {/* Desktop buttons */}
+        <div className="hidden md:flex gap-2">
           <Button variant="outline" onClick={fetchRealTimeData}>
             <RefreshCw className="h-4 w-4 mr-2" />
             Refresh Data
@@ -309,6 +310,51 @@ const AdminDashboard = () => {
             )}
           </div>
           <Button onClick={handleViewAnalytics} disabled={isLoadingAnalytics}>
+            <BarChart3 className="h-4 w-4 mr-2" />
+            {isLoadingAnalytics ? 'Loading...' : 'View Analytics'}
+          </Button>
+        </div>
+        {/* Mobile buttons below welcome text */}
+        <div className="md:hidden grid grid-cols-1 sm:grid-cols-3 gap-2 w-full">
+          <Button variant="outline" onClick={fetchRealTimeData} className="w-full justify-center">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh Data
+          </Button>
+          <div className="relative export-options">
+            <Button 
+              onClick={() => setShowExportOptions(!showExportOptions)}
+              disabled={isGeneratingReport}
+              className="w-full justify-center"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              {isGeneratingReport ? 'Generating...' : 'Generate Report'}
+            </Button>
+            {showExportOptions && (
+              <div className="absolute top-full left-0 mt-2 w-48 bg-white border rounded-lg shadow-lg z-50">
+                <div className="p-2">
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start"
+                    onClick={() => handleGenerateReport('excel')}
+                    disabled={isGeneratingReport}
+                  >
+                    <FileSpreadsheet className="h-4 w-4 mr-2" />
+                    Export as Excel
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start"
+                    onClick={() => handleGenerateReport('pdf')}
+                    disabled={isGeneratingReport}
+                  >
+                    <FileTextIcon className="h-4 w-4 mr-2" />
+                    Export as PDF
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+          <Button onClick={handleViewAnalytics} disabled={isLoadingAnalytics} className="w-full justify-center">
             <BarChart3 className="h-4 w-4 mr-2" />
             {isLoadingAnalytics ? 'Loading...' : 'View Analytics'}
           </Button>

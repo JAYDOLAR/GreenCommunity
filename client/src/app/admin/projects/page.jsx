@@ -31,7 +31,10 @@ import {
   Save,
   Upload,
   Cpu,
-  RefreshCcw
+  RefreshCcw,
+  FileSpreadsheet,
+  FileText as FileTextIcon,
+  BarChart3
 } from 'lucide-react';
 import { blockchainApi } from '@/lib/blockchainApi';
 
@@ -49,6 +52,10 @@ const ProjectsPage = () => {
   // Removed blockchain registration UI (now automatic in backend)
   const [saving, setSaving] = useState(false);
   // Registration flow moved to Add Project page
+  // Dashboard-like actions state
+  const [showExportOptions, setShowExportOptions] = useState(false);
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(false);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -274,28 +281,173 @@ const ProjectsPage = () => {
     setIsLoading(false);
   };
 
+  // Dashboard-like report actions
+  const handleGenerateReport = async (format) => {
+    setIsGeneratingReport(true);
+    try {
+      await fetchProjects();
+      if (format === 'excel') {
+        await generateProjectsExcelReport();
+      } else if (format === 'pdf') {
+        await generateProjectsPDFReport();
+      }
+    } catch (e) {
+      console.error('Failed to generate projects report:', e);
+      alert('Failed to generate report. Please try again.');
+    } finally {
+      setIsGeneratingReport(false);
+      setShowExportOptions(false);
+    }
+  };
+
+  const generateProjectsExcelReport = async () => {
+    // Reuse export CSV but with a different filename
+    const csvContent = [
+      ['Name', 'Location', 'Type', 'Status', 'Total Funding', 'Current Funding', 'Contributors', 'CO2 Removed', 'Verified', 'Featured', 'Created Date', 'Expected Completion', 'Team Size', 'Carbon Offset Target'],
+      ...projects.map(project => [
+        project.name,
+        project.location,
+        project.type,
+        project.status,
+        project.totalFunding,
+        project.currentFunding,
+        project.contributors,
+        project.co2Removed,
+        project.verified ? 'Yes' : 'No',
+        project.featured ? 'Yes' : 'No',
+        project.createdDate,
+        project.expectedCompletion || '',
+        project.teamSize || '',
+        project.carbonOffsetTarget || ''
+      ])
+    ].map(row => row.join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `projects-report-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  };
+
+  const generateProjectsPDFReport = async () => {
+    const rows = projects.map(p => `<tr><td>${p.name}</td><td>${p.location}</td><td>${p.type}</td><td>${p.status}</td><td>${p.totalFunding}</td><td>${p.currentFunding}</td><td>${p.contributors}</td><td>${p.co2Removed}</td><td>${p.verified ? 'Yes' : 'No'}</td><td>${p.featured ? 'Yes' : 'No'}</td></tr>`).join('');
+    const html = `<!DOCTYPE html><html><head><meta charset=\"utf-8\"/><title>Projects Report</title>
+      <style>body{font-family:Arial,sans-serif;margin:32px}h1{margin:0 0 8px}table{width:100%;border-collapse:collapse;margin-top:16px}
+      th,td{border:1px solid #ddd;padding:8px;font-size:12px}th{background:#f8fafc;text-align:left}</style></head>
+      <body><h1>Projects Report</h1><p>Generated on ${new Date().toLocaleString()}</p>
+      <table><thead><tr><th>Name</th><th>Location</th><th>Type</th><th>Status</th><th>Total Funding</th><th>Current Funding</th><th>Contributors</th><th>CO₂ Removed</th><th>Verified</th><th>Featured</th></tr></thead><tbody>${rows}</tbody></table></body></html>`;
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `projects-report-${new Date().toISOString().split('T')[0]}.html`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  };
+
+  const handleViewAnalytics = async () => {
+    setIsLoadingAnalytics(true);
+    try {
+      await new Promise(r => setTimeout(r, 400));
+      router.push('/admin/analytics');
+    } finally {
+      setIsLoadingAnalytics(false);
+    }
+  };
+
   useEffect(() => {
     fetchProjects();
   }, []);
 
+  // Close export dropdown on outside click
+  useEffect(() => {
+    const handler = (e) => {
+      if (showExportOptions && !e.target.closest('.export-options')) setShowExportOptions(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showExportOptions]);
+
   return (
     <div className="p-6 space-y-6 min-h-full">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Project Management</h1>
           <p className="text-muted-foreground">Manage carbon offset projects and approvals</p>
         </div>
-        <div className="flex gap-2">
+        {/* Desktop buttons */}
+        <div className="hidden md:flex gap-2">
           <Button variant="outline" onClick={handleRefreshData} disabled={isLoading}>
             <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-            Refresh
+            Refresh Data
           </Button>
-          <Button variant="outline" onClick={handleExportProjects}>
-            <Download className="h-4 w-4 mr-2" />
-            Export
+          <div className="relative export-options">
+            <Button onClick={() => setShowExportOptions(!showExportOptions)} disabled={isGeneratingReport}>
+              <Download className="h-4 w-4 mr-2" />
+              {isGeneratingReport ? 'Generating...' : 'Generate Report'}
+            </Button>
+            {showExportOptions && (
+              <div className="absolute top-full right-0 mt-2 w-56 bg-white border rounded-lg shadow-lg z-50">
+                <div className="p-2">
+                  <Button variant="ghost" className="w-full justify-start" onClick={() => handleGenerateReport('excel')} disabled={isGeneratingReport}>
+                    <FileSpreadsheet className="h-4 w-4 mr-2" />
+                    Export as Excel
+                  </Button>
+                  <Button variant="ghost" className="w-full justify-start" onClick={() => handleGenerateReport('pdf')} disabled={isGeneratingReport}>
+                    <FileTextIcon className="h-4 w-4 mr-2" />
+                    Export as PDF
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+          <Button onClick={handleViewAnalytics} disabled={isLoadingAnalytics}>
+            <BarChart3 className="h-4 w-4 mr-2" />
+            {isLoadingAnalytics ? 'Loading...' : 'View Analytics'}
           </Button>
           <Button onClick={handleAddProject}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Project
+          </Button>
+        </div>
+
+        {/* Mobile buttons */}
+        <div className="md:hidden grid grid-cols-1 sm:grid-cols-4 gap-2 w-full">
+          <Button variant="outline" onClick={handleRefreshData} disabled={isLoading} className="w-full justify-center">
+            <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+            Refresh Data
+          </Button>
+          <div className="relative export-options">
+            <Button onClick={() => setShowExportOptions(!showExportOptions)} disabled={isGeneratingReport} className="w-full justify-center">
+              <Download className="h-4 w-4 mr-2" />
+              {isGeneratingReport ? 'Generating...' : 'Generate Report'}
+            </Button>
+            {showExportOptions && (
+              <div className="absolute top-full left-0 mt-2 w-56 bg-white border rounded-lg shadow-lg z-50">
+                <div className="p-2">
+                  <Button variant="ghost" className="w-full justify-start" onClick={() => handleGenerateReport('excel')} disabled={isGeneratingReport}>
+                    <FileSpreadsheet className="h-4 w-4 mr-2" />
+                    Export as Excel
+                  </Button>
+                  <Button variant="ghost" className="w-full justify-start" onClick={() => handleGenerateReport('pdf')} disabled={isGeneratingReport}>
+                    <FileTextIcon className="h-4 w-4 mr-2" />
+                    Export as PDF
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+          <Button onClick={handleViewAnalytics} disabled={isLoadingAnalytics} className="w-full justify-center">
+            <BarChart3 className="h-4 w-4 mr-2" />
+            {isLoadingAnalytics ? 'Loading...' : 'View Analytics'}
+          </Button>
+          <Button onClick={handleAddProject} className="w-full justify-center">
             <Plus className="h-4 w-4 mr-2" />
             Add Project
           </Button>
@@ -406,7 +558,7 @@ const ProjectsPage = () => {
         <CardContent>
           <div className="space-y-4">
             {filteredProjects.map((project, idx) => (
-              <div key={project.id || project._id || idx} className="flex items-center gap-4 p-4 border rounded-lg hover:bg-accent/50 transition-colors">
+              <div key={project.id || project._id || idx} className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 p-4 border rounded-lg hover:bg-accent/50 transition-colors overflow-hidden">
                 <div className="w-16 h-16 bg-accent rounded-lg overflow-hidden flex-shrink-0">
                   <img
                     src={project.image || '/tree1.jpg'}
@@ -416,9 +568,9 @@ const ProjectsPage = () => {
                   />
                 </div>
                 
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-medium">{project.name}</h3>
+                <div className="flex-1 min-w-0 w-full">
+                  <div className="flex flex-wrap items-center gap-2 mb-1 min-w-0">
+                    <h3 className="font-medium break-words leading-tight max-w-full sm:max-w-[260px]">{project.name}</h3>
                     <Badge className={getStatusColor(project.status)}>
                       {project.status}
                     </Badge>
@@ -437,7 +589,7 @@ const ProjectsPage = () => {
                       </Badge>
                     )}
                   </div>
-                  <div className="text-sm text-muted-foreground flex items-center gap-2 mb-2">
+                  <div className="text-sm text-muted-foreground flex items-center gap-2 mb-2 break-words">
                     <MapPin className="h-3 w-3" />
                     {project.location}
                   </div>
@@ -447,7 +599,7 @@ const ProjectsPage = () => {
                       <span className="font-medium">{Math.min(100, Math.round(((project.currentFunding || 0) / Math.max(1, project.fundingGoal || project.totalFunding || 0)) * 100))}%</span>
                     </div>
                     <Progress value={Math.min(100, Math.round(((project.currentFunding || 0) / Math.max(1, project.fundingGoal || project.totalFunding || 0)) * 100))} className="h-2" />
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                    <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <DollarSign className="h-3 w-3" />
                         ₹{(project.currentFunding/10000000).toFixed(1)}Cr raised
@@ -464,7 +616,7 @@ const ProjectsPage = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="mt-3 sm:mt-0 flex flex-wrap sm:flex-nowrap items-center gap-2 w-full sm:w-auto">
                   {/* Blockchain status badge (hidden when off-chain) */}
                   {project.blockchain?.projectId && (
                     <Badge className="bg-emerald-600 text-white flex items-center gap-1">
@@ -472,7 +624,7 @@ const ProjectsPage = () => {
                     </Badge>
                   )}
                   <Select value={project.status} onValueChange={(value) => handleStatusChange(project.id, value)}>
-                    <SelectTrigger className="w-32">
+                    <SelectTrigger className="w-full sm:w-32">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
