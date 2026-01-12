@@ -7,6 +7,31 @@ import {
   calculateCO2Savings
 } from '@/config/marketplaceConfig';
 
+// Convert Google Drive share links to direct-view links
+const normalizeDriveLink = (url) => {
+  if (!url) return url;
+  try {
+    // Already a direct link
+    if (/^https?:\/\//i.test(url) && url.includes('drive.google.com/uc')) return url;
+
+    // Matches: https://drive.google.com/file/d/<FILE_ID>/view?usp=sharing
+    const fileMatch = url.match(/drive\.google\.com\/file\/d\/([^/]+)/);
+    if (fileMatch && fileMatch[1]) {
+      return `https://drive.google.com/uc?export=view&id=${fileMatch[1]}`;
+    }
+
+    // Matches: https://drive.google.com/open?id=<FILE_ID>
+    const openMatch = url.match(/[?&]id=([^&]+)/);
+    if (openMatch && openMatch[1]) {
+      return `https://drive.google.com/uc?export=view&id=${openMatch[1]}`;
+    }
+
+    return url;
+  } catch {
+    return url;
+  }
+};
+
 // Transform backend product to client format
 const transformProduct = (backendProduct) => {
   const seller = backendProduct.seller_id;
@@ -20,11 +45,12 @@ const transformProduct = (backendProduct) => {
   // Resolve image url (supports absolute and relative paths, and object forms)
   const firstImage = backendProduct.images?.[0];
   const rawImage = typeof firstImage === 'string' ? firstImage : (firstImage?.url || firstImage?.path || '');
-  const resolvedImage = rawImage
+  const resolvedImageRaw = rawImage
     ? (rawImage.startsWith('http')
         ? rawImage
         : `${API_BASE_URL}${rawImage.startsWith('/') ? '' : '/'}${rawImage}`)
     : DEFAULT_PRODUCT_IMAGE;
+  const resolvedImage = normalizeDriveLink(resolvedImageRaw);
 
   return {
     id: backendProduct._id,

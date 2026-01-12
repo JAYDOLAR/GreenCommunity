@@ -28,13 +28,12 @@ const useStreak = () => {
         }
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        setStreakData(data.streak);
-        setError(null);
-      } else {
-        throw new Error('Failed to fetch streak data');
-      }
+      if (!response.ok) throw new Error(`Failed to fetch streak data (HTTP ${response.status})`);
+      const text = await response.text();
+      let data = {};
+      try { data = text ? JSON.parse(text) : {}; } catch (e) { throw new Error(`Invalid response (HTTP ${response.status})`); }
+      setStreakData(data.streak);
+      setError(null);
     } catch (err) {
       console.error('Error fetching streak data:', err);
       setError(err.message);

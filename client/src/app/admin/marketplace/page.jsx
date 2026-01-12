@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { marketplaceApi } from '@/lib/marketplaceApi';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -76,14 +77,13 @@ const MarketplacePage = () => {
 
   const fetchMarketplaceData = async () => {
     try {
-      const response = await fetch('/api/admin/marketplace');
-      const data = await response.json();
-      if (data.products && data.orders) {
-        setProducts(data.products);
-        setOrders(data.orders);
-      }
+      const result = await marketplaceApi.getProducts({ page: 1, limit: 1000, inStock: true });
+      const list = result?.data?.products || [];
+      setProducts(list);
+      setOrders([]);
     } catch (error) {
       console.error('Failed to fetch marketplace data:', error);
+      setProducts([]);
     }
   };
 

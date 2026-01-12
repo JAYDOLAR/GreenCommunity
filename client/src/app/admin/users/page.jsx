@@ -125,7 +125,12 @@ const UsersPage = () => {
           'Authorization': `Bearer ${adminToken}`
         }
       });
-      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(`Invalid response (HTTP ${response.status})`);
+      }
+      const text = await response.text();
+      let data = {};
+      try { data = text ? JSON.parse(text) : {}; } catch (e) { throw new Error(`Invalid response (HTTP ${response.status})`); }
       
       if (data.users && data.users.length > 0) {
         const csvContent = [
@@ -175,9 +180,13 @@ const UsersPage = () => {
           'Authorization': `Bearer ${adminToken}`
         }
       });
-      
+      if (!response.ok) {
+        throw new Error(`Invalid response (HTTP ${response.status})`);
+      }
       console.log('Response status:', response.status);
-      const data = await response.json();
+      const text = await response.text();
+      let data = {};
+      try { data = text ? JSON.parse(text) : {}; } catch (e) { console.error('Non-JSON response body preview:', String(text).slice(0,200)); throw new Error(`Invalid response (HTTP ${response.status})`); }
       console.log('Response data:', data);
       
       if (data.success && data.users) {
@@ -204,7 +213,12 @@ const UsersPage = () => {
         },
         body: JSON.stringify(userData),
       });
-      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(`Invalid response (HTTP ${response.status})`);
+      }
+      const text = await response.text();
+      let data = {};
+      try { data = text ? JSON.parse(text) : {}; } catch (e) { throw new Error(`Invalid response (HTTP ${response.status})`); }
       if (data.user) {
         setUsers(prev => prev.map(user => user.id === data.user.id ? data.user : user));
         return data.user;
@@ -223,7 +237,12 @@ const UsersPage = () => {
           'Authorization': `Bearer ${adminToken}`
         },
       });
-      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(`Invalid response (HTTP ${response.status})`);
+      }
+      const text = await response.text();
+      let data = {};
+      try { data = text ? JSON.parse(text) : {}; } catch (e) { throw new Error(`Invalid response (HTTP ${response.status})`); }
       if (data.success) {
         setUsers(prev => prev.filter(user => user.id !== userId));
         return true;

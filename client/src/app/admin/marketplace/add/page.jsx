@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -26,10 +27,13 @@ import {
 } from 'lucide-react';
 
 const AddProductPage = () => {
+
   const router = useRouter();
   const fileInputRef = useRef(null);
   const [isLoading, setIsLoading] = useState(false);
   const [uploadedImage, setUploadedImage] = useState(null);
+  const [driveLink, setDriveLink] = useState('');
+
   const [product, setProduct] = useState({
     name: '',
     category: '',
@@ -87,6 +91,7 @@ const AddProductPage = () => {
   };
 
   const handleSaveProduct = async () => {
+
     if (!product.name || !product.category || !product.price || !product.stock) {
       alert('Please fill in all required fields');
       return;
@@ -96,9 +101,24 @@ const AddProductPage = () => {
 
     try {
       // Prepare product data for API
+      // Prefer Drive link if provided; otherwise use uploaded image preview or default
+      const normalizeDriveLink = (url) => {
+        if (!url) return url;
+        try {
+          if (/^https?:\/\//i.test(url) && url.includes('drive.google.com/uc')) return url;
+          const fileMatch = url.match(/drive\.google\.com\/file\/d\/([^/]+)/);
+          if (fileMatch && fileMatch[1]) return `https://drive.google.com/uc?export=view&id=${fileMatch[1]}`;
+          const openMatch = url.match(/[?&]id=([^&]+)/);
+          if (openMatch && openMatch[1]) return `https://drive.google.com/uc?export=view&id=${openMatch[1]}`;
+          return url;
+        } catch { return url; }
+      };
+
+      const selectedImage = driveLink ? normalizeDriveLink(driveLink) : (uploadedImage ? uploadedImage.preview : '/Marketplace/1.jpeg');
+
       const productData = {
         ...product,
-        image: uploadedImage ? uploadedImage.preview : '/Marketplace/1.jpeg', // Use uploaded image or default
+        image: selectedImage,
         price: parseFloat(product.price),
         stock: parseInt(product.stock),
         rating: parseFloat(product.rating),
@@ -107,6 +127,7 @@ const AddProductPage = () => {
         weight: product.weight ? parseFloat(product.weight) : null,
         shipping: product.shipping ? parseFloat(product.shipping) : null
       };
+
 
       // Save to API
       const response = await fetch('/api/admin/marketplace', {
@@ -140,6 +161,7 @@ const AddProductPage = () => {
 
   return (
     <div className="p-6 space-y-6">
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -362,17 +384,17 @@ const AddProductPage = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Image Preview - Only show when image is uploaded */}
-              {uploadedImage && (
+              {(uploadedImage || driveLink) && (
                 <div className="w-full h-48 bg-gray-100 rounded-lg overflow-hidden relative">
                   <img
-                    src={uploadedImage.preview}
+                    src={uploadedImage ? uploadedImage.preview : driveLink}
                     alt="Product preview"
                     className="w-full h-full object-cover"
                   />
                   <Button
                     variant="destructive"
                     size="sm"
-                    onClick={handleRemoveImage}
+                    onClick={() => { handleRemoveImage(); setDriveLink(''); }}
                     className="absolute top-2 right-2 h-8 w-8 p-0"
                   >
                     <X className="h-4 w-4" />
@@ -410,6 +432,16 @@ const AddProductPage = () => {
                       </p>
                     </div>
                   </label>
+                </div>
+
+                {/* Or paste Google Drive link */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium">Or paste Google Drive link</label>
+                  <Input
+                    placeholder="https://drive.google.com/file/d/<FILE_ID>/view?usp=sharing"
+                    value={driveLink}
+                    onChange={(e) => setDriveLink(e.target.value)}
+                  />
                 </div>
 
                 {uploadedImage && (
