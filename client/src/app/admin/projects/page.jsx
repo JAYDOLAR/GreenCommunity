@@ -36,7 +36,6 @@ import {
   Cpu,
   RefreshCcw
 } from 'lucide-react';
-import { blockchainApi } from '@/lib/blockchainApi';
 
 const ProjectsPage = () => {
   const router = useRouter();

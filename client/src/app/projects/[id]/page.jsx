@@ -104,18 +104,6 @@ const ProjectDetailContent = ({ params }) => {
       cancelled = true;
     };
   }, [rawId]);
-          console.error("Project fetch error:", err);
-          setFetchError(err.message);
-        }
-      } finally {
-        if (!cancelled) setLoadingProject(false);
-      }
-    };
-    fetchProject();
-    return () => {
-      cancelled = true;
-    };
-  }, [rawId]);
 
   if (loadingProject) {
     return (
