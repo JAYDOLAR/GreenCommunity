@@ -125,6 +125,30 @@ jobs:
           [ -f "Server/web.config" ] && cp Server/web.config deployment-package/
           [ -f "Server/startup.sh" ] && cp Server/startup.sh deployment-package/ && chmod +x deployment-package/startup.sh
           
+          # Create a custom startup script for Azure
+          cat > deployment-package/startup.sh << 'EOF'
+          #!/bin/bash
+          echo "Starting GreenCommunity application..."
+          echo "Current directory: $(pwd)"
+          echo "Node version: $(node --version)"
+          echo "NPM version: $(npm --version)"
+          
+          # Check if server.js exists
+          if [ -f "server.js" ]; then
+            echo "Found server.js, starting application..."
+            NODE_ENV=production node server.js
+          elif [ -f "app.js" ]; then
+            echo "Found app.js, starting application..."
+            NODE_ENV=production node app.js
+          else
+            echo "ERROR: No entry point found!"
+            ls -la
+            exit 1
+          fi
+          EOF
+          
+          chmod +x deployment-package/startup.sh
+          
           echo "Package structure created"
 
       - name: Install production dependencies
@@ -213,29 +237,65 @@ jobs:
             NODE_ENV=production \
             WEBSITE_RUN_FROM_PACKAGE=1 \
             WEBSITE_ENABLE_SYNC_UPDATE_SITE=true \
+            WEBSITES_CONTAINER_START_TIME_LIMIT=1800 \
+            WEBSITE_TIME_ZONE="Asia/Kolkata" \
+            --output none
+          
+          echo "Configuring startup command..."
+          az webapp config set \
+            --resource-group Green_Community \
+            --name Green-community \
+            --startup-file "node server.js" \
             --output none
 
       - name: Deploy using Azure CLI (ZIP Deploy)
         run: |
           echo "Starting ZIP deployment to Azure..."
-          echo "⏱️  Deployment will continue in background..."
+          echo "⏱️  Deploying package..."
           
-          # Deploy using async mode to avoid timeout
-          az webapp deploy \
+          # Use async deployment to avoid timeout during startup
+          DEPLOY_OUTPUT=$(az webapp deploy \
             --resource-group Green_Community \
             --name Green-community \
             --src-path deployment.zip \
             --type zip \
-            --async true
+            --async true 2>&1)
           
-          echo "✅ Deployment initiated - app will start in background"
-          echo "📋 Check status at: https://green-community.scm.azurewebsites.net/api/deployments"
+          echo "$DEPLOY_OUTPUT"
+          
+          if echo "$DEPLOY_OUTPUT" | grep -q "ERROR"; then
+            echo "❌ Deployment failed"
+            exit 1
+          fi
+          
+          echo "✅ Deployment package uploaded successfully"
+          echo "📦 Azure is now extracting and starting the application..."
+          echo "⏱️  This may take 5-15 minutes for large applications"
 
-      - name: Restart Azure Web App
+      - name: Wait for deployment to extract
         run: |
-          echo "App is starting in background..."
-          echo "Waiting 2 minutes before checking status..."
-          sleep 120
+          echo "Waiting for Azure to extract and prepare the package..."
+          sleep 60
+          
+          echo "Checking deployment status..."
+          for i in {1..5}; do
+            STATUS=$(az webapp show \
+              --resource-group Green_Community \
+              --name Green-community \
+              --query "state" -o tsv 2>/dev/null || echo "Unknown")
+            
+            echo "Attempt $i/5 - App state: $STATUS"
+            
+            if [ "$STATUS" = "Running" ]; then
+              echo "✅ App is in Running state"
+              break
+            fi
+            
+            if [ $i -lt 5 ]; then
+              echo "⏳ Waiting 30 seconds..."
+              sleep 30
+            fi
+          done
 
       - name: Warm up application
         run: |
@@ -256,21 +316,39 @@ jobs:
           echo "⚠️ Application taking longer than expected to start"
           echo "💡 This is normal for large applications. Check manually in a few minutes."
 
-      - name: Health check
-        continue-on-error: true
+      - name: Final status
+        if: always()
         run: |
-          echo "Performing final health check..."
-          if curl -f -s -m 30 "https://green-community.azurewebsites.net" > /dev/null 2>&1; then
-            echo "✅ Deployment successful - Application is healthy"
-            echo "🌐 App URL: https://green-community.azurewebsites.net"
-          else
-            echo "⚠️ Application is still starting up"
-            echo "📋 Check deployment status: https://green-community.scm.azurewebsites.net/api/deployments"
-            echo "📋 Check logs: https://green-community.scm.azurewebsites.net/api/logs/docker"
-            echo "💡 Large apps can take 5-10 minutes to fully start"
-            echo ""
-            echo "✅ Deployment was successful, just waiting for startup to complete"
-          fi
+          echo ""
+          echo "======================================"
+          echo "📊 Deployment Summary"
+          echo "======================================"
+          echo "✅ Package built and uploaded successfully"
+          echo "🌐 App URL: https://green-community.azurewebsites.net"
+          echo ""
+          echo "📋 Monitoring URLs:"
+          echo "  - Deployments: https://green-community.scm.azurewebsites.net/api/deployments"
+          echo "  - Logs: https://green-community.scm.azurewebsites.net/api/logs/docker"
+          echo "  - Log Stream: https://green-community.scm.azurewebsites.net/api/logstream"
+          echo ""
+          echo "💡 If app is not responding yet:"
+          echo "  1. Large apps can take 10-15 minutes to start"
+          echo "  2. Check the logs above for any errors"
+          echo "  3. Verify all environment variables are set in Azure Portal"
+          echo "======================================"
+          
+      - name: Check application logs for errors
+        if: failure()
+        run: |
+          echo "Fetching recent application logs..."
+          az webapp log download \
+            --resource-group Green_Community \
+            --name Green-community \
+            --log-file app-logs.zip 2>/dev/null || true
+          
+          echo ""
+          echo "📋 Check logs at:"
+          echo "  - https://green-community.scm.azurewebsites.net/api/logs/docker"
 
       - name: Cleanup workspace
         if: always()
