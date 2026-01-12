@@ -119,7 +119,7 @@ export const projectsApi = {
       const response = await apiRequest(`/api/projects/featured?limit=${limit}`);
       return {
         ...response,
-        data: response.data.map(transformProject)
+        data: (response.data || []).map(transformProject)
       };
     } catch (error) {
       console.error('Error fetching featured projects:', error);
@@ -133,7 +133,7 @@ export const projectsApi = {
       const response = await apiRequest(`/api/projects/region/${region}`);
       return {
         ...response,
-        data: response.data.map(transformProject)
+        data: (response.data || []).map(transformProject)
       };
     } catch (error) {
       console.error('Error fetching projects by region:', error);
@@ -159,7 +159,7 @@ export const projectsApi = {
       const response = await apiRequest(`/api/projects/nearby-working?${params.toString()}`);
       return {
         ...response,
-        data: response.data.map(transformProject)
+        data: (response.data || []).map(transformProject)
       };
     } catch (error) {
       console.error('Error fetching nearby projects:', error);
@@ -251,7 +251,7 @@ export const projectsApi = {
       }
       
       // Add updated project data
-      Object.keys(projectData).forEach(key => {
+      Object.keys(projectData || {}).forEach(key => {
         const value = projectData[key];
         if (value !== undefined && value !== null) {
           if (typeof value === 'object' && !(value instanceof File)) {

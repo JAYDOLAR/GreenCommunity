@@ -69,14 +69,14 @@ const MarketplacePage = () => {
     }
   };
 
-  const filteredProducts = products.filter(product => {
+  const filteredProducts = (products || []).filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = categoryFilter === 'all' || product.category === categoryFilter;
     const matchesStatus = statusFilter === 'all' || product.status === statusFilter;
     return matchesSearch && matchesCategory && matchesStatus;
   });
 
-  const filteredOrders = orders.filter(order => {
+  const filteredOrders = (orders || []).filter(order => {
     const matchesSearch = order.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          order.customerEmail.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = orderStatusFilter === 'all' || order.status === orderStatusFilter;
@@ -239,7 +239,7 @@ const MarketplacePage = () => {
   const handleExportData = () => {
     const csvContent = [
       ['Product Name', 'Category', 'Price', 'Stock', 'Sold', 'Status', 'Rating', 'Reviews'],
-      ...products.map(product => [
+      ...(products || []).map(product => [
         product.name,
         product.category,
         product.price,
@@ -397,76 +397,117 @@ const MarketplacePage = () => {
         <CardContent>
           <div className="space-y-4">
             {filteredProducts.map((product) => (
-              <div key={product.id} className="flex items-center gap-4 p-4 border rounded-lg hover:bg-accent/50 transition-colors">
-                <div className="w-16 h-16 bg-accent rounded-lg overflow-hidden flex-shrink-0">
-                  <img src={product.image || '/Marketplace/1.jpeg'} alt={product.name} className="w-full h-full object-cover" onError={(e) => { e.target.src = '/Marketplace/1.jpeg'; }} />
-                </div>
-                
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-medium">{product.name}</h3>
-                    <Badge className={getStatusColor(product.status)}>
-                      {product.status}
-                    </Badge>
-                    <Badge variant="outline">
-                      {product.category}
-                    </Badge>
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-2">{product.description}</p>
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <DollarSign className="h-3 w-3" />
-                      ₹{product.price}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Package className="h-3 w-3" />
-                      {product.stock} in stock
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <TrendingUp className="h-3 w-3" />
-                      {product.sold} sold
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Star className="h-3 w-3" />
-                      {product.rating} ({product.reviews} reviews)
-                    </span>
-                  </div>
-                </div>
+              <Card
+                key={product.id}
+                className="border hover:shadow-md transition-shadow"
+              >
+                <CardContent className="p-0">
+                  <div className="flex items-start gap-4 p-4">
+                    {/* Product Image */}
+                    <div className="w-24 h-24 bg-gradient-to-br from-green-400 to-blue-500 rounded-lg overflow-hidden flex-shrink-0 shadow-sm">
+                      <img
+                        src={product.image || '/Marketplace/1.jpeg'}
+                        alt={product.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => { e.target.src = '/Marketplace/1.jpeg'; }}
+                      />
+                    </div>
 
-                <div className="flex items-center gap-2">
-                  <Select value={product.status} onValueChange={(value) => handleStatusChange(product.id, value)}>
-                    <SelectTrigger className="w-32">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="inactive">Inactive</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  
-                  <Button variant="ghost" size="sm" title="View Product">
-                    <Eye className="h-4 w-4" />
-                  </Button>
-                  
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={() => handleEditProduct(product)}
-                    title="Edit Product"
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={() => handleDeleteProduct(product.id)}
-                    title="Delete Product"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
+                    {/* Product Info */}
+                    <div className="flex-1 min-w-0">
+                      {/* Title and Action Buttons */}
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <h3 className="font-semibold text-lg mb-2">{product.name}</h3>
+                          <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+                            {product.description}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0 ml-4">
+                          <Select
+                            value={product.status}
+                            onValueChange={(value) => handleStatusChange(product.id, value)}
+                          >
+                            <SelectTrigger className="w-32">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="active">Active</SelectItem>
+                              <SelectItem value="inactive">Inactive</SelectItem>
+                            </SelectContent>
+                          </Select>
+
+                          <Button variant="ghost" size="sm" title="View Product">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditProduct(product)}
+                            title="Edit Product"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteProduct(product.id)}
+                            title="Delete Product"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Status Badges Row */}
+                      <div className="flex items-center gap-2 flex-wrap mb-3">
+                        <Badge className={getStatusColor(product.status)}>
+                          {product.status}
+                        </Badge>
+                        <Badge variant="outline">
+                          {product.category}
+                        </Badge>
+                        {product.featured && (
+                          <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">
+                            <Star className="h-3 w-3 mr-1 fill-yellow-600" />
+                            Featured
+                          </Badge>
+                        )}
+                      </div>
+
+                      {/* Pricing Section */}
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="text-2xl font-bold text-green-600">
+                          ₹{product.price}
+                        </span>
+                        {product._original?.pricing?.discount_price && (
+                          <span className="text-lg line-through text-muted-foreground">
+                            ₹{product._original.pricing.base_price}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Product Stats */}
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
+                        <span className="flex items-center gap-1">
+                          <Package className="h-3 w-3" />
+                          {product.stock} in stock
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <TrendingUp className="h-3 w-3" />
+                          {product.sold} sold
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Star className="h-3 w-3" />
+                          {product.rating} ({product.reviews} reviews)
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             ))}
           </div>
         </CardContent>

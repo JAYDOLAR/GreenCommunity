@@ -166,7 +166,7 @@ export const marketplaceApi = {
       const response = await apiRequest(`/api/marketplace/featured?limit=${limit}`);
       return {
         ...response,
-        data: response.data.map(transformProduct)
+        data: (response.data || []).map(transformProduct)
       };
     } catch (error) {
       console.error('Error fetching featured products:', error);
@@ -188,7 +188,7 @@ export const marketplaceApi = {
       const categoryMap = {};
 
       // Group backend categories by client categories
-      response.data.forEach(backendCat => {
+      (response.data || []).forEach(backendCat => {
         const clientCategory = CATEGORY_MAPPING[backendCat._id];
         if (clientCategory) {
           if (!categoryMap[clientCategory]) {
@@ -240,7 +240,7 @@ export const marketplaceApi = {
 
       return {
         ...response,
-        data: response.data.map(transformProduct)
+        data: (response.data || []).map(transformProduct)
       };
     } catch (error) {
       console.error('Error searching products:', error);
@@ -263,7 +263,7 @@ export const marketplaceApi = {
 
       return {
         ...response,
-        data: response.data.map(transformProduct)
+        data: (response.data || []).map(transformProduct)
       };
     } catch (error) {
       console.error('Error fetching sustainable products:', error);
@@ -354,9 +354,11 @@ export const marketplaceApi = {
       const formData = new FormData();
       
       // Add new image files if provided
-      imageFiles.forEach((file) => {
-        formData.append('images', file);
-      });
+      if (imageFiles && Array.isArray(imageFiles) && imageFiles.length > 0) {
+        imageFiles.forEach((file) => {
+          formData.append('images', file);
+        });
+      }
       
       // Add updated product data
       Object.keys(productData).forEach(key => {
