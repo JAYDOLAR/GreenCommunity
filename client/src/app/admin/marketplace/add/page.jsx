@@ -143,8 +143,10 @@ const AddProductPage = () => {
         }
       };
 
-      // Extract image files from uploadedImages
-      const imageFiles = uploadedImages.map(img => img.file);
+      // Extract image files from uploadedImages - ensure it's always an array
+      const imageFiles = uploadedImages && uploadedImages.length > 0 
+        ? uploadedImages.map(img => img.file).filter(file => file instanceof File)
+        : [];
 
       // Call API with FormData
       const response = await marketplaceApi.createProduct(productData, imageFiles);
