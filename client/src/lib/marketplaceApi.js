@@ -276,9 +276,14 @@ export const marketplaceApi = {
     try {
       const formData = new FormData();
       
-      // Add image files
-      imageFiles.forEach((file) => {
-        formData.append('images', file);
+      // Ensure imageFiles is always an array
+      const files = Array.isArray(imageFiles) ? imageFiles : [];
+      
+      // Add image files - ensure each file is valid
+      files.forEach((file) => {
+        if (file instanceof File) {
+          formData.append('images', file);
+        }
       });
       
       // Add all other product data as JSON string fields
@@ -353,10 +358,15 @@ export const marketplaceApi = {
     try {
       const formData = new FormData();
       
-      // Add new image files if provided
-      if (imageFiles && Array.isArray(imageFiles) && imageFiles.length > 0) {
-        imageFiles.forEach((file) => {
-          formData.append('images', file);
+      // Ensure imageFiles is always an array
+      const files = Array.isArray(imageFiles) ? imageFiles : [];
+      
+      // Add new image files if provided - ensure each file is valid
+      if (files.length > 0) {
+        files.forEach((file) => {
+          if (file instanceof File) {
+            formData.append('images', file);
+          }
         });
       }
       
