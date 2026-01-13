@@ -16,6 +16,27 @@ const nextConfig = {
       },
     ],
   },
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: `
+              default-src 'self';
+              script-src 'self' 'unsafe-eval' 'unsafe-inline' https://checkout.razorpay.com https://js.razorpay.com;
+              style-src 'self' 'unsafe-inline';
+              img-src 'self' data: https: blob:;
+              font-src 'self' data:;
+              connect-src 'self' https://api.razorpay.com https://lumberjack.razorpay.com;
+              frame-src 'self' https://api.razorpay.com https://checkout.razorpay.com;
+            `.replace(/\s{2,}/g, ' ').trim()
+          }
+        ]
+      }
+    ]
+  },
   async rewrites() {
     // Use different API URLs based on environment
     const apiUrl = process.env.NODE_ENV === 'production'

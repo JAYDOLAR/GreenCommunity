@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import Script from 'next/script';
 import { useUser } from '@/context/UserContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -83,6 +84,8 @@ const Payment = () => {
   const totalAmountINR = Math.round(totalAmountUSD * USD_TO_INR);
 
   // Razorpay configuration
+  const [isRazorpayLoaded, setIsRazorpayLoaded] = useState(false);
+  
   const loadRazorpay = () => {
     return new Promise((resolve) => {
       // Check if we're in browser environment
@@ -93,12 +96,20 @@ const Payment = () => {
       }
 
       // Check if Razorpay is already loaded
-      if (window.Razorpay) {
+      if (window.Razorpay || isRazorpayLoaded) {
         console.log('Razorpay already loaded');
         resolve(true);
         return;
       }
 
+      // If script is loaded via Script component, it should be available
+      if (typeof window !== 'undefined' && window.Razorpay) {
+        setIsRazorpayLoaded(true);
+        resolve(true);
+        return;
+      }
+
+      // Fallback to dynamic loading
       console.log('Loading Razorpay SDK...');
       const script = document.createElement('script');
       script.src = 'https://checkout.razorpay.com/v1/checkout.js';
@@ -106,6 +117,7 @@ const Payment = () => {
       
       script.onload = () => {
         console.log('Razorpay SDK loaded successfully');
+        setIsRazorpayLoaded(true);
         resolve(true);
       };
       
@@ -357,6 +369,19 @@ const Payment = () => {
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 dark:from-gray-900 dark:via-emerald-900/20 dark:to-gray-900 p-0 overflow-x-hidden">
+      {/* Razorpay Script */}
+      <Script
+        src="https://checkout.razorpay.com/v1/checkout.js"
+        onLoad={() => {
+          console.log('Razorpay SDK loaded via Script component');
+          setIsRazorpayLoaded(true);
+        }}
+        onError={(e) => {
+          console.error('Failed to load Razorpay SDK via Script component:', e);
+        }}
+        strategy="afterInteractive"
+      />
+      
       {/* Floating Background Elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-20 left-10 w-32 h-32 bg-green-200/30 rounded-full blur-3xl animate-pulse"></div>

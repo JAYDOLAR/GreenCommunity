@@ -143,6 +143,7 @@ function MobileMarketplaceView() {
 }
 
 function TabletMarketplaceView() {
+  const { t } = useTranslation();
   const [viewMode, setViewMode] = useState('grid');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
