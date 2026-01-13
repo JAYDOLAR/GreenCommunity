@@ -5,7 +5,7 @@ const projectSchema = new mongoose.Schema({
   name: { type: String, required: true, trim: true },
   location: { type: String, required: true, trim: true },
   type: { type: String, required: true, trim: true },
-  region: { type: String, required: true, trim: true },
+  region: { type: String, trim: true }, // Made optional - can be derived from location
   description: { type: String, trim: true },
   image: {
     url: { type: String },
@@ -24,8 +24,17 @@ const projectSchema = new mongoose.Schema({
   },
   startDate: { type: Date },
   endDate: { type: Date },
+  expectedCompletion: { type: Date }, // Alternative field for completion date
   fundingGoal: { type: Number, default: 0 },
+  totalFunding: { type: Number, default: 0 }, // Total funding goal (alias for fundingGoal)
   currentFunding: { type: Number, default: 0 },
+  contributors: { type: Number, default: 0 }, // Number of contributors
+  teamSize: { type: Number, default: 0 }, // Team size
+  carbonOffsetTarget: { type: Number, default: 0 }, // Carbon offset target in tons
+  co2Removed: { type: Number, default: 0 }, // CO2 removed in tons
+  co2PerRupee: { type: Number, default: 0.001 }, // CO2 offset per rupee
+  benefits: [{ type: String }], // Environmental benefits
+  certifications: [{ type: String }], // Project certifications
   verified: { type: Boolean, default: false },
   // Detailed verification workflow
   verification: {

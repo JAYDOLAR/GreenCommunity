@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -25,95 +25,53 @@ import {
 } from 'lucide-react';
 
 const SecurityPage = () => {
-  const [securityThreats, setSecurityThreats] = useState([
-    {
-      id: 1,
-      type: 'failed_login',
-      severity: 'medium',
-      description: 'Multiple failed login attempts from IP 192.168.1.100',
-      ipAddress: '192.168.1.100',
-      user: 'unknown',
-      timestamp: '2024-01-20 14:30:25',
-      status: 'active',
-      location: 'New York, USA'
-    },
-    {
-      id: 2,
-      type: 'suspicious_activity',
-      severity: 'high',
-      description: 'Unusual data access pattern detected',
-      ipAddress: '203.45.67.89',
-      user: 'john.doe@example.com',
-      timestamp: '2024-01-20 13:15:42',
-      status: 'investigating',
-      location: 'London, UK'
-    },
-    {
-      id: 3,
-      type: 'brute_force',
-      severity: 'critical',
-      description: 'Brute force attack detected on admin account',
-      ipAddress: '45.67.89.123',
-      user: 'admin',
-      timestamp: '2024-01-20 12:45:18',
-      status: 'blocked',
-      location: 'Moscow, Russia'
-    },
-    {
-      id: 4,
-      type: 'data_breach',
-      severity: 'high',
-      description: 'Unauthorized access to user database',
-      ipAddress: '98.76.54.32',
-      user: 'system',
-      timestamp: '2024-01-20 11:20:33',
-      status: 'resolved',
-      location: 'Berlin, Germany'
-    }
-  ]);
+  const [securityThreats, setSecurityThreats] = useState([]);
+  const [accessLogs, setAccessLogs] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const [accessLogs, setAccessLogs] = useState([
-    {
-      id: 1,
-      user: 'admin@greencommunity.com',
-      action: 'login',
-      ipAddress: '192.168.1.50',
-      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-      timestamp: '2024-01-20 15:30:25',
-      status: 'success',
-      location: 'New York, USA'
-    },
-    {
-      id: 2,
-      user: 'john.doe@example.com',
-      action: 'project_update',
-      ipAddress: '203.45.67.89',
-      userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
-      timestamp: '2024-01-20 15:25:12',
-      status: 'success',
-      location: 'London, UK'
-    },
-    {
-      id: 3,
-      user: 'sarah.wilson@example.com',
-      action: 'user_management',
-      ipAddress: '45.67.89.123',
-      userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0)',
-      timestamp: '2024-01-20 15:20:45',
-      status: 'success',
-      location: 'San Francisco, USA'
-    },
-    {
-      id: 4,
-      user: 'unknown',
-      action: 'login',
-      ipAddress: '98.76.54.32',
-      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-      timestamp: '2024-01-20 15:15:30',
-      status: 'failed',
-      location: 'Berlin, Germany'
+  // Fetch security data on mount
+  useEffect(() => {
+    fetchSecurityData();
+  }, []);
+
+  const fetchSecurityData = async () => {
+    setIsLoading(true);
+    try {
+      const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:5000';
+      const token = localStorage.getItem('adminToken');
+      
+      const headers = {};
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      
+      // Fetch threats
+      const threatsResponse = await fetch(`${serverUrl}/api/admin/security/threats?limit=50`, {
+        headers
+      });
+      
+      // Fetch logs
+      const logsResponse = await fetch(`${serverUrl}/api/admin/security/logs?limit=100`, {
+        headers
+      });
+
+      if (threatsResponse.ok) {
+        const threatsResult = await threatsResponse.json();
+        if (threatsResult.success) {
+          setSecurityThreats(threatsResult.data);
+        }
+      }
+
+      if (logsResponse.ok) {
+        const logsResult = await logsResponse.json();
+        if (logsResult.success) {
+          setAccessLogs(logsResult.data);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching security data:', error);
+    } finally {
+      setIsLoading(false);
     }
-  ]);
+  };
 
   const [securitySettings, setSecuritySettings] = useState({
     firewallEnabled: true,

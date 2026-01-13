@@ -62,78 +62,70 @@ const AnalyticsPage = () => {
 
   const [metrics, setMetrics] = useState({
     users: {
-      total: 1247,
-      growth: 12.5,
+      total: 0,
+      growth: 0,
       trend: 'up',
-      data: [120, 135, 142, 158, 167, 189, 201, 215, 234, 256, 278, 301]
+      data: []
     },
     revenue: {
-      total: 1250000,
-      growth: 8.3,
+      total: 0,
+      growth: 0,
       trend: 'up',
-      data: [85000, 92000, 89000, 95000, 102000, 98000, 105000, 112000, 108000, 115000, 118000, 125000]
+      data: []
     },
     projects: {
-      total: 45,
-      growth: 15.2,
+      total: 0,
+      growth: 0,
       trend: 'up',
-      data: [32, 35, 38, 41, 39, 42, 44, 43, 45, 47, 46, 45]
+      data: []
     },
     carbonOffset: {
-      total: 125000,
-      growth: 18.7,
+      total: 0,
+      growth: 0,
       trend: 'up',
-      data: [85000, 92000, 98000, 105000, 112000, 118000, 125000, 132000, 138000, 145000, 152000, 158000]
+      data: []
     }
   });
 
-  const [topProjects] = useState([
-    {
-      name: 'Amazon Rainforest Restoration',
-      carbonOffset: 125000,
-      funding: 75,
-      contributors: 15420,
-      growth: 12.5
-    },
-    {
-      name: 'Wind Farm Development',
-      carbonOffset: 75000,
-      funding: 64,
-      contributors: 8765,
-      growth: 8.3
-    },
-    {
-      name: 'Ocean Kelp Forest Restoration',
-      carbonOffset: 45000,
-      funding: 65,
-      contributors: 3240,
-      growth: 15.2
-    },
-    {
-      name: 'Solar Energy Cooperative',
-      carbonOffset: 32000,
-      funding: 63,
-      contributors: 1890,
-      growth: 6.8
-    },
-    {
-      name: 'Mangrove Conservation',
-      carbonOffset: 85000,
-      funding: 75,
-      contributors: 6750,
-      growth: 11.4
-    }
-  ]);
+  const [topProjects, setTopProjects] = useState([]);
 
-  const [userActivity] = useState([
-    { date: '2024-01-01', newUsers: 12, activeUsers: 892, contributions: 45 },
-    { date: '2024-01-02', newUsers: 15, activeUsers: 901, contributions: 52 },
-    { date: '2024-01-03', newUsers: 8, activeUsers: 889, contributions: 38 },
-    { date: '2024-01-04', newUsers: 22, activeUsers: 934, contributions: 67 },
-    { date: '2024-01-05', newUsers: 18, activeUsers: 945, contributions: 58 },
-    { date: '2024-01-06', newUsers: 25, activeUsers: 967, contributions: 73 },
-    { date: '2024-01-07', newUsers: 20, activeUsers: 978, contributions: 61 }
-  ]);
+  const [userActivity, setUserActivity] = useState([]);
+
+  // Fetch analytics data from API
+  useEffect(() => {
+    fetchAnalyticsData();
+  }, [timeRange]);
+
+  const fetchAnalyticsData = async () => {
+    setIsLoading(true);
+    try {
+      const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:5000';
+      const token = localStorage.getItem('adminToken');
+      
+      const response = await fetch(`${serverUrl}/api/admin/analytics/metrics?timeRange=${timeRange}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch analytics data');
+      }
+
+      const result = await response.json();
+      
+      if (result.success && result.data) {
+        setMetrics(result.data.metrics);
+        setTopProjects(result.data.topProjects || []);
+        setUserActivity(result.data.userActivity || []);
+        setLastUpdated(new Date());
+      }
+    } catch (error) {
+      console.error('Error fetching analytics:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Month and Year options
   const months = [
@@ -197,10 +189,20 @@ const AnalyticsPage = () => {
   const fetchRealTimeData = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/admin/analytics-data');
+      const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:5000';
+      const token = localStorage.getItem('adminToken');
+      
+      const response = await fetch(`${serverUrl}/api/admin/analytics/metrics?timeRange=${timeRange}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
       if (response.ok) {
-        const data = await response.json();
-        setMetrics(data.metrics);
+        const result = await response.json();
+        if (result.success && result.data) {
+          setMetrics(result.data.metrics);
+        }
         setLastUpdated(new Date().toISOString());
       }
     } catch (error) {

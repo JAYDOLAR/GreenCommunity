@@ -120,30 +120,35 @@ const UsersPage = () => {
     try {
       // Fetch fresh data from API before exporting
       const adminToken = localStorage.getItem('adminToken');
-      const response = await fetch('/api/admin/users?limit=1000&page=1', {
-        headers: {
-          'Authorization': `Bearer ${adminToken}`
-        }
-      });
-      if (!response.ok) {
-        throw new Error(`Invalid response (HTTP ${response.status})`);
-      }
-      const text = await response.text();
-      let data = {};
-      try { data = text ? JSON.parse(text) : {}; } catch (e) { throw new Error(`Invalid response (HTTP ${response.status})`); }
+      const API_BASE = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:5000';
       
-      if (data.users && data.users.length > 0) {
+      const response = await fetch(`${API_BASE}/api/admin/users?limit=1000&page=1`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${adminToken}`,
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.success && data.users && data.users.length > 0) {
         const csvContent = [
           ['Name', 'Email', 'Role', 'Status', 'Join Date', 'Last Login', 'Contributions', 'Carbon Offset'],
           ...data.users.map(user => [
-            user.name,
-            user.email,
-            user.role,
-            user.status,
-            user.joinDate,
-            user.lastLogin,
-            user.totalContributions,
-            user.carbonOffset
+            user.name || 'Unknown',
+            user.email || '',
+            user.role || 'user',
+            user.status || 'active',
+            user.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US') : 'N/A',
+            user.lastLogin ? new Date(user.lastLogin).toLocaleDateString('en-US') : 'Never',
+            user.totalContributions || 0,
+            user.carbonOffset || 0
           ])
         ].map(row => row.join(',')).join('\n');
 
@@ -157,8 +162,21 @@ const UsersPage = () => {
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
         
-        // Update the local state with fresh data
-        setUsers(data.users);
+        // Update the local state with fresh formatted data
+        const formattedUsers = data.users.map(user => ({
+          id: user.id || user._id,
+          name: user.name || 'Unknown',
+          email: user.email || '',
+          role: user.role || 'user',
+          status: user.status || 'active',
+          isEmailVerified: user.isEmailVerified !== false,
+          joinDate: user.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US') : 'N/A',
+          lastLogin: user.lastLogin ? new Date(user.lastLogin).toLocaleDateString('en-US') : 'Never',
+          totalContributions: user.totalContributions || 0,
+          carbonOffset: user.carbonOffset || 0,
+          avatar: user.avatar || '/user.png'
+        }));
+        setUsers(formattedUsers);
       } else {
         alert('No users found to export');
       }
@@ -173,82 +191,135 @@ const UsersPage = () => {
   const fetchUsers = async () => {
     try {
       const adminToken = localStorage.getItem('adminToken');
-      console.log('Admin token:', adminToken ? 'exists' : 'missing');
+      console.log('🔑 Admin token:', adminToken ? 'exists' : 'missing');
       
-      const response = await fetch('/api/admin/users?limit=1000&page=1', {
+      const API_BASE = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:5000';
+      const url = `${API_BASE}/api/admin/users?limit=1000&page=1`;
+      console.log('🔍 Fetching users from:', url);
+      
+      const response = await fetch(url, {
+        method: 'GET',
         headers: {
-          'Authorization': `Bearer ${adminToken}`
-        }
+          'Authorization': `Bearer ${adminToken}`,
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
       });
-      if (!response.ok) {
-        throw new Error(`Invalid response (HTTP ${response.status})`);
-      }
-      console.log('Response status:', response.status);
-      const text = await response.text();
-      let data = {};
-      try { data = text ? JSON.parse(text) : {}; } catch (e) { console.error('Non-JSON response body preview:', String(text).slice(0,200)); throw new Error(`Invalid response (HTTP ${response.status})`); }
-      console.log('Response data:', data);
       
-      if (data.success && data.users) {
-        setUsers(data.users);
-        console.log('Users set:', data.users.length, 'users');
+      console.log('📊 Response status:', response.status);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('✅ Response data:', data);
+      
+      if (data.success && data.users && Array.isArray(data.users)) {
+        // Map API response to frontend format
+        const formattedUsers = data.users.map(user => ({
+          id: user.id || user._id,
+          name: user.name || 'Unknown',
+          email: user.email || '',
+          role: user.role || 'user',
+          status: user.status || 'active',
+          isEmailVerified: user.isEmailVerified !== false,
+          joinDate: user.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US') : 'N/A',
+          lastLogin: user.lastLogin ? new Date(user.lastLogin).toLocaleDateString('en-US') : 'Never',
+          totalContributions: user.totalContributions || 0,
+          carbonOffset: user.carbonOffset || 0,
+          avatar: user.avatar || '/user.png'
+        }));
+        
+        setUsers(formattedUsers);
+        console.log('✅ Users loaded:', formattedUsers.length, 'users');
       } else {
-        console.error('API Error:', data.message || 'No users in response');
-        setUsers([]); // Ensure empty array if API fails
+        console.error('❌ API Error:', data.message || 'No users in response');
+        setUsers([]);
       }
     } catch (error) {
-      console.error('Failed to fetch users:', error);
-      setUsers([]); // Ensure empty array if fetch fails
+      console.error('❌ Failed to fetch users:', error);
+      setUsers([]);
     }
   };
 
   const updateUser = async (userData) => {
     try {
       const adminToken = localStorage.getItem('adminToken');
-      const response = await fetch('/api/admin/users', {
+      const API_BASE = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:5000';
+      
+      const response = await fetch(`${API_BASE}/api/admin/users`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${adminToken}`
         },
+        credentials: 'include',
         body: JSON.stringify(userData),
       });
+      
       if (!response.ok) {
-        throw new Error(`Invalid response (HTTP ${response.status})`);
+        throw new Error(`HTTP ${response.status}`);
       }
-      const text = await response.text();
-      let data = {};
-      try { data = text ? JSON.parse(text) : {}; } catch (e) { throw new Error(`Invalid response (HTTP ${response.status})`); }
-      if (data.user) {
-        setUsers(prev => prev.map(user => user.id === data.user.id ? data.user : user));
-        return data.user;
+      
+      const data = await response.json();
+      
+      if (data.success && data.user) {
+        const formattedUser = {
+          id: data.user.id || data.user._id,
+          name: data.user.name,
+          email: data.user.email,
+          role: data.user.role,
+          status: data.user.status,
+          isEmailVerified: data.user.isEmailVerified,
+          joinDate: data.user.createdAt ? new Date(data.user.createdAt).toLocaleDateString('en-US') : 'N/A',
+          lastLogin: data.user.lastLogin ? new Date(data.user.lastLogin).toLocaleDateString('en-US') : 'Never',
+          totalContributions: data.user.totalContributions || 0,
+          carbonOffset: data.user.carbonOffset || 0,
+          avatar: data.user.avatar || '/user.png'
+        };
+        
+        setUsers(prev => prev.map(user => user.id === formattedUser.id ? formattedUser : user));
+        return formattedUser;
       }
     } catch (error) {
       console.error('Failed to update user:', error);
+      alert('Failed to update user. Please try again.');
     }
   };
 
   const deleteUser = async (userId) => {
     try {
       const adminToken = localStorage.getItem('adminToken');
-      const response = await fetch(`/api/admin/users?id=${userId}`, {
+      const API_BASE = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:5000';
+      
+      const response = await fetch(`${API_BASE}/api/admin/users?id=${userId}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${adminToken}`
+          'Authorization': `Bearer ${adminToken}`,
+          'Content-Type': 'application/json'
         },
+        credentials: 'include'
       });
+      
       if (!response.ok) {
-        throw new Error(`Invalid response (HTTP ${response.status})`);
+        throw new Error(`HTTP ${response.status}`);
       }
-      const text = await response.text();
-      let data = {};
-      try { data = text ? JSON.parse(text) : {}; } catch (e) { throw new Error(`Invalid response (HTTP ${response.status})`); }
+      
+      const data = await response.json();
+      
       if (data.success) {
         setUsers(prev => prev.filter(user => user.id !== userId));
+        alert('User deleted successfully');
         return true;
+      } else {
+        alert(data.message || 'Failed to delete user');
+        return false;
       }
     } catch (error) {
       console.error('Failed to delete user:', error);
+      alert('Failed to delete user. Please try again.');
+      return false;
     }
   };
 

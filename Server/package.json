@@ -12,6 +12,8 @@
     "seed-community": "node seed-community.js",
     "seed-leaderboard": "node seed-leaderboard.js",
     "seed-marketplace": "node scripts/seedMarketplaceProducts.js",
+    "seed-projects": "node scripts/seedProjects.js",
+    "seed-admin": "node scripts/seedAdminData.js",
     "ipfs:check": "node scripts/check-ipfs.js"
   },
   "keywords": [],
