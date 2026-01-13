@@ -133,37 +133,30 @@ const UsersPage = () => {
     setIsLoading(true);
     try {
       const adminToken = localStorage.getItem('adminToken');
-      const url = `${API_BASE}/api/admin/users?limit=1000&page=1`;
-      const headers = {};
-      if (adminToken) headers['Authorization'] = `Bearer ${adminToken}`;
-      const response = await fetch(url, { method: 'GET', headers, credentials: 'include' });
-      if (response.status === 401 || response.status === 403) {
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem('adminToken');
-          localStorage.removeItem('adminAuthenticated');
-          window.location.href = '/admin/login?reason=auth';
-        }
-        return;
-      }
+      const response = await fetch(`${API_BASE}/api/admin/users?limit=1000&page=1`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${adminToken}`,
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
+      });
       if (!response.ok) {
-        throw new Error(`Invalid response (HTTP ${response.status})`);
+        throw new Error(`HTTP ${response.status}`);
       }
-      const text = await response.text();
-      let data = {};
-      try { data = text ? JSON.parse(text) : {}; } catch (e) { throw new Error(`Invalid response (HTTP ${response.status})`); }
-      
-      if (data.users && data.users.length > 0) {
+      const data = await response.json();
+      if (data.success && data.users && data.users.length > 0) {
         const csvContent = [
           ['Name', 'Email', 'Role', 'Status', 'Join Date', 'Last Login', 'Contributions', 'Carbon Offset'],
           ...data.users.map(user => [
-            user.name,
-            user.email,
-            user.role,
-            user.status,
-            user.joinDate,
-            user.lastLogin,
-            user.totalContributions,
-            user.carbonOffset
+            user.name || 'Unknown',
+            user.email || '',
+            user.role || 'user',
+            user.status || 'active',
+            user.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US') : 'N/A',
+            user.lastLogin ? new Date(user.lastLogin).toLocaleDateString('en-US') : 'Never',
+            user.totalContributions || 0,
+            user.carbonOffset || 0
           ])
         ].map(row => row.join(',')).join('\n');
 
@@ -177,8 +170,21 @@ const UsersPage = () => {
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
         
-        // Update the local state with fresh data
-        setUsers(data.users);
+        // Update the local state with fresh formatted data
+        const formattedUsers = data.users.map(user => ({
+          id: user.id || user._id,
+          name: user.name || 'Unknown',
+          email: user.email || '',
+          role: user.role || 'user',
+          status: user.status || 'active',
+          isEmailVerified: user.isEmailVerified !== false,
+          joinDate: user.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US') : 'N/A',
+          lastLogin: user.lastLogin ? new Date(user.lastLogin).toLocaleDateString('en-US') : 'Never',
+          totalContributions: user.totalContributions || 0,
+          carbonOffset: user.carbonOffset || 0,
+          avatar: user.avatar || ''
+        }));
+        setUsers(formattedUsers);
       } else {
         alert('No users found to export');
       }
@@ -193,106 +199,132 @@ const UsersPage = () => {
   const fetchUsers = async () => {
     try {
       const adminToken = localStorage.getItem('adminToken');
-      const url = `${API_BASE}/api/admin/users?limit=1000&page=1`;
-      const headers = {};
-      if (adminToken) headers['Authorization'] = `Bearer ${adminToken}`;
-      const response = await fetch(url, { method: 'GET', headers, credentials: 'include' });
-      if (response.status === 401 || response.status === 403) {
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem('adminToken');
-          localStorage.removeItem('adminAuthenticated');
-          window.location.href = '/admin/login?reason=auth';
-        }
-        setUsers([]);
-        return;
-      }
-      if (!response.ok) {
-        throw new Error(`Invalid response (HTTP ${response.status})`);
-      }
-      const text = await response.text();
-      let data = {};
-      try { data = text ? JSON.parse(text) : {}; } catch (e) { console.error('Non-JSON response body preview:', String(text).slice(0,200)); throw new Error(`Invalid response (HTTP ${response.status})`); }
+      console.log('🔑 Admin token:', adminToken ? 'exists' : 'missing');
       
-      if (data.success && data.users) {
-        setUsers(data.users);
+      const url = `${API_BASE}/api/admin/users?limit=1000&page=1`;
+      console.log('🔍 Fetching users from:', url);
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${adminToken}`,
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
+      });
+      
+      console.log('📊 Response status:', response.status);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('✅ Response data:', data);
+      
+      if (data.success && data.users && Array.isArray(data.users)) {
+        // Map API response to frontend format
+        const formattedUsers = data.users.map(user => ({
+          id: user.id || user._id,
+          name: user.name || 'Unknown',
+          email: user.email || '',
+          role: user.role || 'user',
+          status: user.status || 'active',
+          isEmailVerified: user.isEmailVerified !== false,
+          joinDate: user.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US') : 'N/A',
+          lastLogin: user.lastLogin ? new Date(user.lastLogin).toLocaleDateString('en-US') : 'Never',
+          totalContributions: user.totalContributions || 0,
+          carbonOffset: user.carbonOffset || 0,
+          avatar: user.avatar || ''
+        }));
+        
+        setUsers(formattedUsers);
+        console.log('✅ Users loaded:', formattedUsers.length, 'users');
       } else {
-        console.error('API Error:', data.message || 'No users in response');
-        setUsers([]); // Ensure empty array if API fails
+        console.error('❌ API Error:', data.message || 'No users in response');
+        setUsers([]);
       }
     } catch (error) {
-      console.error('Failed to fetch users:', error);
-      setUsers([]); // Ensure empty array if fetch fails
+      console.error('❌ Failed to fetch users:', error);
+      setUsers([]);
     }
   };
 
   const updateUser = async (userData) => {
     try {
       const adminToken = localStorage.getItem('adminToken');
-      const url = `${API_BASE}/api/admin/users`;
-      const headers = {
-        'Content-Type': 'application/json'
-      };
-      if (adminToken) headers['Authorization'] = `Bearer ${adminToken}`;
-      const response = await fetch(url, {
+      
+      const response = await fetch(`${API_BASE}/api/admin/users`, {
         method: 'PUT',
-        headers,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${adminToken}`
+        },
         credentials: 'include',
         body: JSON.stringify(userData),
       });
-      if (response.status === 401 || response.status === 403) {
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem('adminToken');
-          localStorage.removeItem('adminAuthenticated');
-          window.location.href = '/admin/login?reason=auth';
-        }
-        return null;
-      }
+      
       if (!response.ok) {
-        throw new Error(`Invalid response (HTTP ${response.status})`);
+        throw new Error(`HTTP ${response.status}`);
       }
-      const text = await response.text();
-      let data = {};
-      try { data = text ? JSON.parse(text) : {}; } catch (e) { throw new Error(`Invalid response (HTTP ${response.status})`); }
-      if (data.user) {
-        setUsers(prev => prev.map(user => user.id === data.user.id ? data.user : user));
-        return data.user;
+      
+      const data = await response.json();
+      
+      if (data.success && data.user) {
+        const formattedUser = {
+          id: data.user.id || data.user._id,
+          name: data.user.name,
+          email: data.user.email,
+          role: data.user.role,
+          status: data.user.status,
+          isEmailVerified: data.user.isEmailVerified,
+          joinDate: data.user.createdAt ? new Date(data.user.createdAt).toLocaleDateString('en-US') : 'N/A',
+          lastLogin: data.user.lastLogin ? new Date(data.user.lastLogin).toLocaleDateString('en-US') : 'Never',
+          totalContributions: data.user.totalContributions || 0,
+          carbonOffset: data.user.carbonOffset || 0,
+          avatar: data.user.avatar || ''
+        };
+        
+        setUsers(prev => prev.map(user => user.id === formattedUser.id ? formattedUser : user));
+        return formattedUser;
       }
     } catch (error) {
       console.error('Failed to update user:', error);
+      alert('Failed to update user. Please try again.');
     }
   };
 
   const deleteUser = async (userId) => {
     try {
       const adminToken = localStorage.getItem('adminToken');
-      const url = `${API_BASE}/api/admin/users?id=${encodeURIComponent(userId)}`;
-      const headers = {};
-      if (adminToken) headers['Authorization'] = `Bearer ${adminToken}`;
-      const response = await fetch(url, {
+      
+      const response = await fetch(`${API_BASE}/api/admin/users?id=${userId}`, {
         method: 'DELETE',
-        headers,
-        credentials: 'include',
+        headers: {
+          'Authorization': `Bearer ${adminToken}`,
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
       });
-      if (response.status === 401 || response.status === 403) {
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem('adminToken');
-          localStorage.removeItem('adminAuthenticated');
-          window.location.href = '/admin/login?reason=auth';
-        }
-        return false;
-      }
+      
       if (!response.ok) {
-        throw new Error(`Invalid response (HTTP ${response.status})`);
+        throw new Error(`HTTP ${response.status}`);
       }
-      const text = await response.text();
-      let data = {};
-      try { data = text ? JSON.parse(text) : {}; } catch (e) { throw new Error(`Invalid response (HTTP ${response.status})`); }
+      
+      const data = await response.json();
+      
       if (data.success) {
         setUsers(prev => prev.filter(user => user.id !== userId));
+        alert('User deleted successfully');
         return true;
+      } else {
+        alert(data.message || 'Failed to delete user');
+        return false;
       }
     } catch (error) {
       console.error('Failed to delete user:', error);
+      alert('Failed to delete user. Please try again.');
+      return false;
     }
   };
 
@@ -748,73 +780,90 @@ const UsersPage = () => {
 
       {/* Edit User Modal */}
       {showEditUser && selectedUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-96 max-w-md">
-            <h2 className="text-xl font-semibold mb-4">Edit User</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Name</label>
-                <Input 
-                  value={editingUser.name || selectedUser.name} 
-                  onChange={(e) => setEditingUser(prev => ({ ...prev, name: e.target.value }))}
-                />
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-[1px] z-50 flex items-end sm:items-center justify-center p-3">
+          <div className="bg-white rounded-t-xl sm:rounded-xl shadow-2xl w-full max-w-lg sm:max-w-xl overflow-hidden">
+            {/* Header */}
+            <div className="px-5 sm:px-6 pt-5 pb-3 border-b">
+              <h2 className="text-xl font-semibold">Edit User</h2>
+              <p className="text-sm text-muted-foreground mt-1">Update basic user details, role and status.</p>
+            </div>
+
+            {/* Body */}
+            <div className="px-5 sm:px-6 py-5 space-y-5">
+              {/* Identity */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Name</label>
+                  <Input
+                    value={editingUser.name ?? selectedUser.name}
+                    onChange={(e) => setEditingUser(prev => ({ ...prev, name: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Email</label>
+                  <Input
+                    value={editingUser.email ?? selectedUser.email}
+                    type="email"
+                    onChange={(e) => setEditingUser(prev => ({ ...prev, email: e.target.value }))}
+                  />
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Email</label>
-                <Input 
-                  value={editingUser.email || selectedUser.email} 
-                  type="email"
-                  onChange={(e) => setEditingUser(prev => ({ ...prev, email: e.target.value }))}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Role</label>
-                <Select 
-                  value={editingUser.role || selectedUser.role}
-                  onValueChange={(value) => setEditingUser(prev => ({ ...prev, role: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="user">User</SelectItem>
-                    <SelectItem value="moderator">Moderator</SelectItem>
-                    <SelectItem value="admin">Admin</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Status</label>
-                <Select 
-                  value={editingUser.status || selectedUser.status}
-                  onValueChange={(value) => setEditingUser(prev => ({ ...prev, status: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="suspended">Suspended</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
-                  </SelectContent>
-                </Select>
+
+              {/* Controls */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Role</label>
+                  <Select
+                    value={editingUser.role ?? selectedUser.role}
+                    onValueChange={(value) => setEditingUser(prev => ({ ...prev, role: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="user">User</SelectItem>
+                      <SelectItem value="moderator">Moderator</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Status</label>
+                  <Select
+                    value={editingUser.status ?? selectedUser.status}
+                    onValueChange={(value) => setEditingUser(prev => ({ ...prev, status: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="suspended">Suspended</SelectItem>
+                      <SelectItem value="inactive">Inactive</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
-            <div className="flex gap-2 mt-6">
-              <Button onClick={() => setShowEditUser(false)} variant="outline" className="flex-1">
-                Cancel
-              </Button>
-              <Button 
-                onClick={async () => {
-                  const updatedUser = { ...selectedUser, ...editingUser };
-                  await updateUser(updatedUser);
-                  setEditingUser({});
-                  setShowEditUser(false);
-                }} 
-                className="flex-1"
-              >
-                Save Changes
-              </Button>
+
+            {/* Footer */}
+            <div className="px-5 sm:px-6 pb-5 pt-3 border-t">
+              <div className="grid grid-cols-2 gap-2 sm:flex sm:justify-end">
+                <Button onClick={() => setShowEditUser(false)} variant="outline" className="w-full sm:w-auto">
+                  Cancel
+                </Button>
+                <Button
+                  onClick={async () => {
+                    const updatedUser = { ...selectedUser, ...editingUser };
+                    await updateUser(updatedUser);
+                    setEditingUser({});
+                    setShowEditUser(false);
+                  }}
+                  className="w-full sm:w-auto"
+                >
+                  Save Changes
+                </Button>
+              </div>
             </div>
           </div>
         </div>

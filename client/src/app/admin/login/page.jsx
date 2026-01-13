@@ -83,8 +83,10 @@ export default function AdminLoginPage() {
     setIsSuccess(false);
 
     try {
+      const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:5000';
+      
       // Call the authentication API
-      const response = await fetch('/api/admin/auth', {
+      const response = await fetch(`${serverUrl}/api/admin/auth`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -170,7 +172,9 @@ export default function AdminLoginPage() {
     setPasswordError('');
 
     try {
-      const response = await fetch('/api/admin/auth', {
+      const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:5000';
+      
+      const response = await fetch(`${serverUrl}/api/admin/auth`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

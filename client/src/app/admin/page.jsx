@@ -33,8 +33,8 @@ const AdminDashboard = () => {
   const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(false);
   const [showExportOptions, setShowExportOptions] = useState(false);
   const [dashboardStats, setDashboardStats] = useState({
-    totalUsers: 1, // Default to 1 to prevent division by zero
-    totalProjects: 1, // Default to 1 to prevent division by zero
+    totalUsers: 0,
+    totalProjects: 0,
     totalRevenue: 0,
     carbonOffset: 0,
     activeProjects: 0,
@@ -42,60 +42,97 @@ const AdminDashboard = () => {
     totalContributors: 0,
     monthlyGrowth: 0
   });
+  const [recentActivities, setRecentActivities] = useState([]);
+  const [isLoadingStats, setIsLoadingStats] = useState(true);
 
   const fetchRealTimeData = async () => {
+    setIsLoadingStats(true);
     try {
       const adminToken = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null;
-      const API_BASE = process.env.NEXT_PUBLIC_SERVER_URL || '';
-      const url = `${API_BASE}/api/admin/dashboard/stats`;
+      const API_BASE = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:5000';
+      const statsUrl = `${API_BASE}/api/admin/dashboard/stats`;
+      const activitiesUrl = `${API_BASE}/api/admin/dashboard/activities`;
 
-      const headers = {};
-      if (adminToken) headers['Authorization'] = `Bearer ${adminToken}`;
+      console.log('🔍 Fetching dashboard data from:', statsUrl);
 
-      const response = await fetch(url, {
+      const headers = {
+        'Content-Type': 'application/json'
+      };
+      if (adminToken) {
+        headers['Authorization'] = `Bearer ${adminToken}`;
+        console.log('🔑 Using admin token for authentication');
+      }
+
+      // Fetch dashboard stats
+      const statsResponse = await fetch(statsUrl, {
         method: 'GET',
         headers,
-        credentials: 'include' // allow cookie-based auth fallback
+        credentials: 'include'
       });
 
-      if (response.status === 401 || response.status === 403) {
-        console.warn('Admin auth failed with status', response.status);
-        // Clear stale tokens
+      console.log('📊 Stats response status:', statsResponse.status);
+
+      if (statsResponse.status === 401 || statsResponse.status === 403) {
+        console.warn('⚠️ Admin auth failed with status', statsResponse.status);
         if (typeof window !== 'undefined') {
           localStorage.removeItem('adminToken');
           localStorage.removeItem('adminAuthenticated');
         }
-        // Redirect to login
         setTimeout(() => {
           if (typeof window !== 'undefined') {
             window.location.href = '/admin/login?reason=auth';
           }
         }, 300);
-        return; // stop further processing
+        return;
       }
 
-      if (!response.ok) {
-        // Non-auth error
-        const text = await response.text();
-        throw new Error(`Dashboard stats fetch failed (${response.status}): ${text?.slice(0,200)}`);
-      }
-
-      const data = await response.json().catch(() => ({}));
-      if (data.success && data.stats) {
-        setDashboardStats(prevStats => ({
-          ...prevStats,
-          ...data.stats
-        }));
+      if (statsResponse.ok) {
+        const statsData = await statsResponse.json();
+        console.log('✅ Raw stats data received:', statsData);
+        
+        if (statsData.success && statsData.stats) {
+          console.log('✅ Dashboard stats loaded successfully:', statsData.stats);
+          setDashboardStats(statsData.stats);
+        } else {
+          console.warn('⚠️ Invalid stats response format:', statsData);
+        }
       } else {
-        console.error('Dashboard stats API response malformed:', data);
+        console.error('❌ Stats API error:', statsResponse.status, statsResponse.statusText);
+        const errorText = await statsResponse.text();
+        console.error('❌ Error details:', errorText);
+      }
+
+      // Fetch recent activities
+      console.log('🔍 Fetching activities from:', activitiesUrl);
+      const activitiesResponse = await fetch(activitiesUrl, {
+        method: 'GET',
+        headers,
+        credentials: 'include'
+      });
+
+      console.log('📋 Activities response status:', activitiesResponse.status);
+
+      if (activitiesResponse.ok) {
+        const activitiesData = await activitiesResponse.json();
+        console.log('✅ Raw activities data received:', activitiesData);
+        
+        if (activitiesData.success && activitiesData.activities) {
+          console.log('✅ Activities loaded successfully:', activitiesData.activities.length, 'items');
+          setRecentActivities(activitiesData.activities);
+        } else {
+          console.warn('⚠️ Invalid activities response format:', activitiesData);
+        }
+      } else {
+        console.error('❌ Activities API error:', activitiesResponse.status, activitiesResponse.statusText);
+        const errorText = await activitiesResponse.text();
+        console.error('❌ Error details:', errorText);
       }
     } catch (error) {
-      console.error('Failed to fetch dashboard stats:', error);
-      setDashboardStats(prevStats => ({
-        ...prevStats,
-        totalUsers: prevStats.totalUsers || 1,
-        totalProjects: prevStats.totalProjects || 1
-      }));
+      console.error('❌ Failed to fetch dashboard data:', error);
+      console.error('❌ Error stack:', error.stack);
+    } finally {
+      setIsLoadingStats(false);
+      console.log('✅ Dashboard data fetch completed');
     }
   };
 
@@ -369,8 +406,17 @@ const AdminDashboard = () => {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{(dashboardStats.totalUsers || 0).toLocaleString('en-US')}</div>
-            <p className="text-xs text-muted-foreground">+{dashboardStats.monthlyGrowth || 0}% from last month</p>
+            {isLoadingStats ? (
+              <div className="text-2xl font-bold text-muted-foreground">Loading...</div>
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{(dashboardStats.totalUsers || 0).toLocaleString('en-US')}</div>
+                <p className="text-xs text-muted-foreground">
+                  {dashboardStats.monthlyGrowth !== undefined && dashboardStats.monthlyGrowth >= 0 ? '+' : ''}
+                  {dashboardStats.monthlyGrowth || 0}% from last month
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -380,8 +426,14 @@ const AdminDashboard = () => {
             <TreePine className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{(dashboardStats.totalProjects || 0).toLocaleString('en-US')}</div>
-            <p className="text-xs text-muted-foreground">{dashboardStats.activeProjects || 0} active projects</p>
+            {isLoadingStats ? (
+              <div className="text-2xl font-bold text-muted-foreground">Loading...</div>
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{(dashboardStats.totalProjects || 0).toLocaleString('en-US')}</div>
+                <p className="text-xs text-muted-foreground">{dashboardStats.activeProjects || 0} active projects</p>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -391,8 +443,17 @@ const AdminDashboard = () => {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₹{(dashboardStats.totalRevenue || 0).toLocaleString('en-US')}</div>
-            <p className="text-xs text-muted-foreground">+{dashboardStats.monthlyGrowth || 0}% from last month</p>
+            {isLoadingStats ? (
+              <div className="text-2xl font-bold text-muted-foreground">Loading...</div>
+            ) : (
+              <>
+                <div className="text-2xl font-bold">₹{(dashboardStats.totalRevenue || 0).toLocaleString('en-US')}</div>
+                <p className="text-xs text-muted-foreground">
+                  {dashboardStats.monthlyGrowth !== undefined && dashboardStats.monthlyGrowth >= 0 ? '+' : ''}
+                  {dashboardStats.monthlyGrowth || 0}% from last month
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -402,8 +463,14 @@ const AdminDashboard = () => {
             <Target className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{(dashboardStats.carbonOffset || 0).toLocaleString('en-US')} kg</div>
-            <p className="text-xs text-muted-foreground">CO₂ removed</p>
+            {isLoadingStats ? (
+              <div className="text-2xl font-bold text-muted-foreground">Loading...</div>
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{(dashboardStats.carbonOffset || 0).toLocaleString('en-US')} kg</div>
+                <p className="text-xs text-muted-foreground">CO₂ removed</p>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -424,7 +491,7 @@ const AdminDashboard = () => {
                 </div>
                 <span className="text-sm font-medium">{dashboardStats.activeProjects || 0}</span>
               </div>
-              <Progress value={dashboardStats.totalProjects > 0 ? (dashboardStats.activeProjects / dashboardStats.totalProjects) * 100 : 0} className="h-2" />
+              <Progress value={dashboardStats.totalProjects > 0 ? ((dashboardStats.activeProjects || 0) / dashboardStats.totalProjects) * 100 : 0} className="h-2" />
               
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -433,7 +500,7 @@ const AdminDashboard = () => {
                 </div>
                 <span className="text-sm font-medium">{dashboardStats.pendingProjects || 0}</span>
               </div>
-              <Progress value={dashboardStats.totalProjects > 0 ? (dashboardStats.pendingProjects / dashboardStats.totalProjects) * 100 : 0} className="h-2" />
+              <Progress value={dashboardStats.totalProjects > 0 ? ((dashboardStats.pendingProjects || 0) / dashboardStats.totalProjects) * 100 : 0} className="h-2" />
               
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -442,7 +509,7 @@ const AdminDashboard = () => {
                 </div>
                 <span className="text-sm font-medium">{dashboardStats.totalContributors || 0}</span>
               </div>
-              <Progress value={dashboardStats.totalUsers > 0 ? (dashboardStats.totalContributors / dashboardStats.totalUsers) * 100 : 0} className="h-2" />
+              <Progress value={dashboardStats.totalUsers > 0 ? ((dashboardStats.totalContributors || 0) / dashboardStats.totalUsers) * 100 : 0} className="h-2" />
             </div>
           </CardContent>
         </Card>
@@ -454,45 +521,86 @@ const AdminDashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                  <Users className="h-4 w-4 text-green-600" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium">New user registration</p>
-                  <p className="text-xs text-muted-foreground">2 minutes ago</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                  <TreePine className="h-4 w-4 text-blue-600" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium">Project approved</p>
-                  <p className="text-xs text-muted-foreground">15 minutes ago</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                  <DollarSign className="h-4 w-4 text-purple-600" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium">Payment received</p>
-                  <p className="text-xs text-muted-foreground">1 hour ago</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
-                  <Target className="h-4 w-4 text-orange-600" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium">Carbon offset milestone</p>
-                  <p className="text-xs text-muted-foreground">2 hours ago</p>
-                </div>
-              </div>
+              {recentActivities.length > 0 ? (
+                recentActivities.slice(0, 4).map((activity, index) => {
+                  const iconColorMap = {
+                    green: { bg: 'bg-green-100', text: 'text-green-600' },
+                    blue: { bg: 'bg-blue-100', text: 'text-blue-600' },
+                    purple: { bg: 'bg-purple-100', text: 'text-purple-600' },
+                    orange: { bg: 'bg-orange-100', text: 'text-orange-600' },
+                    red: { bg: 'bg-red-100', text: 'text-red-600' },
+                    yellow: { bg: 'bg-yellow-100', text: 'text-yellow-600' }
+                  };
+                  
+                  const colors = iconColorMap[activity.iconColor] || iconColorMap.blue;
+                  const Icon = activity.type === 'user' ? Users : 
+                               activity.type === 'project' ? TreePine :
+                               activity.type === 'payment' ? DollarSign :
+                               activity.type === 'carbon' ? Target : Activity;
+                  
+                  const timeAgo = (date) => {
+                    const seconds = Math.floor((new Date() - new Date(date)) / 1000);
+                    if (seconds < 60) return `${seconds} seconds ago`;
+                    if (seconds < 3600) return `${Math.floor(seconds / 60)} minutes ago`;
+                    if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours ago`;
+                    return `${Math.floor(seconds / 86400)} days ago`;
+                  };
+
+                  return (
+                    <div key={activity._id || index} className="flex items-center gap-3">
+                      <div className={`w-8 h-8 ${colors.bg} rounded-full flex items-center justify-center`}>
+                        <Icon className={`h-4 w-4 ${colors.text}`} />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">{activity.title}</p>
+                        <p className="text-xs text-muted-foreground">{timeAgo(activity.createdAt)}</p>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                      <Users className="h-4 w-4 text-green-600" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">New user registration</p>
+                      <p className="text-xs text-muted-foreground">2 minutes ago</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                      <TreePine className="h-4 w-4 text-blue-600" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">Project approved</p>
+                      <p className="text-xs text-muted-foreground">15 minutes ago</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                      <DollarSign className="h-4 w-4 text-purple-600" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">Payment received</p>
+                      <p className="text-xs text-muted-foreground">1 hour ago</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
+                      <Target className="h-4 w-4 text-orange-600" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">Carbon offset milestone</p>
+                      <p className="text-xs text-muted-foreground">2 hours ago</p>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </CardContent>
         </Card>

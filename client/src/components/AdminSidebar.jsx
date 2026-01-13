@@ -29,49 +29,81 @@ const AdminSidebar = ({ isOpen = false, onClose = () => {} }) => {
   const bellRef = useRef(null);
   const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
   const [isDesktop, setIsDesktop] = useState(true);
-  const [notifications, setNotifications] = useState(() => {
-    const fallback = [
-      { id: 1, type: "user", title: "New User Registration", message: "John Doe has joined the platform", time: "2 minutes ago", read: false },
-      { id: 2, type: "project", title: "Project Milestone", message: "Urban Garden Project reached 50% completion", time: "1 hour ago", read: false },
-      { id: 3, type: "order", title: "New Marketplace Order", message: "Order #12345 for Eco-friendly Water Bottle", time: "3 hours ago", read: true },
-      { id: 4, type: "system", title: "System Update", message: "Platform maintenance completed successfully", time: "1 day ago", read: true },
-    ];
-    if (typeof window === 'undefined') return fallback;
-    try {
-      const raw = localStorage.getItem('admin_notifications');
-      if (!raw) return fallback;
-      const parsed = JSON.parse(raw);
-      return Array.isArray(parsed) ? parsed : fallback;
-    } catch {
-      return fallback;
-    }
+  const [notifications, setNotifications] = useState([]);
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    totalProjects: 0,
+    totalMarketplace: 0
   });
-  const [notificationsHydrated, setNotificationsHydrated] = useState(false);
-
-  // Persist notifications across refresh/login
-  const storageKey = `admin_notifications`;
 
   const pathname = usePathname();
   const router = useRouter();
 
   useEffect(() => {
     setMounted(true);
+    fetchNotifications();
+    fetchStats();
   }, []);
 
-  // Hydrate notifications from localStorage
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
+  // Fetch dashboard stats for sidebar badges
+  const fetchStats = async () => {
     try {
-      const raw = localStorage.getItem(storageKey);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed)) {
-          setNotifications(parsed);
+      const adminToken = localStorage.getItem('adminToken');
+      const API_BASE = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:5000';
+      
+      const response = await fetch(`${API_BASE}/api/admin/dashboard/stats`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${adminToken}`,
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.stats) {
+          setStats({
+            totalUsers: data.stats.totalUsers || 0,
+            totalProjects: data.stats.totalProjects || 0,
+            totalMarketplace: data.stats.activeProjects || 0
+          });
         }
       }
-    } catch {}
-    setNotificationsHydrated(true);
-  }, [storageKey]);
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+    }
+  };
+
+  // Fetch notifications from API
+  const fetchNotifications = async () => {
+    try {
+      const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:5000';
+      const token = localStorage.getItem('adminToken');
+      
+      const response = await fetch(`${serverUrl}/api/admin/notifications?limit=20`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          setNotifications(result.data.map(n => ({
+            id: n.id,
+            type: n.type,
+            title: n.title,
+            message: n.message,
+            time: n.time,
+            read: n.isRead
+          })));
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+    }
+  };
 
   // Track desktop vs mobile for responsive behavior
   useEffect(() => {
@@ -102,13 +134,7 @@ const AdminSidebar = ({ isOpen = false, onClose = () => {} }) => {
     };
   }, [showNotifications, isDesktop]);
 
-  // Persist notifications on change
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    try {
-      localStorage.setItem(storageKey, JSON.stringify(notifications));
-    } catch {}
-  }, [notifications, storageKey]);
+  // No localStorage persistence; backend is source of truth
 
   // Close on outside click
   useEffect(() => {
@@ -125,13 +151,13 @@ const AdminSidebar = ({ isOpen = false, onClose = () => {} }) => {
 
   const navigation = [
     { title: "Dashboard", href: "/admin", icon: LayoutDashboard },
-    { title: "Users", href: "/admin/users", icon: Users, badge: "156" },
-    { title: "Projects", href: "/admin/projects", icon: TreePine, badge: "24" },
+    { title: "Users", href: "/admin/users", icon: Users, badge: stats.totalUsers > 0 ? String(stats.totalUsers) : null },
+    { title: "Projects", href: "/admin/projects", icon: TreePine, badge: stats.totalProjects > 0 ? String(stats.totalProjects) : null },
     {
       title: "Marketplace",
       href: "/admin/marketplace",
       icon: ShoppingCart,
-      badge: "89",
+      badge: stats.totalMarketplace > 0 ? String(stats.totalMarketplace) : null,
     },
     { title: "Analytics", href: "/admin/analytics", icon: BarChart3 },
     { title: "Reports", href: "/admin/reports", icon: FileText },
@@ -183,11 +209,15 @@ const AdminSidebar = ({ isOpen = false, onClose = () => {} }) => {
 
   const handleLogout = async () => {
     try {
+      const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:5000';
+      const token = localStorage.getItem('adminToken');
+      
       // Call server logout endpoint to clear cookies
-      await fetch('/api/admin/logout', {
+      await fetch(`${serverUrl}/api/admin/logout`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
       });
     } catch (error) {
@@ -253,14 +283,14 @@ const AdminSidebar = ({ isOpen = false, onClose = () => {} }) => {
               <div className="flex items-center gap-2">
                 <Bell className="h-4 w-4 text-gray-600" />
                 <h3 className="font-semibold text-gray-900">Notifications</h3>
-                {notificationsHydrated && unreadCount > 0 && (
+                {unreadCount > 0 && (
                   <Badge variant="secondary" className="text-xs">
                     {unreadCount} new
                   </Badge>
                 )}
               </div>
               <div className="flex items-center gap-3">
-                {notificationsHydrated && unreadCount > 0 && (
+                {unreadCount > 0 && (
                   <button
                     onClick={markAllAsRead}
                     className="text-xs text-green-600 hover:text-green-700 font-medium"
@@ -359,14 +389,14 @@ const AdminSidebar = ({ isOpen = false, onClose = () => {} }) => {
             <div className="flex items-center gap-2">
               <Bell className="h-4 w-4 text-gray-600" />
               <h3 className="font-semibold text-gray-900">Notifications</h3>
-              {notificationsHydrated && unreadCount > 0 && (
+              {unreadCount > 0 && (
                 <Badge variant="secondary" className="text-xs">
                   {unreadCount} new
                 </Badge>
               )}
             </div>
             <div className="flex items-center gap-2">
-              {notificationsHydrated && unreadCount > 0 && (
+              {unreadCount > 0 && (
                 <button
                   onClick={markAllAsRead}
                   className="text-xs text-green-600 hover:text-green-700 font-medium"

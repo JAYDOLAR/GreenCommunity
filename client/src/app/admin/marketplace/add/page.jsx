@@ -171,16 +171,16 @@ const AddProductPage = () => {
     <div className="p-6 space-y-6">
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Add New Product</h1>
           <p className="text-muted-foreground">Create a new marketplace product</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={handleCancel}>
+        <div className="grid grid-cols-2 md:flex gap-2 w-full md:w-auto">
+          <Button variant="outline" onClick={handleCancel} className="w-full justify-center md:w-auto md:justify-start">
             Cancel
           </Button>
-          <Button onClick={handleSaveProduct} disabled={isLoading}>
+          <Button onClick={handleSaveProduct} disabled={isLoading} className="w-full justify-center md:w-auto md:justify-start">
             <Save className="h-4 w-4 mr-2" />
             {isLoading ? 'Saving...' : 'Save Product'}
           </Button>

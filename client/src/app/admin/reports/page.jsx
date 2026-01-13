@@ -30,97 +30,95 @@ const ReportsPage = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedReports, setGeneratedReports] = useState([]);
   const [showDownloadMenu, setShowDownloadMenu] = useState({});
+  const [reports, setReports] = useState([]);
+  const [reportTemplates, setReportTemplates] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const [reports] = useState([
-    {
-      id: 1,
-      name: 'User Activity Report',
-      type: 'user-activity',
-      description: 'Comprehensive user engagement and activity metrics',
-      lastGenerated: '2024-01-20',
-      status: 'ready',
-      size: '2.3 MB',
-      format: 'PDF'
-    },
-    {
-      id: 2,
-      name: 'Revenue Analysis Report',
-      type: 'revenue',
-      description: 'Detailed revenue breakdown and financial performance',
-      lastGenerated: '2024-01-19',
-      status: 'ready',
-      size: '1.8 MB',
-      format: 'PDF'
-    },
-    {
-      id: 3,
-      name: 'Project Performance Report',
-      type: 'project-performance',
-      description: 'Carbon offset projects performance and metrics',
-      lastGenerated: '2024-01-18',
-      status: 'generating',
-      size: '3.1 MB',
-      format: 'PDF'
-    },
-    {
-      id: 4,
-      name: 'Carbon Offset Impact Report',
-      type: 'carbon-impact',
-      description: 'Environmental impact and carbon offset achievements',
-      lastGenerated: '2024-01-17',
-      status: 'ready',
-      size: '4.2 MB',
-      format: 'PDF'
-    },
-    {
-      id: 5,
-      name: 'Marketplace Sales Report',
-      type: 'marketplace',
-      description: 'Eco-friendly product sales and inventory analysis',
-      lastGenerated: '2024-01-16',
-      status: 'ready',
-      size: '1.5 MB',
-      format: 'PDF'
-    }
-  ]);
+  // Fetch reports and templates from backend
+  useEffect(() => {
+    fetchReportsData();
+  }, []);
 
-  const [reportTemplates] = useState([
-    {
-      id: 'user-activity',
-      name: 'User Activity Report',
-      icon: Users,
-      description: 'Track user engagement, registrations, and activity patterns',
-      metrics: ['New Users', 'Active Users', 'User Retention', 'Engagement Rate']
-    },
-    {
-      id: 'revenue',
-      name: 'Revenue Analysis Report',
-      icon: DollarSign,
-      description: 'Financial performance, revenue trends, and payment analytics',
-      metrics: ['Total Revenue', 'Revenue Growth', 'Payment Methods', 'Revenue by Region']
-    },
-    {
-      id: 'project-performance',
-      name: 'Project Performance Report',
-      icon: TreePine,
-      description: 'Carbon offset project metrics and funding progress',
-      metrics: ['Project Funding', 'Carbon Offset', 'Contributors', 'Project Status']
-    },
-    {
-      id: 'carbon-impact',
-      name: 'Carbon Offset Impact Report',
-      icon: Target,
-      description: 'Environmental impact and carbon reduction achievements',
-      metrics: ['Carbon Offset', 'Environmental Impact', 'Project Efficiency', 'Impact Metrics']
-    },
-    {
-      id: 'marketplace',
-      name: 'Marketplace Sales Report',
-      icon: TrendingUp,
-      description: 'Eco-friendly product sales and inventory management',
-      metrics: ['Product Sales', 'Inventory Levels', 'Customer Satisfaction', 'Sales Trends']
+  const fetchReportsData = async () => {
+    try {
+      setIsLoading(true);
+      const adminToken = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null;
+      const API_BASE = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:5000';
+
+      const headers = {};
+      if (adminToken) headers['Authorization'] = `Bearer ${adminToken}`;
+
+      // Fetch reports
+      const reportsResponse = await fetch(`${API_BASE}/api/admin/reports`, {
+        method: 'GET',
+        headers,
+        credentials: 'include'
+      });
+
+      if (reportsResponse.ok) {
+        const reportsData = await reportsResponse.json();
+        if (reportsData.success && reportsData.reports) {
+          setReports(reportsData.reports);
+        }
+      }
+
+      // Fetch report templates
+      const templatesResponse = await fetch(`${API_BASE}/api/admin/reports/templates`, {
+        method: 'GET',
+        headers,
+        credentials: 'include'
+      });
+
+      if (templatesResponse.ok) {
+        const templatesData = await templatesResponse.json();
+        if (templatesData.success && templatesData.templates) {
+          setReportTemplates(templatesData.templates);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch reports data:', error);
+      // Set default templates if fetch fails
+      setReportTemplates([
+        {
+          id: 'user-activity',
+          name: 'User Activity Report',
+          icon: 'Users',
+          description: 'Track user engagement, registrations, and activity patterns',
+          metrics: ['New Users', 'Active Users', 'User Retention', 'Engagement Rate']
+        },
+        {
+          id: 'revenue',
+          name: 'Revenue Analysis Report',
+          icon: 'DollarSign',
+          description: 'Financial performance, revenue trends, and payment analytics',
+          metrics: ['Total Revenue', 'Revenue Growth', 'Payment Methods', 'Revenue by Region']
+        },
+        {
+          id: 'project-performance',
+          name: 'Project Performance Report',
+          icon: 'TreePine',
+          description: 'Carbon offset project metrics and funding progress',
+          metrics: ['Project Funding', 'Carbon Offset', 'Contributors', 'Project Status']
+        },
+        {
+          id: 'carbon-impact',
+          name: 'Carbon Offset Impact Report',
+          icon: 'Target',
+          description: 'Environmental impact and carbon reduction achievements',
+          metrics: ['Carbon Offset', 'Environmental Impact', 'Project Efficiency', 'Impact Metrics']
+        },
+        {
+          id: 'marketplace',
+          name: 'Marketplace Sales Report',
+          icon: 'TrendingUp',
+          description: 'Eco-friendly product sales and inventory management',
+          metrics: ['Product Sales', 'Inventory Levels', 'Customer Satisfaction', 'Sales Trends']
+        }
+      ]);
+    } finally {
+      setIsLoading(false);
     }
-  ]);
+  };
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -150,33 +148,53 @@ const ReportsPage = () => {
     setIsGenerating(true);
 
     try {
-      // Simulate report generation
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const adminToken = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null;
+      const API_BASE = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:5000';
 
-      const newReport = {
-        id: Date.now(),
-        name: selectedTemplate.name,
-        type: selectedReport,
-        description: selectedTemplate.description,
-        lastGenerated: new Date().toISOString().split('T')[0],
-        status: 'ready',
-        size: `${(Math.random() * 3 + 1).toFixed(1)} MB`,
-        format: reportFormat.toUpperCase()
-      };
+      const headers = { 'Content-Type': 'application/json' };
+      if (adminToken) headers['Authorization'] = `Bearer ${adminToken}`;
 
-      setGeneratedReports(prev => [newReport, ...prev]);
+      const response = await fetch(`${API_BASE}/api/admin/reports/generate`, {
+        method: 'POST',
+        headers,
+        credentials: 'include',
+        body: JSON.stringify({
+          type: selectedReport,
+          timeRange,
+          format: reportFormat
+        })
+      });
 
-      // Automatically download the generated report
-      downloadReport(newReport, reportFormat);
+      if (!response.ok) {
+        throw new Error('Failed to generate report');
+      }
 
-      // Show success popup
-      alert(`Report Generated Successfully!\n\n` +
-        `Report: ${selectedTemplate.name}\n` +
-        `Date: ${newReport.lastGenerated}\n` +
-        `Format: ${reportFormat.toUpperCase()}\n` +
-        `Size: ${newReport.size}\n\n` +
-        `The report has been downloaded automatically.`
-      );
+      const result = await response.json();
+
+      if (result.success && result.report) {
+        const newReport = result.report;
+        
+        // Format the date
+        newReport.lastGenerated = new Date(newReport.lastGenerated).toISOString().split('T')[0];
+        
+        // Add to local state
+        setGeneratedReports(prev => [newReport, ...prev]);
+        
+        // Refresh reports list
+        await fetchReportsData();
+
+        // Automatically download the generated report
+        downloadReport(newReport, reportFormat);
+
+        // Show success popup
+        alert(`Report Generated Successfully!\n\n` +
+          `Report: ${newReport.name}\n` +
+          `Date: ${newReport.lastGenerated}\n` +
+          `Format: ${reportFormat.toUpperCase()}\n` +
+          `Size: ${newReport.size}\n\n` +
+          `The report has been downloaded automatically.`
+        );
+      }
     } catch (error) {
       console.error('Error generating report:', error);
       alert('Error generating report. Please try again.');
@@ -513,7 +531,16 @@ const ReportsPage = () => {
                   </SelectTrigger>
                   <SelectContent>
                     {reportTemplates.map((template) => {
-                      const Icon = template.icon;
+                      // Map icon name to actual icon component
+                      const iconMap = {
+                        'Users': Users,
+                        'DollarSign': DollarSign,
+                        'TreePine': TreePine,
+                        'Target': Target,
+                        'TrendingUp': TrendingUp
+                      };
+                      const Icon = iconMap[template.icon] || FileText;
+                      
                       return (
                         <SelectItem key={template.id} value={template.id}>
                           <div className="flex items-center gap-2">
@@ -616,78 +643,88 @@ const ReportsPage = () => {
               <CardDescription>View and download generated reports</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {[...generatedReports, ...reports].map((report) => (
-                  <div key={report.id} className="relative flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 p-4 border rounded-lg hover:bg-accent/50 transition-colors overflow-hidden">
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-accent rounded-lg flex items-center justify-center flex-shrink-0">
-                      <FileText className="h-5 w-5 text-primary" />
-                    </div>
+              {isLoading ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  Loading reports...
+                </div>
+              ) : [...generatedReports, ...reports].length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No reports generated yet. Generate your first report above.
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {[...generatedReports, ...reports].map((report) => (
+                    <div key={report.id || report._id} className="flex items-center gap-4 p-4 border rounded-lg hover:bg-accent/50 transition-colors">
+                      <div className="w-12 h-12 bg-accent rounded-lg flex items-center justify-center">
+                        <FileText className="h-5 w-5 text-primary" />
+                      </div>
 
-                    <div className="flex-1 min-w-0 w-full">
-                      <div className="flex flex-wrap items-center gap-2 mb-1 min-w-0">
-                        <h3 className="font-medium">{report.name}</h3>
-                        <Badge className={getStatusColor(report.status)}>
-                          {report.status}
-                        </Badge>
-                        <Badge variant="outline">
-                          {report.format}
-                        </Badge>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="font-medium">{report.name}</h3>
+                          <Badge className={getStatusColor(report.status)}>
+                            {report.status}
+                          </Badge>
+                          <Badge variant="outline">
+                            {report.format}
+                          </Badge>
+                        </div>
+                        <div className="text-sm text-muted-foreground mb-2">
+                          {report.description}
+                        </div>
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            Generated {typeof report.lastGenerated === 'string' ? report.lastGenerated : new Date(report.lastGenerated).toLocaleDateString()}
+                          </span>
+                          <span>Size: {report.size}</span>
+                          <span>Format: {report.format}</span>
+                        </div>
                       </div>
-                      <div className="text-sm text-muted-foreground mb-2 break-words">
-                        {report.description}
-                      </div>
-                      <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1 whitespace-nowrap">
-                          <Calendar className="h-3 w-3" />
-                          Generated {report.lastGenerated}
-                        </span>
-                        <span className="whitespace-nowrap">Size: {report.size}</span>
-                        <span className="whitespace-nowrap">Format: {report.format}</span>
-                      </div>
-                    </div>
 
-                    <div className="mt-2 sm:mt-0 flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
-                      <Button variant="ghost" size="sm" onClick={() => viewReport(report)} title="View">
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <div className="relative">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setShowDownloadMenu(prev => ({ ...prev, [report.id]: !prev[report.id] }))}
-                        >
-                          <Download className="h-4 w-4" />
-                          <ChevronDown className="h-3 w-3 ml-1" />
+                      <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="sm" onClick={() => viewReport(report)}>
+                          <Eye className="h-4 w-4" />
                         </Button>
-                        {showDownloadMenu[report.id] && (
-                          <div className="absolute right-0 top-full mt-1 bg-background border rounded-lg shadow-lg z-50 min-w-[120px] download-menu">
-                            <div className="p-1">
-                              <button
-                                onClick={() => {
-                                  downloadReport(report, 'pdf');
-                                  setShowDownloadMenu(prev => ({ ...prev, [report.id]: false }));
-                                }}
-                                className="w-full text-left px-3 py-2 text-sm hover:bg-accent rounded-md transition-colors"
-                              >
-                                Download PDF
-                              </button>
-                              <button
-                                onClick={() => {
-                                  downloadReport(report, 'csv');
-                                  setShowDownloadMenu(prev => ({ ...prev, [report.id]: false }));
-                                }}
-                                className="w-full text-left px-3 py-2 text-sm hover:bg-accent rounded-md transition-colors"
-                              >
-                                Download CSV
-                              </button>
+                        <div className="relative">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setShowDownloadMenu(prev => ({ ...prev, [report.id || report._id]: !prev[report.id || report._id] }))}
+                          >
+                            <Download className="h-4 w-4" />
+                            <ChevronDown className="h-3 w-3 ml-1" />
+                          </Button>
+                          {showDownloadMenu[report.id || report._id] && (
+                            <div className="absolute right-0 top-full mt-1 bg-background border rounded-lg shadow-lg z-50 min-w-[120px] download-menu">
+                              <div className="p-1">
+                                <button
+                                  onClick={() => {
+                                    downloadReport(report, 'pdf');
+                                    setShowDownloadMenu(prev => ({ ...prev, [report.id || report._id]: false }));
+                                  }}
+                                  className="w-full text-left px-3 py-2 text-sm hover:bg-accent rounded-md transition-colors"
+                                >
+                                  Download PDF
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    downloadReport(report, 'csv');
+                                    setShowDownloadMenu(prev => ({ ...prev, [report.id || report._id]: false }));
+                                  }}
+                                  className="w-full text-left px-3 py-2 text-sm hover:bg-accent rounded-md transition-colors"
+                                >
+                                  Download CSV
+                                </button>
+                              </div>
                             </div>
-                          </div>
-                        )}
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

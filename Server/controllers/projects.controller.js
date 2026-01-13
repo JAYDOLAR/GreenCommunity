@@ -276,9 +276,21 @@ export const getProjectById = asyncHandler(async (req, res) => {
       });
     }
     
+    // Enhance project data with computed fields for frontend compatibility
+    const enhancedProject = {
+      ...project,
+      totalFunding: project.totalFunding || project.fundingGoal || 0,
+      currentFunding: project.currentFunding || 0,
+      contributors: project.contributors || 0,
+      co2Removed: project.co2Removed || project.impact?.carbonOffset || 0,
+      expectedCompletion: project.endDate || project.expectedCompletion,
+      teamSize: project.teamSize || project.organization?.teamSize || 0,
+      carbonOffsetTarget: project.carbonOffsetTarget || project.impact?.carbonOffset || 0
+    };
+    
     res.json({
       success: true,
-      data: project
+      data: enhancedProject
     });
   } catch (error) {
     console.error('Error fetching project:', error);

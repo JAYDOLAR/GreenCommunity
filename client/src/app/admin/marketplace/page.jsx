@@ -153,17 +153,8 @@ const MarketplacePage = () => {
   };
 
   const handleEditProduct = (product) => {
-    setEditingProduct(product);
-    setEditForm({
-      name: product.name || '',
-      description: product.description || '',
-      price: product.price || '',
-      stock: product.inventory?.quantity || product.stock || '',
-      category: product.category || '',
-      status: product.status || 'active',
-    });
-    setEditImages([]);
-    setEditDialogOpen(true);
+    const pid = product.id || product._id;
+    router.push(`/admin/marketplace/edit/${pid}`);
   };
 
   const handleEditFormChange = (field, value) => {
@@ -535,12 +526,12 @@ const MarketplacePage = () => {
             {filteredProducts.map((product) => (
               <Card
                 key={product.id || product._id}
-                className="border hover:shadow-md transition-shadow"
+                className="border hover:shadow-md transition-shadow overflow-hidden"
               >
                 <CardContent className="p-0">
-                  <div className="flex items-start gap-4 p-4">
+                  <div className="flex flex-col sm:flex-row items-start gap-4 p-4">
                     {/* Product Image */}
-                    <div className="w-24 h-24 bg-gradient-to-br from-green-400 to-blue-500 rounded-lg overflow-hidden flex-shrink-0 shadow-sm">
+                    <div className="w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-br from-green-400 to-blue-500 rounded-lg overflow-hidden flex-shrink-0 shadow-sm">
                       <img
                         src={product.image || '/Marketplace/1.jpeg'}
                         alt={product.name}
@@ -550,21 +541,21 @@ const MarketplacePage = () => {
                     </div>
 
                     {/* Product Info */}
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 w-full">
                       {/* Title and Action Buttons */}
-                      <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-start justify-between sm:items-start mb-2 gap-2">
                         <div>
-                          <h3 className="font-semibold text-lg mb-2">{product.name}</h3>
+                          <h3 className="font-semibold text-lg mb-2 break-words line-clamp-2">{product.name}</h3>
                           <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
                             {product.description}
                           </p>
                         </div>
-                        <div className="flex items-center gap-2 flex-shrink-0 ml-4">
+                        <div className="flex items-center gap-2 flex-shrink-0 sm:ml-4 w-full sm:w-auto flex-wrap sm:flex-nowrap mt-2 sm:mt-0">
                           <Select
                             value={product.status || 'inactive'}
                             onValueChange={(value) => handleStatusChange(product.id || product._id, value)}
                           >
-                            <SelectTrigger className="w-32">
+                            <SelectTrigger className="w-full sm:w-32">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -573,7 +564,7 @@ const MarketplacePage = () => {
                             </SelectContent>
                           </Select>
 
-                          <Button variant="ghost" size="sm" title="View Product">
+                          <Button variant="ghost" size="sm" title="View Product" className="sm:ml-0">
                             <Eye className="h-4 w-4" />
                           </Button>
 

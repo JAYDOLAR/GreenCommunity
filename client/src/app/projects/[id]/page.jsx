@@ -37,13 +37,6 @@ import {
 import AuthGuard from "@/components/AuthGuard";
 import Layout from "@/components/Layout";
 
-const ProjectDetail = () => {
-  const params = useParams();
-  const router = useRouter();
-  const [contributionAmount, setContributionAmount] = useState([50]);
-  const [isLoading, setIsLoading] = useState(false);
-};
-
 const ProjectDetailContent = ({ params }) => {
   const router = useRouter();
   const urlParams = useParams();
@@ -52,6 +45,7 @@ const ProjectDetailContent = ({ params }) => {
   const [loadingProject, setLoadingProject] = useState(true);
   const [project, setProject] = useState(null);
   const [fetchError, setFetchError] = useState(null);
+  const [relatedProjects, setRelatedProjects] = useState([]);
 
   const [rawId, setRawId] = useState(null);
 
@@ -77,6 +71,42 @@ const ProjectDetailContent = ({ params }) => {
     };
   }, [params, urlParams]);
 
+  // Helper function to calculate time remaining
+  const calculateTimeRemaining = (expectedCompletion) => {
+    if (!expectedCompletion) return 'Ongoing';
+    const now = new Date();
+    const end = new Date(expectedCompletion);
+    const diff = end - now;
+    if (diff <= 0) return 'Completed';
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    if (days > 30) return `${Math.floor(days / 30)} months`;
+    return `${days} days`;
+  };
+
+  // Helper function to enhance project data
+  const enhanceProjectData = (projectData) => {
+    return {
+      ...projectData,
+      benefits: projectData.benefits || [
+        'Carbon emission reduction',
+        'Biodiversity conservation',
+        'Community development',
+        'Sustainable practices'
+      ],
+      certifications: projectData.certifications || [
+        'Verified Carbon Standard',
+        'Gold Standard',
+        'Climate Action Reserve'
+      ],
+      timeRemaining: calculateTimeRemaining(projectData.expectedCompletion),
+      co2PerRupee: projectData.co2PerRupee || 0.001, // Default ratio
+      currentFunding: projectData.currentFunding || 0,
+      totalFunding: projectData.totalFunding || projectData.fundingGoal || 0,
+      contributors: projectData.contributors || 0,
+      co2Removed: projectData.co2Removed || 0
+    };
+  };
+
   useEffect(() => {
     if (!rawId) return; // wait until we have an id
     let cancelled = false;
@@ -86,7 +116,27 @@ const ProjectDetailContent = ({ params }) => {
       try {
         const response = await projectsApi.getProjectById(rawId);
         if (response.success && response.data && !cancelled) {
-          setProject(response.data);
+          const enhancedProject = enhanceProjectData(response.data);
+          setProject(enhancedProject);
+          
+          // Fetch related projects
+          try {
+            const relatedResponse = await projectsApi.getProjects({
+              limit: 4,
+              type: response.data.type,
+              status: 'active'
+            });
+            if (relatedResponse.success && relatedResponse.data?.projects) {
+              const related = relatedResponse.data.projects
+                .filter(p => p._id !== rawId)
+                .slice(0, 4)
+                .map(enhanceProjectData);
+              setRelatedProjects(related);
+            }
+          } catch (relErr) {
+            console.error('Failed to fetch related projects:', relErr);
+            // Not critical, continue without related projects
+          }
         } else if (!cancelled) {
           setFetchError("Project not found");
         }
@@ -309,21 +359,23 @@ const ProjectDetailContent = ({ params }) => {
               </Card>
 
               {/* Project Highlights */}
-              <Card>
-                <CardContent className="p-4">
-                  <h3 className="font-semibold text-foreground mb-3">
-                    Project Highlights
-                  </h3>
-                  <div className="space-y-2">
-                    {project.benefits.slice(0, 3).map((benefit, index) => (
-                      <div key={index} className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                        <span className="text-sm">{benefit}</span>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+              {project.benefits && project.benefits.length > 0 && (
+                <Card>
+                  <CardContent className="p-4">
+                    <h3 className="font-semibold text-foreground mb-3">
+                      Project Highlights
+                    </h3>
+                    <div className="space-y-2">
+                      {project.benefits.slice(0, 3).map((benefit, index) => (
+                        <div key={index} className="flex items-center gap-2">
+                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          <span className="text-sm">{benefit}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </div>
 
@@ -413,18 +465,20 @@ const ProjectDetailContent = ({ params }) => {
             </div>
 
             {/* Benefits */}
-            <div>
-              <h3 className="font-semibold text-foreground mb-2">
-                Environmental Benefits
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                {project.benefits.map((benefit) => (
-                  <Badge key={benefit} variant="secondary" className="text-xs">
-                    {benefit}
-                  </Badge>
-                ))}
+            {project.benefits && project.benefits.length > 0 && (
+              <div>
+                <h3 className="font-semibold text-foreground mb-2">
+                  Environmental Benefits
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {project.benefits.map((benefit) => (
+                    <Badge key={benefit} variant="secondary" className="text-xs">
+                      {benefit}
+                    </Badge>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Contribution */}
             <div>
@@ -557,20 +611,22 @@ const ProjectDetailContent = ({ params }) => {
             </div>
 
             {/* Certifications */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg">Certifications</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex flex-wrap gap-2">
-                  {project.certifications.map((cert) => (
-                    <Badge key={cert} variant="outline" className="text-xs">
-                      {cert}
-                    </Badge>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+            {project.certifications && project.certifications.length > 0 && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg">Certifications</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex flex-wrap gap-2">
+                    {project.certifications.map((cert) => (
+                      <Badge key={cert} variant="outline" className="text-xs">
+                        {cert}
+                      </Badge>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
 
@@ -581,10 +637,12 @@ const ProjectDetailContent = ({ params }) => {
               More Projects You Might Like
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-              {demoProjects
-                .filter((p) => p.id !== project.id) // Exclude current project
-                .slice(0, 4) // Show only 4 projects
-                .map((relatedProject) => {
+              {relatedProjects.length === 0 ? (
+                <div className="col-span-full text-center text-muted-foreground py-8">
+                  No related projects found
+                </div>
+              ) : (
+                relatedProjects.map((relatedProject) => {
                   const relatedFundingPercentage =
                     (relatedProject.currentFunding /
                       relatedProject.totalFunding) *
@@ -700,7 +758,8 @@ const ProjectDetailContent = ({ params }) => {
                       </CardContent>
                     </Card>
                   );
-                })}
+                })
+              )}
             </div>
           </div>
         </div>

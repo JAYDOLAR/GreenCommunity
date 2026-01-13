@@ -19,6 +19,30 @@ import {
   registerExistingProjectOnBlockchain,
   getProjectBlockchainStatus
 } from '../controllers/admin.controller.js';
+import { getAnalyticsMetrics } from '../controllers/analytics.controller.js';
+import { 
+  getSecurityThreats, 
+  getSecurityLogs, 
+  createSecurityThreat, 
+  createSecurityLog, 
+  updateSecurityThreat 
+} from '../controllers/security.controller.js';
+import { 
+  getNotifications, 
+  createNotification, 
+  markAsRead, 
+  markAllAsRead, 
+  deleteNotification 
+} from '../controllers/notification.controller.js';
+import { 
+  getDashboardStats as getDashboardStatsController, 
+  getRecentActivities 
+} from '../controllers/dashboard.controller.js';
+import { 
+  getReports, 
+  getReportTemplates, 
+  generateReport 
+} from '../controllers/reports.controller.js';
 import { authenticate, authenticateAdmin } from '../middleware/auth.js';
 import { upload } from '../middleware/fileUpload.js';
 
@@ -42,7 +66,28 @@ router.get('/verify', authenticate, adminVerify);
 router.post('/logout', adminLogout);
 
 // Admin dashboard routes
-router.get('/dashboard/stats', authenticateAdmin, requireAdmin, getDashboardStats);
+router.get('/dashboard/stats', authenticateAdmin, requireAdmin, getDashboardStatsController);
+router.get('/dashboard/activities', authenticateAdmin, requireAdmin, getRecentActivities);
+router.get('/analytics/metrics', authenticateAdmin, requireAdmin, getAnalyticsMetrics);
+
+// Reports routes
+router.get('/reports', authenticateAdmin, requireAdmin, getReports);
+router.get('/reports/templates', authenticateAdmin, requireAdmin, getReportTemplates);
+router.post('/reports/generate', authenticateAdmin, requireAdmin, generateReport);
+
+// Security routes
+router.get('/security/threats', authenticateAdmin, requireAdmin, getSecurityThreats);
+router.get('/security/logs', authenticateAdmin, requireAdmin, getSecurityLogs);
+router.post('/security/threats', authenticateAdmin, requireAdmin, createSecurityThreat);
+router.post('/security/logs', authenticateAdmin, requireAdmin, createSecurityLog);
+router.put('/security/threats', authenticateAdmin, requireAdmin, updateSecurityThreat);
+
+// Notification routes
+router.get('/notifications', authenticateAdmin, requireAdmin, getNotifications);
+router.post('/notifications', authenticateAdmin, requireAdmin, createNotification);
+router.put('/notifications/read', authenticateAdmin, requireAdmin, markAsRead);
+router.put('/notifications/read-all', authenticateAdmin, requireAdmin, markAllAsRead);
+router.delete('/notifications', authenticateAdmin, requireAdmin, deleteNotification);
 
 // Admin user management routes
 router.get('/users', authenticateAdmin, requireAdmin, getUsers);

@@ -234,24 +234,8 @@ const ProjectsPage = () => {
   };
 
   const handleEditProject = (project) => {
-    setSelectedProject(project);
-    setEditingProject({
-      name: project.name || "",
-      location: project.location || "",
-      type: project.type || "",
-      description: project.description || "",
-      totalFunding: (project.totalFunding || 0).toString(),
-      image: project.image || "",
-      status: project.status || "pending",
-      verified: project.verified || false,
-      featured: project.featured || false,
-      expectedCompletion: project.expectedCompletion || "",
-      teamSize: (project.teamSize || 0).toString(),
-      carbonOffsetTarget: (project.carbonOffsetTarget || 0).toString(),
-    });
-    setEditImageFile(null);
-    setEditImagePreview(null);
-    setShowEditProject(true);
+    const pid = project.id || project._id;
+    router.push(`/admin/projects/edit/${pid}`);
   };
 
   const handleDeleteProject = async (projectId) => {
@@ -377,20 +361,20 @@ const ProjectsPage = () => {
         "Carbon Offset Target",
       ],
       ...(projects || []).map((p) => [
-        p.name,
-        p.location,
-        p.type,
-        p.status,
-        p.totalFunding,
-        p.currentFunding,
-        p.contributors,
-        p.co2Removed,
+        p.name || "",
+        p.location || "",
+        p.type || "",
+        p.status || "",
+        p.totalFunding || p.fundingGoal || 0,
+        p.currentFunding || 0,
+        p.contributors || 0,
+        p.co2Removed || (p.impact && p.impact.carbonOffset) || 0,
         p.verified ? "Yes" : "No",
         p.featured ? "Yes" : "No",
-        p.createdDate,
-        p.expectedCompletion || "",
-        p.teamSize || "",
-        p.carbonOffsetTarget || "",
+        p.createdDate || p.created_at || "",
+        p.expectedCompletion || p.endDate || "",
+        p.teamSize || 0,
+        p.carbonOffsetTarget || 0,
       ]),
     ]
       .map((row) => row.join(","))

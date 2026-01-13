@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useUser } from '@/context/UserContext';
 
 const useStreak = () => {
@@ -15,7 +15,7 @@ const useStreak = () => {
   const [error, setError] = useState(null);
   const { user } = useUser();
 
-  const fetchStreakData = async () => {
+  const fetchStreakData = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -40,11 +40,11 @@ const useStreak = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
   useEffect(() => {
     fetchStreakData();
-  }, [user]);
+  }, [fetchStreakData]);
 
   // Generate streak calendar data for the last 30 days
   const getStreakCalendar = () => {
