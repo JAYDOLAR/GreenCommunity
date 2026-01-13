@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import getAdminApiUrl from '@/lib/adminApi';
 import { 
   Users, 
   TreePine, 
@@ -49,7 +50,7 @@ const AdminDashboard = () => {
     setIsLoadingStats(true);
     try {
       const adminToken = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null;
-      const API_BASE = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:5000';
+      const API_BASE = getAdminApiUrl();
       const statsUrl = `${API_BASE}/api/admin/dashboard/stats`;
       const activitiesUrl = `${API_BASE}/api/admin/dashboard/activities`;
 

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import getAdminApiUrl from '@/lib/adminApi';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -32,7 +33,7 @@ import {
 
 const UsersPage = () => {
   const router = useRouter();
-  const API_BASE = process.env.NEXT_PUBLIC_SERVER_URL || '';
+  const API_BASE = getAdminApiUrl();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
