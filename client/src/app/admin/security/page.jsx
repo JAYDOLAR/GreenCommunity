@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import getAdminApiUrl from '@/lib/adminApi';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -37,7 +38,7 @@ const SecurityPage = () => {
   const fetchSecurityData = async () => {
     setIsLoading(true);
     try {
-      const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:5000';
+      const serverUrl = getAdminApiUrl();
       const token = localStorage.getItem('adminToken');
       
       const headers = {};

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import getAdminApiUrl from '@/lib/adminApi';
 import { usePathname, useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -49,7 +50,7 @@ const AdminSidebar = ({ isOpen = false, onClose = () => {} }) => {
   const fetchStats = async () => {
     try {
       const adminToken = localStorage.getItem('adminToken');
-      const API_BASE = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:5000';
+      const API_BASE = getAdminApiUrl();
       
       const response = await fetch(`${API_BASE}/api/admin/dashboard/stats`, {
         method: 'GET',
@@ -78,7 +79,7 @@ const AdminSidebar = ({ isOpen = false, onClose = () => {} }) => {
   // Fetch notifications from API
   const fetchNotifications = async () => {
     try {
-      const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:5000';
+      const serverUrl = getAdminApiUrl();
       const token = localStorage.getItem('adminToken');
       
       const response = await fetch(`${serverUrl}/api/admin/notifications?limit=20`, {
@@ -207,7 +208,7 @@ const AdminSidebar = ({ isOpen = false, onClose = () => {} }) => {
 
   const handleLogout = async () => {
     try {
-      const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:5000';
+      const serverUrl = getAdminApiUrl();
       const token = localStorage.getItem('adminToken');
       
       // Call server logout endpoint to clear cookies

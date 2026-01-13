@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import getAdminApiUrl from '@/lib/adminApi';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -43,7 +44,7 @@ const ReportsPage = () => {
     try {
       setIsLoading(true);
       const adminToken = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null;
-      const API_BASE = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:5000';
+      const API_BASE = getAdminApiUrl();
 
       const headers = {};
       if (adminToken) headers['Authorization'] = `Bearer ${adminToken}`;
@@ -149,7 +150,7 @@ const ReportsPage = () => {
 
     try {
       const adminToken = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null;
-      const API_BASE = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:5000';
+      const API_BASE = getAdminApiUrl();
 
       const headers = { 'Content-Type': 'application/json' };
       if (adminToken) headers['Authorization'] = `Bearer ${adminToken}`;

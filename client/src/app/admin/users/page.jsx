@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import getAdminApiUrl from '@/lib/adminApi';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -120,7 +121,7 @@ const UsersPage = () => {
     try {
       // Fetch fresh data from API before exporting
       const adminToken = localStorage.getItem('adminToken');
-      const API_BASE = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:5000';
+      const API_BASE = getAdminApiUrl();
       
       const response = await fetch(`${API_BASE}/api/admin/users?limit=1000&page=1`, {
         method: 'GET',
@@ -193,7 +194,7 @@ const UsersPage = () => {
       const adminToken = localStorage.getItem('adminToken');
       console.log('🔑 Admin token:', adminToken ? 'exists' : 'missing');
       
-      const API_BASE = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:5000';
+      const API_BASE = getAdminApiUrl();
       const url = `${API_BASE}/api/admin/users?limit=1000&page=1`;
       console.log('🔍 Fetching users from:', url);
       
@@ -246,7 +247,7 @@ const UsersPage = () => {
   const updateUser = async (userData) => {
     try {
       const adminToken = localStorage.getItem('adminToken');
-      const API_BASE = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:5000';
+      const API_BASE = getAdminApiUrl();
       
       const response = await fetch(`${API_BASE}/api/admin/users`, {
         method: 'PUT',
@@ -291,7 +292,7 @@ const UsersPage = () => {
   const deleteUser = async (userId) => {
     try {
       const adminToken = localStorage.getItem('adminToken');
-      const API_BASE = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:5000';
+      const API_BASE = getAdminApiUrl();
       
       const response = await fetch(`${API_BASE}/api/admin/users?id=${userId}`, {
         method: 'DELETE',

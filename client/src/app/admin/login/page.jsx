@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import getAdminApiUrl from '@/lib/adminApi';
 import Link from 'next/link';
 import { Eye, EyeOff, AlertCircle, X, Check, Shield } from 'lucide-react';
 
@@ -83,7 +84,7 @@ export default function AdminLoginPage() {
     setIsSuccess(false);
 
     try {
-      const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:5000';
+      const serverUrl = getAdminApiUrl();
       
       // Call the authentication API
       const response = await fetch(`${serverUrl}/api/admin/auth`, {
@@ -172,7 +173,7 @@ export default function AdminLoginPage() {
     setPasswordError('');
 
     try {
-      const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:5000';
+      const serverUrl = getAdminApiUrl();
       
       const response = await fetch(`${serverUrl}/api/admin/auth`, {
         method: 'POST',
