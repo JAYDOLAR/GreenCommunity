@@ -303,7 +303,7 @@ jobs:
           max_attempts=10
           for i in $(seq 1 $max_attempts); do
             echo "Attempt $i/$max_attempts:"
-            if curl -f -s -m 30 "https://green-community.azurewebsites.net" > /dev/null 2>&1; then
+            if curl -f -s -m 30 "https://www.green-community.app" > /dev/null 2>&1; then
               echo "✅ Application is responding!"
               exit 0
             else
@@ -324,7 +324,8 @@ jobs:
           echo "📊 Deployment Summary"
           echo "======================================"
           echo "✅ Package built and uploaded successfully"
-          echo "🌐 App URL: https://green-community.azurewebsites.net"
+          echo "🌐 App URL: https://www.green-community.app"
+          echo "🌐 Azure URL: https://green-community.azurewebsites.net"
           echo ""
           echo "📋 Monitoring URLs:"
           echo "  - Deployments: https://green-community.scm.azurewebsites.net/api/deployments"

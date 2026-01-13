@@ -1,23 +1,13 @@
+import { apiFallbackManager } from './apiFallback.js';
+
 // API Configuration - Handle both development and production environments
 export const API_BASE_URL = (() => {
-  // In browser, use the current host's API or fallback
-  if (typeof window !== 'undefined') {
-    // Client-side: Use same origin for API calls in production, localhost in development
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-      return 'http://localhost:5000';
-    } else {
-      // Production: Use same origin (Azure URL)
-      return window.location.origin;
-    }
-  }
-  
-  // Server-side: Use environment variable or default
-  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+  return apiFallbackManager.getCurrentBaseUrl();
 })();
 
-// Create a configured fetch function
+// Create a configured fetch function with automatic fallback
 const apiRequest = async (endpoint, options = {}) => {
-  const url = `${API_BASE_URL}${endpoint}`;
+  const url = `${apiFallbackManager.getCurrentBaseUrl()}${endpoint}`;
   
   // Get token from localStorage
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
@@ -33,7 +23,8 @@ const apiRequest = async (endpoint, options = {}) => {
   };
 
   try {
-    const response = await fetch(url, config);
+    // Use fallback manager for automatic domain switching
+    const response = await apiFallbackManager.makeRequestWithFallback(endpoint, config);
     
     // Handle network errors or server not responding
     if (!response) {

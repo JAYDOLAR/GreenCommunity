@@ -1,9 +1,37 @@
 // Environment Configuration
 // This file handles environment variables and provides fallbacks
 
-// API Configuration
-export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-export const CLIENT_URL = process.env.NEXT_PUBLIC_CLIENT_URL || 'http://localhost:3000';
+// API Configuration with fallback support
+const getApiUrl = () => {
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
+  }
+  
+  // Check for fallback flag
+  if (process.env.NEXT_PUBLIC_USE_AZURE_FALLBACK === 'true') {
+    return 'https://green-community.azurewebsites.net';
+  }
+  
+  // Default to custom domain
+  return 'https://www.green-community.app';
+};
+
+const getClientUrl = () => {
+  if (process.env.NEXT_PUBLIC_CLIENT_URL) {
+    return process.env.NEXT_PUBLIC_CLIENT_URL;
+  }
+  
+  // Check for fallback flag
+  if (process.env.NEXT_PUBLIC_USE_AZURE_FALLBACK === 'true') {
+    return 'https://green-community.azurewebsites.net';
+  }
+  
+  // Default to custom domain
+  return 'https://www.green-community.app';
+};
+
+export const API_URL = getApiUrl();
+export const CLIENT_URL = getClientUrl();
 
 // Database Configuration (for reference, actual DB config should be on backend)
 export const DB_NAME = process.env.DB_NAME || 'greencommunity';

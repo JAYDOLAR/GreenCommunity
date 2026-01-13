@@ -86,7 +86,8 @@ async function createServer() {
       const allowedOrigins = [
         "http://localhost:3000",
         "https://www.green-community.app",
-        "https://green-community.azurewebsites.net",
+        "https://green-community.app",
+        "https://green-community.azurewebsites.net", // Keep for transition period
         process.env.CLIENT_URL,
       ].filter(Boolean);
 

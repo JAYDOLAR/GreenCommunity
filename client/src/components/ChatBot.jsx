@@ -61,8 +61,22 @@ const ChatBot = () => {
     setInput('');
     ; (async () => {
       try {
-        // Determine backend URL (prefer NEXT_PUBLIC_API_URL)
-        const base = (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_API_URL) || '';
+        // Determine backend URL with fallback support
+        const getBackendUrl = () => {
+          if (process.env.NEXT_PUBLIC_API_URL) {
+            return process.env.NEXT_PUBLIC_API_URL;
+          }
+          
+          // Check for fallback flag
+          if (process.env.NEXT_PUBLIC_USE_AZURE_FALLBACK === 'true') {
+            return 'https://green-community.azurewebsites.net';
+          }
+          
+          // Default to custom domain
+          return 'https://www.green-community.app';
+        };
+        
+        const base = getBackendUrl();
         const askUrl = `${base}/api/ai/ask`;
 
         // Ensure a stable session id for personalization/memory

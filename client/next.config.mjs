@@ -38,9 +38,23 @@ const nextConfig = {
     ]
   },
   async rewrites() {
-    // Use different API URLs based on environment
+    // Use different API URLs based on environment with fallback support
+    const getProductionApiUrl = () => {
+      if (process.env.NEXT_PUBLIC_API_URL) {
+        return process.env.NEXT_PUBLIC_API_URL;
+      }
+      
+      // Check for fallback flag
+      if (process.env.NEXT_PUBLIC_USE_AZURE_FALLBACK === 'true') {
+        return 'https://green-community.azurewebsites.net';
+      }
+      
+      // Default to custom domain
+      return 'https://www.green-community.app';
+    };
+    
     const apiUrl = process.env.NODE_ENV === 'production'
-      ? ''  // Same origin in production
+      ? getProductionApiUrl()  // Custom domain with fallback in production
       : 'http://localhost:5000';  // Development
 
     if (process.env.NODE_ENV === 'development') {

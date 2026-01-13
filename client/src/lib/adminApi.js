@@ -1,13 +1,15 @@
 // Admin API Configuration - Handle both development and production environments
 export const getAdminApiUrl = () => {
-  // In browser, use the current host's API or fallback
+    // In browser environment
   if (typeof window !== 'undefined') {
-    // Client-side: Use same origin for API calls in production, localhost in development
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
       return 'http://localhost:5000';
     } else {
-      // Production: Use same origin (Azure URL)
-      return window.location.origin;
+      // Production: Use custom domain with Azure fallback
+      const customDomain = 'https://www.green-community.app';
+      const azureFallback = 'https://green-community.azurewebsites.net';
+      
+      return process.env.NEXT_PUBLIC_USE_AZURE_FALLBACK === 'true' ? azureFallback : customDomain;
     }
   }
   

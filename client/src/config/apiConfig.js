@@ -2,8 +2,22 @@
 // This file contains API endpoints and configuration
 // TODO: Make this configurable via environment variables
 
-// Base API URL - should be set via environment variable
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
+// Base API URL with fallback support
+const getBaseUrl = () => {
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
+  }
+  
+  // Check for fallback flag
+  if (process.env.NEXT_PUBLIC_USE_AZURE_FALLBACK === 'true') {
+    return 'https://green-community.azurewebsites.net';
+  }
+  
+  // Default to custom domain
+  return 'https://www.green-community.app';
+};
+
+export const API_BASE_URL = getBaseUrl();
 
 // API Endpoints
 export const API_ENDPOINTS = {

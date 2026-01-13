@@ -244,8 +244,8 @@ CLOUDINARY_API_KEY=your-api-key
 CLOUDINARY_API_SECRET=your-api-secret
 
 # URLs
-CLIENT_URL=http://localhost:3000
-SERVER_URL=http://localhost:5000
+CLIENT_URL=https://www.green-community.app
+SERVER_URL=https://www.green-community.app
 ```
 
 ## 🚨 Troubleshooting
