@@ -77,17 +77,17 @@ const SettingsPage = () => {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Settings</h1>
           <p className="text-muted-foreground">Configure platform settings and preferences</p>
         </div>
-        <div className="flex gap-3">
-          <Button variant="outline">
+        <div className="grid grid-cols-2 md:flex gap-2 w-full md:w-auto">
+          <Button variant="outline" className="w-full justify-center md:w-auto md:justify-start">
             <RefreshCw className="h-4 w-4 mr-2" />
             Reset to Default
           </Button>
-          <Button>
+          <Button className="w-full justify-center md:w-auto md:justify-start">
             <Save className="h-4 w-4 mr-2" />
             Save Changes
           </Button>
@@ -126,7 +126,7 @@ const SettingsPage = () => {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="contactEmail">Contact Email</Label>
                 <Input
@@ -149,7 +149,7 @@ const SettingsPage = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="timezone">Timezone</Label>
                 <Select value={generalSettings.timezone} onValueChange={(value) => handleGeneralSettingChange('timezone', value)}>
@@ -180,7 +180,7 @@ const SettingsPage = () => {
               </div>
             </div>
 
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
               <div>
                 <Label htmlFor="maintenanceMode">Maintenance Mode</Label>
                 <p className="text-sm text-muted-foreground">Temporarily disable the platform</p>
@@ -204,7 +204,7 @@ const SettingsPage = () => {
             <CardDescription>Configure notification preferences</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
               <div>
                 <Label htmlFor="emailNotifications">Email Notifications</Label>
                 <p className="text-sm text-muted-foreground">Receive notifications via email</p>
@@ -216,7 +216,7 @@ const SettingsPage = () => {
               />
             </div>
 
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
               <div>
                 <Label htmlFor="pushNotifications">Push Notifications</Label>
                 <p className="text-sm text-muted-foreground">Receive browser push notifications</p>
@@ -228,7 +228,7 @@ const SettingsPage = () => {
               />
             </div>
 
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
               <div>
                 <Label htmlFor="projectUpdates">Project Updates</Label>
                 <p className="text-sm text-muted-foreground">Get notified about project changes</p>
@@ -240,7 +240,7 @@ const SettingsPage = () => {
               />
             </div>
 
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
               <div>
                 <Label htmlFor="userReports">User Reports</Label>
                 <p className="text-sm text-muted-foreground">Receive user report notifications</p>
@@ -252,7 +252,7 @@ const SettingsPage = () => {
               />
             </div>
 
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
               <div>
                 <Label htmlFor="systemAlerts">System Alerts</Label>
                 <p className="text-sm text-muted-foreground">Critical system notifications</p>
@@ -264,7 +264,7 @@ const SettingsPage = () => {
               />
             </div>
 
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
               <div>
                 <Label htmlFor="marketingEmails">Marketing Emails</Label>
                 <p className="text-sm text-muted-foreground">Receive promotional content</p>
@@ -288,7 +288,7 @@ const SettingsPage = () => {
             <CardDescription>Configure security and authentication</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
               <div>
                 <Label htmlFor="twoFactorAuth">Two-Factor Authentication</Label>
                 <p className="text-sm text-muted-foreground">Require 2FA for admin accounts</p>
@@ -343,7 +343,7 @@ const SettingsPage = () => {
               </Select>
             </div>
 
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
               <div>
                 <Label htmlFor="ipWhitelist">IP Whitelist</Label>
                 <p className="text-sm text-muted-foreground">Restrict admin access to specific IPs</p>
@@ -367,7 +367,7 @@ const SettingsPage = () => {
             <CardDescription>Customize platform appearance</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="primaryColor">Primary Color</Label>
                 <Input
@@ -423,7 +423,7 @@ const SettingsPage = () => {
           <CardDescription>Database configuration and maintenance</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <div className="p-4 border rounded-lg">
               <h4 className="font-medium mb-2">Database Status</h4>
               <div className="space-y-2 text-sm">
@@ -479,16 +479,16 @@ const SettingsPage = () => {
             </div>
           </div>
           
-          <div className="flex gap-3 mt-6">
-            <Button variant="outline">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-6">
+            <Button variant="outline" className="w-full justify-center">
               <RefreshCw className="h-4 w-4 mr-2" />
               Optimize Database
             </Button>
-            <Button variant="outline">
+            <Button variant="outline" className="w-full justify-center">
               <Database className="h-4 w-4 mr-2" />
               Create Backup
             </Button>
-            <Button variant="outline">
+            <Button variant="outline" className="w-full justify-center">
               <Lock className="h-4 w-4 mr-2" />
               Security Scan
             </Button>
