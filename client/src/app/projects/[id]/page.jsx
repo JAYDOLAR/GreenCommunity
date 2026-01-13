@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import ProjectView from "@/components/ProjectView";
 import { useParams, useRouter } from "next/navigation";
+import { projectsApi } from '@/lib/projectsApi';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -83,24 +84,16 @@ const ProjectDetailContent = ({ params }) => {
       setLoadingProject(true);
       setFetchError(null);
       try {
-        const res = await fetch(`/api/projects/${rawId}`);
-        if (res.ok) {
-          const text = await res.text();
-          if (text) {
-            const data = JSON.parse(text);
-            const apiProject =
-              data?.data?.name || data?.data?._id ? data.data : data;
-            if (apiProject && !cancelled) setProject(apiProject);
-          }
-        } else if (res.status === 404) {
-          if (!project) setFetchError("Project not found");
-        } else {
-          throw new Error(`Failed to fetch project (${res.status})`);
+        const response = await projectsApi.getProjectById(rawId);
+        if (response.success && response.data && !cancelled) {
+          setProject(response.data);
+        } else if (!cancelled) {
+          setFetchError("Project not found");
         }
       } catch (err) {
         if (!cancelled) {
-          console.error("Project fetch error:", err);
-          setFetchError(err.message);
+          console.error("Failed to fetch project:", err);
+          setFetchError(err.message || "Failed to load project");
         }
       } finally {
         if (!cancelled) setLoadingProject(false);

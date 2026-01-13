@@ -7,42 +7,6 @@ import {
   calculateCO2Savings
 } from '@/config/marketplaceConfig';
 
-// Convert Google Drive share links to direct-view links with better CORS handling
-const normalizeDriveLink = (url) => {
-  if (!url) return url;
-  try {
-    // Already a direct link with uc?export=view
-    if (/^https?:\/\//i.test(url) && url.includes('drive.google.com/uc?export=view')) return url;
-    
-    // Already a direct link with uc?id=
-    if (/^https?:\/\//i.test(url) && url.includes('drive.google.com/uc?id=')) {
-      // Convert to export=view format for better compatibility
-      const idMatch = url.match(/[?&]id=([^&]+)/);
-      if (idMatch && idMatch[1]) {
-        return `https://drive.google.com/uc?export=view&id=${idMatch[1]}`;
-      }
-      return url;
-    }
-
-    // Matches: https://drive.google.com/file/d/<FILE_ID>/view?usp=sharing or similar
-    const fileMatch = url.match(/drive\.google\.com\/file\/d\/([^/?]+)/);
-    if (fileMatch && fileMatch[1]) {
-      return `https://drive.google.com/uc?export=view&id=${fileMatch[1]}`;
-    }
-
-    // Matches: https://drive.google.com/open?id=<FILE_ID>
-    const openMatch = url.match(/[?&]id=([^&]+)/);
-    if (openMatch && openMatch[1]) {
-      return `https://drive.google.com/uc?export=view&id=${openMatch[1]}`;
-    }
-
-    return url;
-  } catch (error) {
-    console.error('Error normalizing drive link:', error);
-    return url;
-  }
-};
-
 // Transform backend product to client format
 const transformProduct = (backendProduct) => {
   const seller = backendProduct.seller_id;
@@ -61,8 +25,7 @@ const transformProduct = (backendProduct) => {
     if (typeof firstImage === 'string') {
       // Images from backend are full URLs
       if (firstImage.startsWith('http')) {
-        // Normalize Google Drive links for better compatibility
-        resolvedImage = normalizeDriveLink(firstImage);
+        resolvedImage = firstImage;
       } else {
         // Fallback: if somehow a relative path exists, convert it
         resolvedImage = `${API_BASE_URL}${firstImage.startsWith('/') ? '' : '/'}${firstImage}`;
@@ -72,7 +35,7 @@ const transformProduct = (backendProduct) => {
       const imageUrl = firstImage?.url || firstImage?.path || '';
       if (imageUrl) {
         resolvedImage = imageUrl.startsWith('http') 
-          ? normalizeDriveLink(imageUrl)
+          ? imageUrl
           : `${API_BASE_URL}${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}`;
       }
     }
@@ -203,7 +166,7 @@ export const marketplaceApi = {
       const response = await apiRequest(`/api/marketplace/featured?limit=${limit}`);
       return {
         ...response,
-        data: response.data.map(transformProduct)
+        data: (response.data || []).map(transformProduct)
       };
     } catch (error) {
       console.error('Error fetching featured products:', error);
@@ -225,7 +188,7 @@ export const marketplaceApi = {
       const categoryMap = {};
 
       // Group backend categories by client categories
-      response.data.forEach(backendCat => {
+      (response.data || []).forEach(backendCat => {
         const clientCategory = CATEGORY_MAPPING[backendCat._id];
         if (clientCategory) {
           if (!categoryMap[clientCategory]) {
@@ -277,7 +240,7 @@ export const marketplaceApi = {
 
       return {
         ...response,
-        data: response.data.map(transformProduct)
+        data: (response.data || []).map(transformProduct)
       };
     } catch (error) {
       console.error('Error searching products:', error);
@@ -300,10 +263,176 @@ export const marketplaceApi = {
 
       return {
         ...response,
-        data: response.data.map(transformProduct)
+        data: (response.data || []).map(transformProduct)
       };
     } catch (error) {
       console.error('Error fetching sustainable products:', error);
+      throw error;
+    }
+  },
+
+  // Admin operations - Create Product with Cloudinary images
+  async createProduct(productData, imageFiles = []) {
+    try {
+      const formData = new FormData();
+      
+      // Add image files
+      imageFiles.forEach((file) => {
+        formData.append('images', file);
+      });
+      
+      // Add all other product data as JSON string fields
+      formData.append('name', productData.name);
+      formData.append('description', productData.description || '');
+      formData.append('category', productData.category);
+      
+      // Pricing
+      formData.append('pricing', JSON.stringify({
+        base_price: parseFloat(productData.price),
+        discount_price: productData.discount_price ? parseFloat(productData.discount_price) : null,
+        currency: productData.currency || 'INR'
+      }));
+      
+      // Inventory
+      formData.append('inventory', JSON.stringify({
+        stock_quantity: parseInt(productData.stock),
+        low_stock_threshold: productData.low_stock_threshold || 10,
+        warehouse_location: productData.warehouse_location || ''
+      }));
+      
+      // Sustainability metrics
+      if (productData.sustainability) {
+        formData.append('sustainability', JSON.stringify(productData.sustainability));
+      }
+      
+      // Other fields
+      if (productData.tags && productData.tags.length > 0) {
+        formData.append('tags', JSON.stringify(productData.tags));
+      }
+      
+      if (productData.featured !== undefined) {
+        formData.append('featured', productData.featured);
+      }
+      
+      if (productData.specifications) {
+        formData.append('specifications', JSON.stringify(productData.specifications));
+      }
+      
+      if (productData.shipping) {
+        formData.append('shipping', JSON.stringify(productData.shipping));
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/marketplace/products`, {
+        method: 'POST',
+        headers: {
+          // Don't set Content-Type - browser will set it with boundary for FormData
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        credentials: 'include',
+        body: formData
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Failed to create product: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      return {
+        success: true,
+        data: transformProduct(result.data)
+      };
+    } catch (error) {
+      console.error('Error creating product:', error);
+      throw error;
+    }
+  },
+
+  // Update Product with Cloudinary images
+  async updateProduct(productId, productData, imageFiles = []) {
+    try {
+      const formData = new FormData();
+      
+      // Add new image files if provided
+      if (imageFiles && Array.isArray(imageFiles) && imageFiles.length > 0) {
+        imageFiles.forEach((file) => {
+          formData.append('images', file);
+        });
+      }
+      
+      // Add updated product data
+      Object.keys(productData).forEach(key => {
+        const value = productData[key];
+        if (value !== undefined && value !== null) {
+          if (typeof value === 'object') {
+            formData.append(key, JSON.stringify(value));
+          } else {
+            formData.append(key, value);
+          }
+        }
+      });
+
+      const response = await fetch(`${API_BASE_URL}/api/marketplace/products/${productId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        credentials: 'include',
+        body: formData
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Failed to update product: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      return {
+        success: true,
+        data: transformProduct(result.data)
+      };
+    } catch (error) {
+      console.error('Error updating product:', error);
+      throw error;
+    }
+  },
+
+  // Delete Product (also deletes Cloudinary images)
+  async deleteProduct(productId) {
+    try {
+      const response = await apiRequest(`/api/marketplace/products/${productId}`, {
+        method: 'DELETE'
+      });
+      return response;
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      throw error;
+    }
+  },
+
+  // Update product stock
+  async updateStock(productId, quantity, operation = 'set') {
+    try {
+      const response = await apiRequest(`/api/marketplace/products/${productId}/stock`, {
+        method: 'PATCH',
+        body: JSON.stringify({ quantity, operation })
+      });
+      return response;
+    } catch (error) {
+      console.error('Error updating stock:', error);
+      throw error;
+    }
+  },
+
+  // Toggle featured status
+  async toggleFeatured(productId) {
+    try {
+      const response = await apiRequest(`/api/marketplace/products/${productId}/featured`, {
+        method: 'PATCH'
+      });
+      return response;
+    } catch (error) {
+      console.error('Error toggling featured status:', error);
       throw error;
     }
   }

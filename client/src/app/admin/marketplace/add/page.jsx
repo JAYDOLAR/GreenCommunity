@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useRef } from 'react';
-
 import { useRouter } from 'next/navigation';
+import { marketplaceApi } from '@/lib/marketplaceApi';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,24 +31,24 @@ const AddProductPage = () => {
   const router = useRouter();
   const fileInputRef = useRef(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [uploadedImage, setUploadedImage] = useState(null);
-  const [driveLink, setDriveLink] = useState('');
+  const [uploadedImages, setUploadedImages] = useState([]);
 
   const [product, setProduct] = useState({
     name: '',
     category: '',
     price: '',
+    discount_price: '',
     stock: '',
     description: '',
     status: 'draft',
     featured: false,
-    shipping: '',
+    shipping_cost: '',
     weight: '',
     dimensions: '',
     tags: '',
-    rating: '0',
-    reviews: '0',
-    sold: '0'
+    certifications: [],
+    carbon_footprint: '',
+    eco_rating: '3'
   });
 
   const handleInputChange = (field, value) => {
@@ -56,100 +56,108 @@ const AddProductPage = () => {
   };
 
   const handleImageUpload = (event) => {
-    const file = event.target.files[0];
-    if (file) {
+    const files = Array.from(event.target.files || []);
+    
+    // Check total images limit (max 5)
+    if (uploadedImages.length + files.length > 5) {
+      alert('Maximum 5 images allowed per product');
+      return;
+    }
+    
+    const validFiles = [];
+    
+    files.forEach(file => {
       // Validate file type
       if (!file.type.startsWith('image/')) {
-        alert('Please select an image file');
+        alert(`${file.name} is not an image file`);
         return;
       }
 
       // Validate file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
-        alert('Image size should be less than 5MB');
+        alert(`${file.name} exceeds 5MB size limit`);
         return;
       }
-
+      
+      validFiles.push(file);
+    });
+    
+    // Create previews for valid files
+    validFiles.forEach(file => {
       const reader = new FileReader();
       reader.onload = (e) => {
-        setUploadedImage({
+        setUploadedImages(prev => [...prev, {
           file: file,
           preview: e.target.result
-        });
-        setProduct(prev => ({ ...prev, image: e.target.result }));
+        }]);
       };
       reader.readAsDataURL(file);
-    }
+    });
   };
 
-  const handleRemoveImage = () => {
-    setUploadedImage(null);
-    setProduct(prev => ({ ...prev, image: '' }));
-    if (fileInputRef.current) {
+  const handleRemoveImage = (index) => {
+    setUploadedImages(prev => prev.filter((_, i) => i !== index));
+    if (fileInputRef.current && uploadedImages.length === 1) {
       fileInputRef.current.value = '';
     }
   };
 
   const handleSaveProduct = async () => {
-
+    // Validation
     if (!product.name || !product.category || !product.price || !product.stock) {
-      alert('Please fill in all required fields');
+      alert('Please fill in all required fields: Name, Category, Price, and Stock');
       return;
+    }
+
+    if (uploadedImages.length === 0) {
+      if (!confirm('No images uploaded. Continue without images?')) {
+        return;
+      }
     }
 
     setIsLoading(true);
 
     try {
-      // Prepare product data for API
-      // Prefer Drive link if provided; otherwise use uploaded image preview or default
-      const normalizeDriveLink = (url) => {
-        if (!url) return url;
-        try {
-          if (/^https?:\/\//i.test(url) && url.includes('drive.google.com/uc')) return url;
-          const fileMatch = url.match(/drive\.google\.com\/file\/d\/([^/]+)/);
-          if (fileMatch && fileMatch[1]) return `https://drive.google.com/uc?export=view&id=${fileMatch[1]}`;
-          const openMatch = url.match(/[?&]id=([^&]+)/);
-          if (openMatch && openMatch[1]) return `https://drive.google.com/uc?export=view&id=${openMatch[1]}`;
-          return url;
-        } catch { return url; }
-      };
-
-      const selectedImage = driveLink ? normalizeDriveLink(driveLink) : (uploadedImage ? uploadedImage.preview : '/Marketplace/1.jpeg');
-
+      // Prepare product data
       const productData = {
-        ...product,
-        image: selectedImage,
-        price: parseFloat(product.price),
-        stock: parseInt(product.stock),
-        rating: parseFloat(product.rating),
-        reviews: parseInt(product.reviews),
-        sold: parseInt(product.sold),
-        weight: product.weight ? parseFloat(product.weight) : null,
-        shipping: product.shipping ? parseFloat(product.shipping) : null
+        name: product.name,
+        description: product.description,
+        category: product.category,
+        price: product.price,
+        discount_price: product.discount_price || null,
+        stock: product.stock,
+        featured: product.featured,
+        sustainability: {
+          carbon_footprint: product.carbon_footprint ? parseFloat(product.carbon_footprint) : 0,
+          eco_rating: product.eco_rating ? parseInt(product.eco_rating) : 3,
+          certifications: product.certifications || []
+        },
+        tags: product.tags ? product.tags.split(',').map(t => t.trim()).filter(t => t) : [],
+        specifications: {
+          weight: product.weight || null,
+          dimensions: product.dimensions || null
+        },
+        shipping: {
+          cost: product.shipping_cost ? parseFloat(product.shipping_cost) : 0,
+          estimated_days: 5
+        }
       };
 
+      // Extract image files from uploadedImages
+      const imageFiles = uploadedImages.map(img => img.file);
 
-      // Save to API
-      const response = await fetch('/api/admin/marketplace', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(productData),
-      });
+      // Call API with FormData
+      const response = await marketplaceApi.createProduct(productData, imageFiles);
 
-      if (response.ok) {
-        const result = await response.json();
-        console.log('Product saved successfully:', result.product);
-
-        // Navigate back to marketplace page
+      if (response.success) {
+        alert('Product created successfully!');
         router.push('/admin/marketplace');
       } else {
-        throw new Error('Failed to save product');
+        throw new Error(response.message || 'Failed to create product');
       }
     } catch (error) {
       console.error('Failed to save product:', error);
-      alert('Failed to save product. Please try again.');
+      alert('Failed to save product: ' + error.message);
     } finally {
       setIsLoading(false);
     }
@@ -211,12 +219,13 @@ const AddProductPage = () => {
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="lifestyle">Lifestyle</SelectItem>
-                      <SelectItem value="technology">Technology</SelectItem>
-                      <SelectItem value="fashion">Fashion</SelectItem>
-                      <SelectItem value="home">Home & Garden</SelectItem>
-                      <SelectItem value="sports">Sports & Outdoors</SelectItem>
-                      <SelectItem value="books">Books & Media</SelectItem>
+                      <SelectItem value="solar">Solar Products</SelectItem>
+                      <SelectItem value="reusable">Reusable Items</SelectItem>
+                      <SelectItem value="zero_waste">Zero Waste</SelectItem>
+                      <SelectItem value="local">Local Products</SelectItem>
+                      <SelectItem value="organic">Organic</SelectItem>
+                      <SelectItem value="eco_fashion">Eco Fashion</SelectItem>
+                      <SelectItem value="green_tech">Green Tech</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -379,78 +388,80 @@ const AddProductPage = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <ImageIcon className="h-5 w-5" />
-                Product Image
+                Product Images
               </CardTitle>
+              <p className="text-xs text-muted-foreground">Upload up to 5 images</p>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Image Preview - Only show when image is uploaded */}
-              {(uploadedImage || driveLink) && (
-                <div className="w-full h-48 bg-gray-100 rounded-lg overflow-hidden relative">
-                  <img
-                    src={uploadedImage ? uploadedImage.preview : driveLink}
-                    alt="Product preview"
-                    className="w-full h-full object-cover"
-                  />
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => { handleRemoveImage(); setDriveLink(''); }}
-                    className="absolute top-2 right-2 h-8 w-8 p-0"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
+              {/* Image Previews */}
+              {uploadedImages.length > 0 && (
+                <div className="grid grid-cols-2 gap-2">
+                  {uploadedImages.map((img, index) => (
+                    <div key={index} className="relative w-full h-32 bg-gray-100 rounded-lg overflow-hidden">
+                      <img
+                        src={img.preview}
+                        alt={`Product ${index + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleRemoveImage(index)}
+                        className="absolute top-1 right-1 h-6 w-6 p-0"
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                      {index === 0 && (
+                        <div className="absolute bottom-1 left-1 bg-green-600 text-white text-xs px-2 py-0.5 rounded">
+                          Primary
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
               )}
 
               {/* Upload Section */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <Upload className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">Upload Image</span>
-                </div>
-
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-gray-400 transition-colors">
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    className="hidden"
-                    id="image-upload"
-                  />
-                  <label
-                    htmlFor="image-upload"
-                    className="cursor-pointer flex flex-col items-center gap-2"
-                  >
-                    <ImageIcon className="h-8 w-8 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">
-                        {uploadedImage ? 'Change Image' : 'Click to upload'}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        PNG, JPG, GIF up to 5MB
-                      </p>
-                    </div>
-                  </label>
-                </div>
-
-                {/* Or paste Google Drive link */}
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium">Or paste Google Drive link</label>
-                  <Input
-                    placeholder="https://drive.google.com/file/d/<FILE_ID>/view?usp=sharing"
-                    value={driveLink}
-                    onChange={(e) => setDriveLink(e.target.value)}
-                  />
-                </div>
-
-                {uploadedImage && (
-                  <div className="text-xs text-muted-foreground">
-                    <p>File: {uploadedImage.file.name}</p>
-                    <p>Size: {(uploadedImage.file.size / 1024 / 1024).toFixed(2)} MB</p>
+              {uploadedImages.length < 5 && (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Upload className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium">Upload Images ({uploadedImages.length}/5)</span>
                   </div>
-                )}
-              </div>
+
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-gray-400 transition-colors">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleImageUpload}
+                      className="hidden"
+                      id="image-upload"
+                    />
+                    <label
+                      htmlFor="image-upload"
+                      className="cursor-pointer flex flex-col items-center gap-2"
+                    >
+                      <ImageIcon className="h-8 w-8 text-muted-foreground" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">
+                          Click to upload
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          PNG, JPG, GIF up to 5MB each
+                        </p>
+                      </div>
+                    </label>
+                  </div>
+
+                  {uploadedImages.length > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      First image will be the primary product image
+                    </p>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
 

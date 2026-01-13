@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { projectsApi } from '@/lib/projectsApi';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -279,18 +280,11 @@ const Projects = () => {
       setIsLoading(true);
       setError(null);
       try {
-        const res = await fetch('/api/projects?limit=1000&page=1');
-        const rawText = await res.text();
-        const data = rawText ? JSON.parse(rawText) : {};
-        if (data.success && data.data?.projects) {
-          setProjects(data.data.projects);
-        } else if (Array.isArray(data.projects)) {
-          setProjects(data.projects);
-        } else {
-          setProjects([]);
-        }
+        const response = await projectsApi.getProjects({ limit: 1000, page: 1 });
+        setProjects(response.data?.projects || []);
       } catch (err) {
         console.error('Failed to load projects:', err);
+        setError(err.message || 'Failed to load projects');
         setProjects([]);
       } finally {
         setIsLoading(false);

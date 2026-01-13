@@ -32,6 +32,7 @@ import {
 
 const UsersPage = () => {
   const router = useRouter();
+  const API_BASE = process.env.NEXT_PUBLIC_SERVER_URL || '';
 
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -131,13 +132,19 @@ const UsersPage = () => {
   const handleExportUsers = async () => {
     setIsLoading(true);
     try {
-      // Fetch fresh data from API before exporting
       const adminToken = localStorage.getItem('adminToken');
-      const response = await fetch('/api/admin/users?limit=1000&page=1', {
-        headers: {
-          'Authorization': `Bearer ${adminToken}`
+      const url = `${API_BASE}/api/admin/users?limit=1000&page=1`;
+      const headers = {};
+      if (adminToken) headers['Authorization'] = `Bearer ${adminToken}`;
+      const response = await fetch(url, { method: 'GET', headers, credentials: 'include' });
+      if (response.status === 401 || response.status === 403) {
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('adminToken');
+          localStorage.removeItem('adminAuthenticated');
+          window.location.href = '/admin/login?reason=auth';
         }
-      });
+        return;
+      }
       if (!response.ok) {
         throw new Error(`Invalid response (HTTP ${response.status})`);
       }
@@ -186,25 +193,28 @@ const UsersPage = () => {
   const fetchUsers = async () => {
     try {
       const adminToken = localStorage.getItem('adminToken');
-      console.log('Admin token:', adminToken ? 'exists' : 'missing');
-      
-      const response = await fetch('/api/admin/users?limit=1000&page=1', {
-        headers: {
-          'Authorization': `Bearer ${adminToken}`
+      const url = `${API_BASE}/api/admin/users?limit=1000&page=1`;
+      const headers = {};
+      if (adminToken) headers['Authorization'] = `Bearer ${adminToken}`;
+      const response = await fetch(url, { method: 'GET', headers, credentials: 'include' });
+      if (response.status === 401 || response.status === 403) {
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('adminToken');
+          localStorage.removeItem('adminAuthenticated');
+          window.location.href = '/admin/login?reason=auth';
         }
-      });
+        setUsers([]);
+        return;
+      }
       if (!response.ok) {
         throw new Error(`Invalid response (HTTP ${response.status})`);
       }
-      console.log('Response status:', response.status);
       const text = await response.text();
       let data = {};
       try { data = text ? JSON.parse(text) : {}; } catch (e) { console.error('Non-JSON response body preview:', String(text).slice(0,200)); throw new Error(`Invalid response (HTTP ${response.status})`); }
-      console.log('Response data:', data);
       
       if (data.success && data.users) {
         setUsers(data.users);
-        console.log('Users set:', data.users.length, 'users');
       } else {
         console.error('API Error:', data.message || 'No users in response');
         setUsers([]); // Ensure empty array if API fails
@@ -218,14 +228,25 @@ const UsersPage = () => {
   const updateUser = async (userData) => {
     try {
       const adminToken = localStorage.getItem('adminToken');
-      const response = await fetch('/api/admin/users', {
+      const url = `${API_BASE}/api/admin/users`;
+      const headers = {
+        'Content-Type': 'application/json'
+      };
+      if (adminToken) headers['Authorization'] = `Bearer ${adminToken}`;
+      const response = await fetch(url, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${adminToken}`
-        },
+        headers,
+        credentials: 'include',
         body: JSON.stringify(userData),
       });
+      if (response.status === 401 || response.status === 403) {
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('adminToken');
+          localStorage.removeItem('adminAuthenticated');
+          window.location.href = '/admin/login?reason=auth';
+        }
+        return null;
+      }
       if (!response.ok) {
         throw new Error(`Invalid response (HTTP ${response.status})`);
       }
@@ -244,12 +265,22 @@ const UsersPage = () => {
   const deleteUser = async (userId) => {
     try {
       const adminToken = localStorage.getItem('adminToken');
-      const response = await fetch(`/api/admin/users?id=${userId}`, {
+      const url = `${API_BASE}/api/admin/users?id=${encodeURIComponent(userId)}`;
+      const headers = {};
+      if (adminToken) headers['Authorization'] = `Bearer ${adminToken}`;
+      const response = await fetch(url, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${adminToken}`
-        },
+        headers,
+        credentials: 'include',
       });
+      if (response.status === 401 || response.status === 403) {
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('adminToken');
+          localStorage.removeItem('adminAuthenticated');
+          window.location.href = '/admin/login?reason=auth';
+        }
+        return false;
+      }
       if (!response.ok) {
         throw new Error(`Invalid response (HTTP ${response.status})`);
       }

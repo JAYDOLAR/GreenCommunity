@@ -9,6 +9,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import { 
   ShoppingBag, 
   Package, 
@@ -47,6 +50,11 @@ const MarketplacePage = () => {
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(false);
   const exportRef = useRef(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [editForm, setEditForm] = useState({});
+  const [editImages, setEditImages] = useState([]);
+  const [isSaving, setIsSaving] = useState(false);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -70,14 +78,14 @@ const MarketplacePage = () => {
     }
   };
 
-  const filteredProducts = products.filter(product => {
+  const filteredProducts = (products || []).filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = categoryFilter === 'all' || product.category === categoryFilter;
     const matchesStatus = statusFilter === 'all' || product.status === statusFilter;
     return matchesSearch && matchesCategory && matchesStatus;
   });
 
-  const filteredOrders = orders.filter(order => {
+  const filteredOrders = (orders || []).filter(order => {
     const matchesSearch = order.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          order.customerEmail.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = orderStatusFilter === 'all' || order.status === orderStatusFilter;
@@ -115,56 +123,129 @@ const MarketplacePage = () => {
     // Normalize id
     const normalize = (p) => (p.id || p._id);
     // Optimistic UI update
-    setProducts(prev => prev.map(p => (normalize(p) === (productId || normalize(p)) && normalize(p) === (productId) ? { ...p, status: newStatus } : (normalize(p) === productId ? { ...p, status: newStatus } : p))));
+    setProducts(prev => prev.map(p => (normalize(p) === productId ? { ...p, status: newStatus } : p)));
 
-    // Persist override locally for refresh fallback
     try {
-      const raw = localStorage.getItem(STATUS_OVERRIDES_KEY);
-      const overrides = raw ? JSON.parse(raw) : {};
-      overrides[productId] = newStatus;
-      localStorage.setItem(STATUS_OVERRIDES_KEY, JSON.stringify(overrides));
-    } catch {}
-    try {
-      const product = prevProducts.find(p => (p.id || p._id) === productId);
-      if (!product) return;
-      const updatedProduct = { ...product, id: productId, status: newStatus };
-      const response = await fetch(`/api/admin/marketplace?id=${encodeURIComponent(productId)}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(updatedProduct),
-      });
-      if (!response.ok) throw new Error('Non-200 response');
-      // Sync with server
-      await fetchMarketplaceData();
+      const response = await marketplaceApi.updateProduct(productId, { status: newStatus });
+      if (!response.success) throw new Error(response.message || 'Failed to update product status');
     } catch (error) {
       console.error('Failed to update product status:', error);
-      // Revert on failure
       setProducts(prevProducts);
-      // Remove bad override
-      try {
-        const raw = localStorage.getItem(STATUS_OVERRIDES_KEY);
-        const overrides = raw ? JSON.parse(raw) : {};
-        delete overrides[productId];
-        localStorage.setItem(STATUS_OVERRIDES_KEY, JSON.stringify(overrides));
-      } catch {}
+      alert('Failed to update product status: ' + error.message);
     }
   };
 
   const handleDeleteProduct = async (productId) => {
-    if (confirm('Are you sure you want to delete this product?')) {
+    if (confirm('Are you sure you want to delete this product? This will also delete all associated images from Cloudinary.')) {
       try {
-        const response = await fetch(`/api/admin/marketplace?id=${productId}`, {
-          method: 'DELETE',
-        });
-        
-        if (response.ok) {
-          setProducts(products.filter(product => product.id !== productId));
-        }
+        // Optimistically update UI
+        const previousProducts = [...products];
+        setProducts(products.filter(product => product.id !== productId));
+
+        await marketplaceApi.deleteProduct(productId);
       } catch (error) {
         console.error('Failed to delete product:', error);
+        // Revert on failure
+        setProducts(previousProducts);
+        alert('Failed to delete product: ' + error.message);
       }
+    }
+  };
+
+  const handleEditProduct = (product) => {
+    setEditingProduct(product);
+    setEditForm({
+      name: product.name || '',
+      description: product.description || '',
+      price: product.price || '',
+      stock: product.inventory?.quantity || product.stock || '',
+      category: product.category || '',
+      status: product.status || 'active',
+    });
+    setEditImages([]);
+    setEditDialogOpen(true);
+  };
+
+  const handleEditFormChange = (field, value) => {
+    setEditForm(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleEditImageUpload = (event) => {
+    const files = Array.from(event.target.files || []);
+    const validFiles = [];
+    
+    for (const file of files) {
+      if (!file.type.startsWith('image/')) {
+        alert(`${file.name} is not an image file`);
+        continue;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        alert(`${file.name} exceeds 5MB limit`);
+        continue;
+      }
+      validFiles.push(file);
+    }
+
+    if (editImages.length + validFiles.length > 5) {
+      alert('Maximum 5 images allowed');
+      return;
+    }
+
+    const newImages = validFiles.map(file => ({
+      file,
+      preview: URL.createObjectURL(file)
+    }));
+
+    setEditImages(prev => [...prev, ...newImages]);
+  };
+
+  const handleRemoveEditImage = (index) => {
+    setEditImages(prev => {
+      const updated = [...prev];
+      URL.revokeObjectURL(updated[index].preview);
+      updated.splice(index, 1);
+      return updated;
+    });
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editForm.name || !editForm.price) {
+      alert('Name and price are required');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const updateData = {
+        name: editForm.name,
+        description: editForm.description,
+        price: parseFloat(editForm.price),
+        category: editForm.category,
+        status: editForm.status,
+        inventory: {
+          quantity: parseInt(editForm.stock) || 0,
+        },
+      };
+
+      const imageFiles = editImages.length > 0 ? editImages.map(img => img.file) : null;
+      
+      const response = await marketplaceApi.updateProduct(editingProduct.id, updateData, imageFiles);
+      
+      if (response.success) {
+        await fetchMarketplaceData();
+        setEditDialogOpen(false);
+        setEditingProduct(null);
+        setEditForm({});
+        setEditImages([]);
+        alert('Product updated successfully!');
+      } else {
+        throw new Error(response.message || 'Failed to update product');
+      }
+    } catch (error) {
+      console.error('Failed to update product:', error);
+      alert('Failed to update product: ' + error.message);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -177,7 +258,7 @@ const MarketplacePage = () => {
   const handleExportData = () => {
     const csvContent = [
       ['Product Name', 'Category', 'Price', 'Stock', 'Sold', 'Status', 'Rating', 'Reviews'],
-      ...products.map(product => [
+      ...(products || []).map(product => [
         product.name,
         product.category,
         product.price,
@@ -452,71 +533,117 @@ const MarketplacePage = () => {
         <CardContent>
           <div className="space-y-4">
             {filteredProducts.map((product) => (
-              <div key={product.id || product._id} className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 p-4 border rounded-lg hover:bg-accent/50 transition-colors overflow-hidden">
-                <div className="w-16 h-16 bg-accent rounded-lg overflow-hidden flex-shrink-0">
-                  <img src={product.image || '/Marketplace/1.jpeg'} alt={product.name} className="w-full h-full object-cover" onError={(e) => { e.target.src = '/Marketplace/1.jpeg'; }} />
-                </div>
-                
-                <div className="flex-1 min-w-0 w-full">
-                  <div className="flex flex-wrap items-center gap-2 mb-1 min-w-0">
-                    <h3 className="font-medium leading-tight break-words max-w-full sm:max-w-[260px]">{product.name}</h3>
-                    <Badge className={getStatusColor(product.status)}>
-                      {product.status}
-                    </Badge>
-                    <Badge variant="outline">
-                      {product.category}
-                    </Badge>
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-2 break-words">{product.description}</p>
-                  <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-sm text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <DollarSign className="h-3 w-3" />
-                      ₹{product.price}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Package className="h-3 w-3" />
-                      {product.stock} in stock
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <TrendingUp className="h-3 w-3" />
-                      {product.sold} sold
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Star className="h-3 w-3" />
-                      {product.rating} ({product.reviews} reviews)
-                    </span>
-                  </div>
-                </div>
+              <Card
+                key={product.id || product._id}
+                className="border hover:shadow-md transition-shadow"
+              >
+                <CardContent className="p-0">
+                  <div className="flex items-start gap-4 p-4">
+                    {/* Product Image */}
+                    <div className="w-24 h-24 bg-gradient-to-br from-green-400 to-blue-500 rounded-lg overflow-hidden flex-shrink-0 shadow-sm">
+                      <img
+                        src={product.image || '/Marketplace/1.jpeg'}
+                        alt={product.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => { e.target.src = '/Marketplace/1.jpeg'; }}
+                      />
+                    </div>
 
-                <div className="mt-3 sm:mt-0 flex flex-wrap sm:flex-nowrap items-center gap-2 w-full sm:w-auto">
-                  <Select value={product.status || 'inactive'} onValueChange={(value) => handleStatusChange(product.id || product._id, value)}>
-                    <SelectTrigger className="w-full sm:w-36 min-w-[130px] justify-between bg-white">
-                      <SelectValue placeholder={(product.status ? (product.status.charAt(0).toUpperCase() + product.status.slice(1)) : 'Status')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="inactive">Inactive</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  
-                  <Button variant="ghost" size="sm" title="View Product">
-                    <Eye className="h-4 w-4" />
-                  </Button>
-                  
-                  <Button variant="ghost" size="sm" title="Edit Product">
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={() => handleDeleteProduct(product.id || product._id)}
-                    title="Delete Product"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
+                    {/* Product Info */}
+                    <div className="flex-1 min-w-0">
+                      {/* Title and Action Buttons */}
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <h3 className="font-semibold text-lg mb-2">{product.name}</h3>
+                          <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+                            {product.description}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0 ml-4">
+                          <Select
+                            value={product.status || 'inactive'}
+                            onValueChange={(value) => handleStatusChange(product.id || product._id, value)}
+                          >
+                            <SelectTrigger className="w-32">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="active">Active</SelectItem>
+                              <SelectItem value="inactive">Inactive</SelectItem>
+                            </SelectContent>
+                          </Select>
+
+                          <Button variant="ghost" size="sm" title="View Product">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditProduct(product)}
+                            title="Edit Product"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteProduct(product.id || product._id)}
+                            title="Delete Product"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Status Badges Row */}
+                      <div className="flex items-center gap-2 flex-wrap mb-3">
+                        <Badge className={getStatusColor(product.status)}>
+                          {product.status}
+                        </Badge>
+                        <Badge variant="outline">
+                          {product.category}
+                        </Badge>
+                        {product.featured && (
+                          <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">
+                            <Star className="h-3 w-3 mr-1 fill-yellow-600" />
+                            Featured
+                          </Badge>
+                        )}
+                      </div>
+
+                      {/* Pricing Section */}
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="text-2xl font-bold text-green-600">
+                          ₹{product.price}
+                        </span>
+                        {product._original?.pricing?.discount_price && (
+                          <span className="text-lg line-through text-muted-foreground">
+                            ₹{product._original.pricing.base_price}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Product Stats */}
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
+                        <span className="flex items-center gap-1">
+                          <Package className="h-3 w-3" />
+                          {product.stock} in stock
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <TrendingUp className="h-3 w-3" />
+                          {product.sold} sold
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Star className="h-3 w-3" />
+                          {product.rating} ({product.reviews} reviews)
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             ))}
           </div>
         </CardContent>
@@ -603,6 +730,178 @@ const MarketplacePage = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Edit Product Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Product</DialogTitle>
+            <DialogDescription>
+              Update product details and images (up to 5 images, 5MB each)
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-name">Product Name *</Label>
+                <Input
+                  id="edit-name"
+                  value={editForm.name || ''}
+                  onChange={(e) => handleEditFormChange('name', e.target.value)}
+                  placeholder="Enter product name"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-price">Price (₹) *</Label>
+                <Input
+                  id="edit-price"
+                  type="number"
+                  value={editForm.price || ''}
+                  onChange={(e) => handleEditFormChange('price', e.target.value)}
+                  placeholder="Enter price"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-description">Description</Label>
+              <Textarea
+                id="edit-description"
+                value={editForm.description || ''}
+                onChange={(e) => handleEditFormChange('description', e.target.value)}
+                placeholder="Enter product description"
+                rows={3}
+              />
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-category">Category</Label>
+                <Select
+                  value={editForm.category || ''}
+                  onValueChange={(value) => handleEditFormChange('category', value)}
+                >
+                  <SelectTrigger id="edit-category">
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="solar">Solar Products</SelectItem>
+                    <SelectItem value="reusable">Reusable Items</SelectItem>
+                    <SelectItem value="zero_waste">Zero Waste</SelectItem>
+                    <SelectItem value="local">Local Products</SelectItem>
+                    <SelectItem value="organic">Organic</SelectItem>
+                    <SelectItem value="eco_fashion">Eco Fashion</SelectItem>
+                    <SelectItem value="green_tech">Green Tech</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-stock">Stock Quantity</Label>
+                <Input
+                  id="edit-stock"
+                  type="number"
+                  value={editForm.stock || ''}
+                  onChange={(e) => handleEditFormChange('stock', e.target.value)}
+                  placeholder="Stock"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-status">Status</Label>
+                <Select
+                  value={editForm.status || 'active'}
+                  onValueChange={(value) => handleEditFormChange('status', value)}
+                >
+                  <SelectTrigger id="edit-status">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>New Images (optional)</Label>
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleEditImageUpload}
+                  className="hidden"
+                  id="edit-image-upload"
+                />
+                <label
+                  htmlFor="edit-image-upload"
+                  className="cursor-pointer flex flex-col items-center gap-2"
+                >
+                  <Plus className="h-8 w-8 text-muted-foreground" />
+                  <p className="text-sm font-medium">
+                    {editImages.length > 0 ? 'Add More Images' : 'Upload Images'}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {editImages.length}/5 images • PNG, JPG up to 5MB each
+                  </p>
+                </label>
+              </div>
+
+              {editImages.length > 0 && (
+                <div className="grid grid-cols-5 gap-2 mt-2">
+                  {editImages.map((img, index) => (
+                    <div key={index} className="relative">
+                      <img
+                        src={img.preview}
+                        alt={`Preview ${index + 1}`}
+                        className="w-full h-20 object-cover rounded"
+                      />
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleRemoveEditImage(index)}
+                        className="absolute -top-2 -right-2 h-6 w-6 p-0 rounded-full"
+                      >
+                        ×
+                      </Button>
+                      {index === 0 && (
+                        <Badge className="absolute bottom-1 left-1 text-xs">Primary</Badge>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground mt-2">
+                {editImages.length > 0 
+                  ? 'New images will replace existing ones. Leave empty to keep current images.'
+                  : 'Current images will be kept if you don\'t upload new ones.'}
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setEditDialogOpen(false);
+                setEditingProduct(null);
+                setEditForm({});
+                setEditImages([]);
+              }}
+              disabled={isSaving}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleSaveEdit} disabled={isSaving}>
+              {isSaving ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
