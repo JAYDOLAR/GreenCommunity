@@ -501,7 +501,8 @@ const Dashboard = () => {
                       className="bg-primary/15 text-primary border-primary/30 font-semibold cursor-pointer hover:bg-primary/25 transition-colors text-xs sm:text-xs md:text-sm"
                     >
                       Start Offsetting →
-                  </Badge>
+                    </Badge>
+                  </Link>
                 </div>
               </div>
             </CardContent>
