@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 env:
-  AZURE_WEBAPP_NAME: Green-community
+  AZURE_WEBAPP_NAME: greencommunity-app
   NODE_VERSION: '22.x'
 
 concurrency:
@@ -221,16 +221,16 @@ jobs:
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_590830FF75664EA1BF5D7DF0E9C1963D }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_99406FEA6DE74B5EB356BA1CAD7B1C2D }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_CBE9DEB1A36B4792AE601A767B1BD1C2 }}
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Configure Azure App Service settings
         run: |
           echo "Configuring app settings..."
           az webapp config appsettings set \
             --resource-group Green_Community \
-            --name Green-community \
+            --name greencommunity-app \
             --settings \
             SCM_DO_BUILD_DURING_DEPLOYMENT=false \
             WEBSITE_NODE_DEFAULT_VERSION=22.x \
@@ -244,7 +244,7 @@ jobs:
           echo "Configuring startup command..."
           az webapp config set \
             --resource-group Green_Community \
-            --name Green-community \
+            --name greencommunity-app \
             --startup-file "node server.js" \
             --output none
 
@@ -256,7 +256,7 @@ jobs:
           # Use async deployment to avoid timeout during startup
           DEPLOY_OUTPUT=$(az webapp deploy \
             --resource-group Green_Community \
-            --name Green-community \
+            --name greencommunity-app \
             --src-path deployment.zip \
             --type zip \
             --async true 2>&1)
@@ -281,7 +281,7 @@ jobs:
           for i in {1..5}; do
             STATUS=$(az webapp show \
               --resource-group Green_Community \
-              --name Green-community \
+              --name greencommunity-app \
               --query "state" -o tsv 2>/dev/null || echo "Unknown")
             
             echo "Attempt $i/5 - App state: $STATUS"
@@ -303,7 +303,7 @@ jobs:
           max_attempts=10
           for i in $(seq 1 $max_attempts); do
             echo "Attempt $i/$max_attempts:"
-            if curl -f -s -m 30 "https://www.green-community.app" > /dev/null 2>&1; then
+            if curl -f -s -m 30 "https://greencommunity-app.azurewebsites.net" > /dev/null 2>&1; then
               echo "✅ Application is responding!"
               exit 0
             else
@@ -324,13 +324,12 @@ jobs:
           echo "📊 Deployment Summary"
           echo "======================================"
           echo "✅ Package built and uploaded successfully"
-          echo "🌐 App URL: https://www.green-community.app"
-          echo "🌐 Azure URL: https://green-community.azurewebsites.net"
+          echo "🌐 App URL: https://greencommunity-app.azurewebsites.net"
           echo ""
           echo "📋 Monitoring URLs:"
-          echo "  - Deployments: https://green-community.scm.azurewebsites.net/api/deployments"
-          echo "  - Logs: https://green-community.scm.azurewebsites.net/api/logs/docker"
-          echo "  - Log Stream: https://green-community.scm.azurewebsites.net/api/logstream"
+          echo "  - Deployments: https://greencommunity-app.scm.azurewebsites.net/api/deployments"
+          echo "  - Logs: https://greencommunity-app.scm.azurewebsites.net/api/logs/docker"
+          echo "  - Log Stream: https://greencommunity-app.scm.azurewebsites.net/api/logstream"
           echo ""
           echo "💡 If app is not responding yet:"
           echo "  1. Large apps can take 10-15 minutes to start"
@@ -344,12 +343,12 @@ jobs:
           echo "Fetching recent application logs..."
           az webapp log download \
             --resource-group Green_Community \
-            --name Green-community \
+            --name greencommunity-app \
             --log-file app-logs.zip 2>/dev/null || true
           
           echo ""
           echo "📋 Check logs at:"
-          echo "  - https://green-community.scm.azurewebsites.net/api/logs/docker"
+          echo "  - https://greencommunity-app.scm.azurewebsites.net/api/logs/docker"
 
       - name: Cleanup workspace
         if: always()
