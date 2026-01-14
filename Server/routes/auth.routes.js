@@ -214,4 +214,15 @@ router.get('/health', (req, res) => {
 // Get user streak information
 router.get('/streak', authenticate, getUserStreak);
 
+// User notifications
+import { 
+  getUserNotifications, 
+  markUserNotificationAsRead, 
+  markAllUserNotificationsAsRead 
+} from '../controllers/notification.controller.js';
+
+router.get('/notifications', authenticate, getUserNotifications);
+router.put('/notifications/:id/read', authenticate, markUserNotificationAsRead);
+router.put('/notifications/read-all', authenticate, markAllUserNotificationsAsRead);
+
 export default router;

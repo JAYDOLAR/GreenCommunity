@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Leaf, Menu, X, User, TrendingUp, LogOut, LayoutDashboard, FileText, ShoppingCart, TreePine, Users, Settings, Bell } from 'lucide-react';
 import { useUser } from '@/context/UserContext';
-import { authAPI } from '@/lib/api';
+import { authAPI, notificationsAPI } from '@/lib/api';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
@@ -40,57 +40,62 @@ export default function Layout({ children }) {
   
   const storageKey = `notifications_${user?.id || user?._id || 'guest'}`;
 
-  const [notifications, setNotifications] = useState(() => {
-    const fallback = [
-      { id: 1, title: "New Challenge Available", message: "Join the 'Green Week' challenge and reduce your carbon footprint!", time: "2 minutes ago", unread: true },
-      { id: 2, title: "Goal Achievement", message: "Congratulations! You've reached 75% of your monthly goal.", time: "1 hour ago", unread: true },
-      { id: 3, title: "Community Update", message: "Your community has saved 500kg of CO2 this week!", time: "3 hours ago", unread: false }
-    ];
-    if (typeof window === 'undefined') return fallback;
-    try {
-      const raw = localStorage.getItem(storageKey);
-      if (!raw) return fallback;
-      const parsed = JSON.parse(raw);
-      return Array.isArray(parsed) ? parsed : fallback;
-    } catch {
-      return fallback;
-    }
-  });
+  const [notifications, setNotifications] = useState([]);
   const [notificationsHydrated, setNotificationsHydrated] = useState(false);
 
   const unreadCount = notifications.filter(n => n.unread).length;
 
-  const markAsRead = (id) => {
-    setNotifications((prev) => prev.map(n => n.id === id ? { ...n, unread: false } : n));
+  const markAsRead = async (id) => {
+    setNotifications((prev) => prev.map(n => n.id === id || n._id === id ? { ...n, unread: false } : n));
+    // Try to mark as read on backend
+    if (isAuthenticated) {
+      try {
+        await notificationsAPI.markAsRead(id);
+      } catch {}
+    }
   };
 
-  const markAllAsRead = () => {
+  const markAllAsRead = async () => {
     setNotifications((prev) => prev.map(n => ({ ...n, unread: false })));
+    // Try to mark all as read on backend
+    if (isAuthenticated) {
+      try {
+        await notificationsAPI.markAllAsRead();
+      } catch {}
+    }
   };
   
+  // Fetch notifications from API when authenticated
   useEffect(() => {
     if (typeof window === 'undefined') return;
     setNotificationsHydrated(false);
-    try {
-      const raw = localStorage.getItem(storageKey);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed)) {
-          setNotifications(parsed);
+    
+    const fetchNotifications = async () => {
+      if (isAuthenticated) {
+        try {
+          const data = await notificationsAPI.getAll();
+          if (Array.isArray(data)) {
+            setNotifications(data.map(n => ({
+              id: n._id || n.id,
+              _id: n._id,
+              title: n.title || 'Notification',
+              message: n.message || n.content || '',
+              time: n.createdAt ? new Date(n.createdAt).toLocaleString() : 'Recently',
+              unread: !n.read
+            })));
+          }
+        } catch {
+          // If API fails, show empty notifications
+          setNotifications([]);
         }
+      } else {
+        setNotifications([]);
       }
-    } catch {}
-    setNotificationsHydrated(true);
-  }, [storageKey]);
-
-  
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (!notificationsHydrated) return;
-    try {
-      localStorage.setItem(storageKey, JSON.stringify(notifications));
-    } catch {}
-  }, [notifications, storageKey, notificationsHydrated]);
+      setNotificationsHydrated(true);
+    };
+    
+    fetchNotifications();
+  }, [isAuthenticated, storageKey]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;

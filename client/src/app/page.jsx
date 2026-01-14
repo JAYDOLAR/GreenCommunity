@@ -27,12 +27,18 @@ import toast, { Toaster } from 'react-hot-toast';
 import { motion } from 'framer-motion';
 import { useOptimizedNavigation } from '@/lib/useOptimizedNavigation';
 import { RedirectLoader, PageLoader } from '@/components/LoadingComponents';
+import { publicAPI } from '@/lib/api';
 
 const LandingPage = () => {
   const [mounted, setMounted] = useState(false);
+  const [globalStats, setGlobalStats] = useState(null);
 
   useEffect(() => {
     setMounted(true);
+    // Fetch real global stats from the backend
+    publicAPI.getGlobalStats()
+      .then(data => setGlobalStats(data))
+      .catch(() => setGlobalStats(null)); // Keep null on error, will show defaults
   }, []);
 
   const features = [
@@ -63,9 +69,21 @@ const LandingPage = () => {
   ];
 
   const stats = [
-    { value: "10K+", label: "Climate Champions", subtext: "Growing 15% MoM" },
-    { value: "30%", label: "Average Carbon Reduction", subtext: "Members consistently reduce their carbon footprint" },
-    { value: "100%", label: "Real-time Impact Tracking", subtext: "Monitor your sustainability journey" }
+    { 
+      value: globalStats ? `${globalStats.totalUsers >= 1000 ? Math.floor(globalStats.totalUsers / 1000) + 'K+' : globalStats.totalUsers}` : '...', 
+      label: "Climate Champions", 
+      subtext: globalStats ? `Growing ${globalStats.growthRate}% MoM` : 'Loading...' 
+    },
+    { 
+      value: globalStats ? `${globalStats.avgCarbonReduction}%` : '...', 
+      label: "Average Carbon Reduction", 
+      subtext: "Members consistently reduce their carbon footprint" 
+    },
+    { 
+      value: "100%", 
+      label: "Real-time Impact Tracking", 
+      subtext: "Monitor your sustainability journey" 
+    }
   ];
 
   const toolkit = [

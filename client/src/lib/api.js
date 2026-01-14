@@ -527,5 +527,29 @@ export const challengesAPI = {
       return { success: true, message: "Event left (mock)" };
     }
     return apiRequest(`/api/community/events/leave/${eventId}`, { method: 'POST' });
+  },
+  // Get extended leaderboard with streak and badges
+  leaderboardExtended: async () => {
+    return apiRequest('/api/challenges/leaderboard/extended');
+  }
+};
+
+// Public stats API (no auth required)
+export const publicAPI = {
+  getGlobalStats: async () => {
+    return apiRequest('/api/community/stats');
+  }
+};
+
+// Notifications API
+export const notificationsAPI = {
+  getAll: async () => {
+    return apiRequest('/api/auth/notifications');
+  },
+  markAsRead: async (notificationId) => {
+    return apiRequest(`/api/auth/notifications/${notificationId}/read`, { method: 'PUT' });
+  },
+  markAllAsRead: async () => {
+    return apiRequest('/api/auth/notifications/read-all', { method: 'PUT' });
   }
 };

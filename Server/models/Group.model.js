@@ -11,10 +11,17 @@ const groupSchema = new mongoose.Schema({
   iconClass: { type: String },
   active: { type: Boolean, default: true },
   posts: { type: Number, default: 0 },
+  rating: { type: Number, default: 0, min: 0, max: 5 },
+  totalRatings: { type: Number, default: 0 },
   created_at: { type: Date, default: Date.now },
   updated_at: { type: Date, default: Date.now }
 }, {
   timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }
+});
+
+// Virtual for average rating display
+groupSchema.virtual('averageRating').get(function() {
+  return this.totalRatings > 0 ? (this.rating / this.totalRatings).toFixed(1) : 0;
 });
 
 const getGroupModel = async () => {
