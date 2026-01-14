@@ -87,7 +87,7 @@ async function createServer() {
         "http://localhost:3000",
         "https://www.green-community.app",
         "https://green-community.app",
-        "https://green-community.azurewebsites.net", // Keep for transition period
+        "https://greencommunity-app.azurewebsites.net", // Unified Azure deployment
         process.env.CLIENT_URL,
       ].filter(Boolean);
 

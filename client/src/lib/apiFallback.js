@@ -4,8 +4,9 @@
 export class APIFallbackManager {
   constructor() {
     this.customDomain = 'https://www.green-community.app';
-    this.azureDomain = 'https://green-community.azurewebsites.net';
-    this.currentDomain = this.customDomain;
+    this.azureDomain = 'https://greencommunity-app.azurewebsites.net';
+    // Default to Azure domain since custom domain is currently disabled (403)
+    this.currentDomain = this.azureDomain;
     this.failedDomains = new Set();
     this.retryCount = 0;
     this.maxRetries = 1;
@@ -28,7 +29,8 @@ export class APIFallbackManager {
       return process.env.NEXT_PUBLIC_API_URL;
     }
 
-    return this.currentDomain;
+    // Default to Azure domain for now (custom domain disabled)
+    return this.azureDomain;
   }
 
   async makeRequestWithFallback(endpoint, options = {}) {
