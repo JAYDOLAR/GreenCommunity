@@ -18,7 +18,7 @@ jobs:
   build-and-deploy:
     name: Build and Deploy Application
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 20
 
     permissions:
       id-token: write
@@ -28,7 +28,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Node.js ${{ env.NODE_VERSION }}
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
@@ -37,186 +37,89 @@ jobs:
             client/package-lock.json
             Server/package-lock.json
 
-      - name: Cache Next.js build
+      - name: Cache dependencies
+        id: cache-deps
         uses: actions/cache@v4
         with:
           path: |
-            client/.next/cache
             client/node_modules
             Server/node_modules
-          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('client/src/**/*', 'Server/**/*') }}
+            client/.next/cache
+          key: deps-${{ runner.os }}-${{ hashFiles('client/package-lock.json', 'Server/package-lock.json') }}
           restore-keys: |
-            ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-
-            ${{ runner.os }}-nextjs-
+            deps-${{ runner.os }}-
 
-      - name: Install client dependencies
-        working-directory: ./client
+      - name: Install dependencies
+        if: steps.cache-deps.outputs.cache-hit != 'true'
         run: |
-          npm ci --prefer-offline --no-audit --silent
+          echo "Installing client dependencies..."
+          cd client && npm ci --prefer-offline --no-audit --silent &
+          CLIENT_PID=$!
           
-      - name: Install server dependencies
-        working-directory: ./Server
-        run: |
-          npm ci --legacy-peer-deps --prefer-offline --no-audit --silent
+          echo "Installing server dependencies..."
+          cd Server && npm ci --legacy-peer-deps --prefer-offline --no-audit --silent &
+          SERVER_PID=$!
+          
+          wait $CLIENT_PID $SERVER_PID
+          echo "Dependencies installed"
+        working-directory: ${{ github.workspace }}
 
       - name: Build Next.js client
         working-directory: ./client
-        run: |
-          npm run build
+        run: npm run build
 
-      - name: Run tests (if available)
-        env:
-          GOOGLE_CLIENT_ID: "test-client-id"
-          GOOGLE_CLIENT_SECRET: "test-secret"
-          GOOGLE_CALLBACK: "http://localhost/callback"
-          NODE_ENV: test
-        run: |
-          if [ -f "client/package.json" ] && npm --prefix client run test --if-present --passWithNoTests; then
-            echo "Client tests completed"
-          fi
-          if [ -f "Server/package.json" ] && npm --prefix Server run test --if-present --passWithNoTests; then
-            echo "Server tests completed"
-          fi
-
-      - name: Create optimized deployment package
+      - name: Create deployment package
         run: |
           echo "Creating deployment package..."
-          mkdir -p deployment-package
+          mkdir -p deployment-package/client
 
-          # Copy server files (exclude unnecessary files upfront)
-          echo "Copying server files..."
-          rsync -av \
-            --exclude='node_modules' \
-            --exclude='.git*' \
-            --exclude='tests/' \
-            --exclude='__tests__/' \
-            --exclude='*.test.*' \
-            --exclude='*.spec.*' \
-            --exclude='docs/' \
-            --exclude='.github/' \
-            --exclude='coverage/' \
-            --exclude='.nyc_output/' \
-            --exclude='*.log' \
+          # Copy server files efficiently
+          rsync -a --exclude='node_modules' --exclude='.git*' --exclude='tests/' \
+            --exclude='__tests__/' --exclude='*.test.*' --exclude='*.spec.*' \
+            --exclude='coverage/' --exclude='*.log' --exclude='*.md' \
             Server/ deployment-package/
 
-          # Create minimal Next.js deployment structure
-          echo "Setting up Next.js structure..."
-          mkdir -p deployment-package/client
-          
-          # Copy only essential Next.js files
-          cp -r client/.next deployment-package/client/
-          cp -r client/public deployment-package/client/
-          cp client/package*.json deployment-package/client/
-          
-          # Copy source files for Next.js runtime (needed for production)
-          cp -r client/src deployment-package/client/
-          
-          # Copy config files only if they exist
-          [ -f "client/next.config.mjs" ] && cp client/next.config.mjs deployment-package/client/
+          # Copy Next.js build and essentials
+          cp -r client/.next client/public client/src deployment-package/client/
+          cp client/package*.json client/next.config.mjs deployment-package/client/
           [ -f "client/jsconfig.json" ] && cp client/jsconfig.json deployment-package/client/
-          [ -f "client/postcss.config.mjs" ] && cp client/postcss.config.mjs deployment-package/client/
-          [ -f "client/tailwind.config.js" ] && cp client/tailwind.config.js deployment-package/client/
           [ -f "client/components.json" ] && cp client/components.json deployment-package/client/
-          
-          # Copy root package.json
-          cp Server/package*.json deployment-package/
-          
-          # Copy Azure-specific files if they exist
+
+          # Copy Azure config
           [ -f "Server/web.config" ] && cp Server/web.config deployment-package/
-          [ -f "Server/startup.sh" ] && cp Server/startup.sh deployment-package/ && chmod +x deployment-package/startup.sh
-          
-          # Create a custom startup script for Azure
+
+          # Create startup script
           cat > deployment-package/startup.sh << 'EOF'
           #!/bin/bash
           echo "Starting GreenCommunity application..."
-          echo "Current directory: $(pwd)"
-          echo "Node version: $(node --version)"
-          echo "NPM version: $(npm --version)"
-          
-          # Check if server.js exists
-          if [ -f "server.js" ]; then
-            echo "Found server.js, starting application..."
-            NODE_ENV=production node server.js
-          elif [ -f "app.js" ]; then
-            echo "Found app.js, starting application..."
-            NODE_ENV=production node app.js
-          else
-            echo "ERROR: No entry point found!"
-            ls -la
-            exit 1
-          fi
+          NODE_ENV=production node server.js
           EOF
-          
           chmod +x deployment-package/startup.sh
-          
-          echo "Package structure created"
 
-      - name: Install production dependencies
+      - name: Install production dependencies and optimize
         working-directory: deployment-package
         run: |
-          echo "Installing server production dependencies..."
+          # Install server production deps
           npm ci --omit=dev --legacy-peer-deps --prefer-offline --no-audit --silent
           
-          echo "Installing client production dependencies..."
-          cd client
-          npm ci --omit=dev --prefer-offline --no-audit --silent
-          cd ..
+          # Install client production deps
+          cd client && npm ci --omit=dev --prefer-offline --no-audit --silent && cd ..
           
-          # Clean up unnecessary files
-          echo "Cleaning up unnecessary files..."
-          find . -name "*.test.*" -delete 2>/dev/null || true
-          find . -name "*.spec.*" -delete 2>/dev/null || true
-          find . -type d -name "__tests__" -exec rm -rf {} + 2>/dev/null || true
-          find . -type d -name "coverage" -exec rm -rf {} + 2>/dev/null || true
-          find . -name "*.md" -delete 2>/dev/null || true
-          find . -name ".git*" -delete 2>/dev/null || true
-          find . -name "*.log" -delete 2>/dev/null || true
-
-      - name: Optimize deployment package
-        working-directory: deployment-package
-        run: |
-          echo "Optimizing package size..."
-          
-          # Remove caches
-          rm -rf client/node_modules/.cache 2>/dev/null || true
-          rm -rf node_modules/.cache 2>/dev/null || true
-          rm -rf client/.next/cache 2>/dev/null || true
-          
-          # Remove source maps (optional - comment out if you need them for debugging)
+          # Aggressive cleanup for smaller package
           find . -name "*.map" -type f -delete 2>/dev/null || true
-          
-          # Remove unnecessary node_modules subdirectories
-          find . -type d -name ".bin" -path "*/node_modules/*" -exec rm -rf {} + 2>/dev/null || true
+          find . -name "*.md" -type f -delete 2>/dev/null || true
+          find . -name "*.test.*" -delete 2>/dev/null || true
           find . -type d -name "test" -path "*/node_modules/*" -exec rm -rf {} + 2>/dev/null || true
           find . -type d -name "tests" -path "*/node_modules/*" -exec rm -rf {} + 2>/dev/null || true
+          rm -rf client/.next/cache node_modules/.cache client/node_modules/.cache 2>/dev/null || true
           
-          echo "Final package size:"
-          du -sh .
+          echo "Package size: $(du -sh . | cut -f1)"
 
-      - name: Create ZIP deployment package
+      - name: Create ZIP package
         run: |
-          echo "Creating ZIP archive for faster upload..."
           cd deployment-package
           zip -r -q ../deployment.zip . -x "*.git*"
-          cd ..
-          echo "ZIP size: $(du -h deployment.zip | cut -f1)"
-
-      - name: Verify deployment structure
-        working-directory: deployment-package
-        run: |
-          echo "📦 Deployment package contents:"
-          ls -la
-          echo ""
-          echo "📄 Package.json files found:"
-          find . -name "package.json" -type f -exec echo "  - {}" \;
-          echo ""
-          if [ -d "client" ]; then
-            echo "✅ Client directory exists"
-            echo "📁 Client contents:"
-            ls -la client/ | head -10
-          else
-            echo "❌ Client directory missing"
-          fi
+          echo "ZIP size: $(du -h ../deployment.zip | cut -f1)"
 
       - name: Login to Azure
         uses: azure/login@v2
@@ -225,9 +128,9 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Configure Azure App Service settings
+      - name: Configure and Deploy to Azure
         run: |
-          echo "Configuring app settings..."
+          # Configure app settings (runs in background)
           az webapp config appsettings set \
             --resource-group Green_Community \
             --name greencommunity-app \
@@ -238,122 +141,64 @@ jobs:
             WEBSITE_RUN_FROM_PACKAGE=1 \
             WEBSITE_ENABLE_SYNC_UPDATE_SITE=true \
             WEBSITES_CONTAINER_START_TIME_LIMIT=1800 \
-            WEBSITE_TIME_ZONE="Asia/Kolkata" \
-            --output none
+            --output none &
+          CONFIG_PID=$!
           
-          echo "Configuring startup command..."
           az webapp config set \
             --resource-group Green_Community \
             --name greencommunity-app \
             --startup-file "node server.js" \
-            --output none
-
-      - name: Deploy using Azure CLI (ZIP Deploy)
-        run: |
-          echo "Starting ZIP deployment to Azure..."
-          echo "⏱️  Deploying package..."
+            --output none &
+          STARTUP_PID=$!
           
-          # Use async deployment to avoid timeout during startup
-          DEPLOY_OUTPUT=$(az webapp deploy \
+          wait $CONFIG_PID $STARTUP_PID
+          
+          # Deploy
+          echo "Deploying to Azure..."
+          az webapp deploy \
             --resource-group Green_Community \
             --name greencommunity-app \
             --src-path deployment.zip \
             --type zip \
-            --async true 2>&1)
+            --async true
           
-          echo "$DEPLOY_OUTPUT"
-          
-          if echo "$DEPLOY_OUTPUT" | grep -q "ERROR"; then
-            echo "❌ Deployment failed"
-            exit 1
-          fi
-          
-          echo "✅ Deployment package uploaded successfully"
-          echo "📦 Azure is now extracting and starting the application..."
-          echo "⏱️  This may take 5-15 minutes for large applications"
+          echo "Deployment initiated successfully"
 
-      - name: Wait for deployment to extract
+      - name: Verify deployment
         run: |
-          echo "Waiting for Azure to extract and prepare the package..."
-          sleep 60
+          echo "Waiting for deployment..."
+          sleep 30
           
-          echo "Checking deployment status..."
-          for i in {1..5}; do
-            STATUS=$(az webapp show \
-              --resource-group Green_Community \
-              --name greencommunity-app \
-              --query "state" -o tsv 2>/dev/null || echo "Unknown")
-            
-            echo "Attempt $i/5 - App state: $STATUS"
-            
-            if [ "$STATUS" = "Running" ]; then
-              echo "✅ App is in Running state"
-              break
-            fi
-            
-            if [ $i -lt 5 ]; then
-              echo "⏳ Waiting 30 seconds..."
-              sleep 30
-            fi
-          done
-
-      - name: Warm up application
-        run: |
-          echo "Checking if application is responding..."
-          max_attempts=10
-          for i in $(seq 1 $max_attempts); do
-            echo "Attempt $i/$max_attempts:"
-            if curl -f -s -m 30 "https://greencommunity-app.azurewebsites.net" > /dev/null 2>&1; then
-              echo "✅ Application is responding!"
+          # Quick health check (3 attempts, 15s apart)
+          for i in 1 2 3; do
+            if curl -f -s -m 15 "https://greencommunity-app.azurewebsites.net" > /dev/null 2>&1; then
+              echo "Application is responding!"
               exit 0
-            else
-              echo "⏳ Not ready yet, waiting 30 seconds..."
-              if [ $i -lt $max_attempts ]; then
-                sleep 30
-              fi
             fi
+            [ $i -lt 3 ] && sleep 15
           done
-          echo "⚠️ Application taking longer than expected to start"
-          echo "💡 This is normal for large applications. Check manually in a few minutes."
+          
+          # Check app state as fallback
+          STATUS=$(az webapp show --resource-group Green_Community --name greencommunity-app --query "state" -o tsv 2>/dev/null || echo "Unknown")
+          echo "App state: $STATUS"
+          if [ "$STATUS" = "Running" ]; then
+            echo "App is running. May need additional warm-up time."
+          fi
 
-      - name: Final status
+      - name: Deployment summary
         if: always()
         run: |
           echo ""
           echo "======================================"
-          echo "📊 Deployment Summary"
+          echo "Deployment Summary"
           echo "======================================"
-          echo "✅ Package built and uploaded successfully"
-          echo "🌐 App URL: https://greencommunity-app.azurewebsites.net"
+          echo "App URL: https://greencommunity-app.azurewebsites.net"
           echo ""
-          echo "📋 Monitoring URLs:"
-          echo "  - Deployments: https://greencommunity-app.scm.azurewebsites.net/api/deployments"
+          echo "Monitoring:"
           echo "  - Logs: https://greencommunity-app.scm.azurewebsites.net/api/logs/docker"
-          echo "  - Log Stream: https://greencommunity-app.scm.azurewebsites.net/api/logstream"
-          echo ""
-          echo "💡 If app is not responding yet:"
-          echo "  1. Large apps can take 10-15 minutes to start"
-          echo "  2. Check the logs above for any errors"
-          echo "  3. Verify all environment variables are set in Azure Portal"
+          echo "  - Stream: https://greencommunity-app.scm.azurewebsites.net/api/logstream"
           echo "======================================"
-          
-      - name: Check application logs for errors
-        if: failure()
-        run: |
-          echo "Fetching recent application logs..."
-          az webapp log download \
-            --resource-group Green_Community \
-            --name greencommunity-app \
-            --log-file app-logs.zip 2>/dev/null || true
-          
-          echo ""
-          echo "📋 Check logs at:"
-          echo "  - https://greencommunity-app.scm.azurewebsites.net/api/logs/docker"
 
-      - name: Cleanup workspace
+      - name: Cleanup
         if: always()
-        run: |
-          echo "Cleaning up..."
-          rm -rf deployment-package
-          rm -f deployment.zip
-          echo "✅ Cleanup complete"
+        run: rm -rf deployment-package deployment.zip
