@@ -115,9 +115,15 @@ async function createServer() {
   app.use(mongoSanitize());
 
   // Session configuration
+  // IMPORTANT: In production, SESSION_SECRET MUST be set in environment variables
+  const sessionSecret = process.env.SESSION_SECRET;
+  if (!sessionSecret && process.env.NODE_ENV === 'production') {
+    console.error('❌ CRITICAL: SESSION_SECRET is not set in production environment!');
+  }
+  
   app.use(
     session({
-      secret: process.env.SESSION_SECRET || "e1439b2d322dd209c548e286e01c4f27d05bf43be19d9936662b75f5aac8838eee9095d1731ccde27e88524c1f0a11bcb5999f9baefc42fbb20e39e87c51a23g",
+      secret: sessionSecret || (process.env.NODE_ENV !== 'production' ? 'dev-secret-key-not-for-production' : (() => { throw new Error('SESSION_SECRET is required in production'); })()),
       resave: false,
       saveUninitialized: false,
       cookie: {
@@ -143,6 +149,7 @@ async function createServer() {
   app.use("/api/ai", aiRoutes);
   app.use("/api/community", communityRoutes);
   app.use("/api/admin", adminRoutes);
+  app.use("/api/email", emailRoutes);
   app.use('/api/blockchain', blockchainApiRoutes);
   // Simple blockchain demo endpoints (non /api for clarity/tests)
   app.use('/blockchain', blockchainRouter);

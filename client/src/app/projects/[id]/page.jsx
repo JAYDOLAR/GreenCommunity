@@ -576,10 +576,13 @@ const ProjectDetailContent = ({ params }) => {
                       onClick={() => {
                         setIsLoading(true);
                         try {
+                          // Pass co2PerRupee so payment page can calculate correct impact
                           router.push(
                             `/payment?project=${encodeURIComponent(
+                              project._id
+                            )}&name=${encodeURIComponent(
                               project.name
-                            )}&amount=${contributionAmount[0] * 83}`
+                            )}&amount=${contributionAmount[0]}&co2Rate=${project.co2PerRupee}`
                           );
                         } catch (error) {
                           console.error("Navigation error:", error);
@@ -590,9 +593,7 @@ const ProjectDetailContent = ({ params }) => {
                     >
                       {isLoading
                         ? "Processing..."
-                        : `Contribute ₹${(
-                            contributionAmount[0] * 83
-                          ).toLocaleString()}`}
+                        : `Contribute ₹${contributionAmount[0].toLocaleString()}`}
                     </Button>
                   </DialogFooter>
                 </DialogContent>

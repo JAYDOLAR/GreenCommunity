@@ -39,7 +39,15 @@ export const useFootprintLog = () => {
         try {
             const response = await footprintLogAPI.getTotalEmissions(filters);
             setTotalEmissions(response.total || 0);
-            if (response.equivalents) setEquivalents(response.equivalents);
+            if (response.equivalents) {
+                // Map backend field names to frontend expected names
+                const eq = response.equivalents;
+                setEquivalents({
+                    trees: eq.trees || eq.trees_planted || 0,
+                    cars: parseFloat(eq.cars) || 0, // cars = portion of a car's annual emissions
+                    kwh: eq.kwh || 0
+                });
+            }
         } catch (err) {
             console.error('Failed to fetch total emissions:', err);
         }

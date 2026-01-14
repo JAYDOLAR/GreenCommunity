@@ -3,45 +3,42 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { authAPI } from '@/lib/api';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
   const [step, setStep] = useState(1);
   const [code, setCode] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState('');
   const router = useRouter();
 
-const handleSendCode = async (e) => {
+  const handleSendCode = async (e) => {
     e.preventDefault();
     setSubmitted(true);
+    setError('');
     try {
-      const response = await fetch('/api/auth/forgot-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
-      });
-      if (!response.ok) throw new Error('Failed to send code');
+      await authAPI.forgotPassword(email);
       setStep(2);
     } catch (error) {
-      console.error('Error:', error);
+      setError(error.message || 'Failed to send code. Please try again.');
     } finally {
       setSubmitted(false);
     }
   };
 
-const handleVerify = async (e) => {
+  const handleVerify = async (e) => {
     e.preventDefault();
     setSubmitted(true);
+    setError('');
     try {
-      const response = await fetch('/api/auth/verify-reset-code', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, code })
-      });
-      if (!response.ok) throw new Error('Failed to verify code');
+      await authAPI.verifyResetCode(email, code);
+      // Store email and code in sessionStorage for the update-password page
+      sessionStorage.setItem('resetEmail', email);
+      sessionStorage.setItem('resetCode', code);
       router.push('/update-password');
     } catch (error) {
-      console.error('Error:', error);
+      setError(error.message || 'Invalid verification code. Please try again.');
     } finally {
       setSubmitted(false);
     }
@@ -98,6 +95,9 @@ const handleVerify = async (e) => {
             />
           </div>
         )}
+        {error && (
+          <div className="text-red-600 text-center text-sm">{error}</div>
+        )}
         <button
           type="submit"
           className="w-full py-2 rounded-md font-semibold text-white bg-primary hover:bg-primary/90 transition"
@@ -107,6 +107,11 @@ const handleVerify = async (e) => {
             ? (step === 1 ? 'Sending...' : 'Verifying...')
             : (step === 1 ? 'Send Code' : 'Verify')}
         </button>
+        <div className="text-center">
+          <Link href="/login" className="text-primary hover:underline text-sm">
+            Back to Login
+          </Link>
+        </div>
       </form>
     </main>
   );

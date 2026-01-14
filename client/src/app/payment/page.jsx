@@ -35,11 +35,15 @@ const Payment = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
 
+  // Get project details from URL params
   const projectId = searchParams.get('project');
   const projectName = searchParams.get('name') || 'Climate Project';
-  const co2PerDollar = parseFloat(searchParams.get('co2Rate') || '2.5');
+  // co2PerRupee: tons of CO2 offset per rupee spent (e.g., 0.001 = 1kg per rupee)
+  const co2PerRupee = parseFloat(searchParams.get('co2Rate') || '0.001');
+  // Initial amount from URL (in INR) or default to 1000
+  const initialAmount = parseInt(searchParams.get('amount') || '1000', 10);
 
-  const [contributionAmount, setContributionAmount] = useState([50]); // in USD
+  const [contributionAmount, setContributionAmount] = useState([initialAmount]); // in INR
   const [isProcessing, setIsProcessing] = useState(false);
   const [billingInfo, setBillingInfo] = useState({
     email: '',
@@ -49,14 +53,20 @@ const Payment = () => {
     zipCode: ''
   });
 
-  const calculateImpact = (amount) => {
-    return (amount * co2PerDollar).toFixed(1);
+  // Calculate CO2 impact in tons based on INR amount and co2PerRupee
+  const calculateImpact = (amountINR) => {
+    const impactTons = amountINR * co2PerRupee;
+    // Show in kg if less than 1 ton
+    if (impactTons < 1) {
+      return `${(impactTons * 1000).toFixed(0)} kg`;
+    }
+    return `${impactTons.toFixed(2)} tons`;
   };
 
-  const calculateTrees = (amount) => {
-    // Rough estimate: 1 tree absorbs ~48 lbs CO2 per year (0.02 tons)
-    const co2Tons = amount * co2PerDollar;
-    return Math.round(co2Tons / 0.02);
+  const calculateTrees = (amountINR) => {
+    // 1 tree absorbs ~22 kg CO2 per year (0.022 tons)
+    const co2Tons = amountINR * co2PerRupee;
+    return Math.max(1, Math.round(co2Tons / 0.022));
   };
 
   // Check if all billing info is completed and valid
@@ -78,10 +88,9 @@ const Payment = () => {
     );
   };
 
-  const USD_TO_INR = 83;
-  const processingFee = Math.round(contributionAmount[0] * 0.029 + 0.3); // in USD
-  const totalAmountUSD = contributionAmount[0] + processingFee;
-  const totalAmountINR = Math.round(totalAmountUSD * USD_TO_INR);
+  // Processing fee: 2.9% + ₹25 (Razorpay standard fees)
+  const processingFee = Math.round(contributionAmount[0] * 0.029 + 25);
+  const totalAmountINR = contributionAmount[0] + processingFee;
 
   // Razorpay configuration
   const [isRazorpayLoaded, setIsRazorpayLoaded] = useState(false);
@@ -140,9 +149,8 @@ const Payment = () => {
         return;
       }
 
-      // Convert USD to INR (approximate rate)
-      const usdToInr = 83;
-      const amountInINR = contributionAmount[0] * usdToInr;
+      // Amount is already in INR
+      const amountInINR = contributionAmount[0];
       const amountInPaise = Math.round(amountInINR * 100); // Convert to paise
 
       // Razorpay minimum amount is ₹1 (100 paise)
@@ -156,6 +164,7 @@ const Payment = () => {
         amount: amountInINR,
         amountInPaise: amountInPaise,
         projectName: projectName,
+        co2Impact: calculateImpact(amountInINR),
         keyId: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID
       });
 
@@ -187,11 +196,11 @@ const Payment = () => {
                 razorpay_order_id: response.razorpay_order_id,
                 razorpay_payment_id: response.razorpay_payment_id,
                 razorpay_signature: response.razorpay_signature,
-                amount: amountInINR.toFixed(0),
+                amount: amountInINR,
                 projectName,
                 userEmail: user?.email || billingInfo.email,
                 userName: user?.name || 'Valued Contributor',
-                co2Impact: `${calculateImpact(contributionAmount[0])} tons`
+                co2Impact: calculateImpact(amountInINR)
               })
             });
 
@@ -207,7 +216,7 @@ const Payment = () => {
           toast.success(
             <div className="flex items-center gap-2">
               <Leaf className="h-4 w-4" />
-              Payment Successful! Thank you for contributing ₹{amountInINR.toFixed(0)} to {projectName}. You've helped offset {calculateImpact(contributionAmount[0])} tons of CO₂!
+              Payment Successful! Thank you for contributing ₹{amountInINR.toLocaleString()} to {projectName}. You've helped offset {calculateImpact(amountInINR)} of CO₂!
             </div>
           );
           
@@ -219,14 +228,15 @@ const Payment = () => {
           }, 2000);
         },
         prefill: {
-          name: 'Climate Contributor',
-          email: 'contributor@greencommunity.com',
-          contact: '9999999999'
+          name: user?.name || 'Climate Contributor',
+          email: user?.email || billingInfo.email || '',
+          contact: ''
         },
         notes: {
           address: 'GreenCommunity Climate Initiative',
           project: projectName,
-          amount_usd: contributionAmount[0]
+          projectId: projectId,
+          co2Impact: calculateImpact(amountInINR)
         },
         theme: {
           color: '#10b981'

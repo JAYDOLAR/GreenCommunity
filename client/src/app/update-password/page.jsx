@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { authAPI } from '../../lib/api';
+import Link from 'next/link';
 
 export default function UpdatePasswordPage() {
   const [password, setPassword] = useState('');
@@ -10,7 +11,22 @@ export default function UpdatePasswordPage() {
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState('');
+  const [code, setCode] = useState('');
+  const [isResetFlow, setIsResetFlow] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    // Check if this is a password reset flow (coming from forgot-password)
+    const resetEmail = sessionStorage.getItem('resetEmail');
+    const resetCode = sessionStorage.getItem('resetCode');
+    
+    if (resetEmail && resetCode) {
+      setEmail(resetEmail);
+      setCode(resetCode);
+      setIsResetFlow(true);
+    }
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -23,16 +39,30 @@ export default function UpdatePasswordPage() {
       return;
     }
 
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters long');
+      setLoading(false);
+      return;
+    }
+
     try {
-      // Update the password for authenticated user
-      await authAPI.updatePassword(password);
+      if (isResetFlow) {
+        // Password reset flow - use code-based update
+        await authAPI.updatePasswordWithCode(email, code, password);
+        // Clear session storage
+        sessionStorage.removeItem('resetEmail');
+        sessionStorage.removeItem('resetCode');
+      } else {
+        // Authenticated user password change
+        await authAPI.updatePassword(password);
+      }
 
       setSubmitted(true);
       setTimeout(() => {
-        router.push('/'); // Redirect to dashboard instead of login
+        router.push(isResetFlow ? '/login' : '/dashboard');
       }, 2000);
     } catch (error) {
-      setError(error.message);
+      setError(error.message || 'Failed to update password. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -53,7 +83,9 @@ export default function UpdatePasswordPage() {
         <div className="text-center">
           
           <p className="text-muted-foreground text-sm mb-4">
-            Enter your new password below.
+            {isResetFlow 
+              ? 'Create a new password for your account.'
+              : 'Enter your new password below.'}
           </p>
         </div>
         <div>
@@ -90,15 +122,20 @@ export default function UpdatePasswordPage() {
         <button
           type="submit"
           className="w-full py-2 rounded-md font-semibold text-white bg-primary hover:bg-primary/90 transition"
-          disabled={submitted}
+          disabled={submitted || loading}
         >
-          {submitted ? 'Password Updated!' : 'Update Password'}
+          {loading ? 'Updating...' : (submitted ? 'Password Updated!' : 'Update Password')}
         </button>
         {submitted && (
           <div className="text-green-600 text-center text-sm mt-2">
-            Password updated successfully! Redirecting to dashboard...
+            Password updated successfully! Redirecting to {isResetFlow ? 'login' : 'dashboard'}...
           </div>
         )}
+        <div className="text-center">
+          <Link href="/login" className="text-primary hover:underline text-sm">
+            Back to Login
+          </Link>
+        </div>
       </form>
     </main>
   );

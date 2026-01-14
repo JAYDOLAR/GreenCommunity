@@ -1103,9 +1103,9 @@ const Projects = () => {
                             </div>
                             <div className="text-center">
                               <div className="text-lg sm:text-xl font-bold text-primary">
-                                ₹{(project.co2PerRupee * 1000000).toFixed(2)}
+                                ₹{project.co2PerRupee > 0 ? Math.round(1 / project.co2PerRupee).toLocaleString() : 'N/A'}
                               </div>
-                              <div className="text-xs sm:text-sm text-muted-foreground">per ton</div>
+                              <div className="text-xs sm:text-sm text-muted-foreground">per ton CO₂</div>
                             </div>
                           </div>
 

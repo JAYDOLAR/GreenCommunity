@@ -1,5 +1,5 @@
 import Report from '../models/Report.model.js';
-import User from '../models/User.model.js';
+import { getUserModel } from '../models/User.model.js';
 import Project from '../models/Project.model.js';
 import Order from '../models/Order.model.js';
 
@@ -170,6 +170,7 @@ export const generateReport = async (req, res) => {
 // Helper functions to get report data
 async function getUserActivityData(timeRange) {
   const dateFilter = getDateFilter(timeRange);
+  const User = await getUserModel();
   
   const totalUsers = await User.countDocuments(dateFilter);
   const activeUsers = await User.countDocuments({ ...dateFilter, lastLogin: { $exists: true } });

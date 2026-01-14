@@ -16,6 +16,7 @@ import {
   User,
   Shield
 } from 'lucide-react';
+import { authAPI } from '@/lib/api';
 
 const VerifyEmail = () => {
   const [email, setEmail] = useState('');
@@ -34,6 +35,9 @@ const VerifyEmail = () => {
     const emailParam = searchParams.get('email');
     if (emailParam) {
       setEmail(emailParam);
+      // If email is passed, verification code was already sent during signup
+      // Show the code input directly
+      setShowCodeInput(true);
     }
   }, [searchParams]);
 
@@ -54,14 +58,14 @@ const VerifyEmail = () => {
     setError('');
 
     try {
-      // Simulate API call to send verification email
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Call real API to resend verification code
+      await authAPI.resendVerificationCode(email);
       
       setShowCodeInput(true);
       setResendCountdown(60); // 60 seconds countdown
       setError('');
     } catch (error) {
-      setError('Failed to send verification email. Please try again.');
+      setError(error.message || 'Failed to send verification email. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -73,27 +77,27 @@ const VerifyEmail = () => {
       return;
     }
 
+    if (verificationCode.length !== 6) {
+      setError('Please enter a valid 6-digit verification code');
+      return;
+    }
+
     setIsLoading(true);
     setError('');
 
     try {
-      // Simulate API call to verify code
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Call real API to verify the code
+      await authAPI.verifyEmailCode(email, verificationCode);
       
-      // For demo purposes, accept any 6-digit code
-      if (verificationCode.length === 6) {
-        setIsVerified(true);
-        setError('');
-        
-        // Redirect to Carbon Calculator after 2 seconds
-        setTimeout(() => {
-          router.push('/CarbonCalculator');
-        }, 2000);
-      } else {
-        setError('Invalid verification code. Please try again.');
-      }
+      setIsVerified(true);
+      setError('');
+      
+      // Redirect to dashboard after 2 seconds
+      setTimeout(() => {
+        router.push('/dashboard');
+      }, 2000);
     } catch (error) {
-      setError('Failed to verify code. Please try again.');
+      setError(error.message || 'Invalid verification code. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -106,13 +110,13 @@ const VerifyEmail = () => {
     setError('');
 
     try {
-      // Simulate API call to resend verification email
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Call real API to resend verification code
+      await authAPI.resendVerificationCode(email);
       
       setResendCountdown(60);
       setError('');
     } catch (error) {
-      setError('Failed to resend verification email. Please try again.');
+      setError(error.message || 'Failed to resend verification email. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -128,7 +132,7 @@ const VerifyEmail = () => {
             </div>
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Email Verified!</h2>
             <p className="text-gray-600 mb-6">
-              Your email has been successfully verified. Redirecting you to the Carbon Calculator...
+              Your email has been successfully verified. Redirecting you to your dashboard...
             </p>
             <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
               <RefreshCw className="h-4 w-4 animate-spin" />

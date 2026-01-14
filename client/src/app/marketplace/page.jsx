@@ -115,11 +115,18 @@ function MobileMarketplaceView() {
                   <span className="font-bold text-sm text-foreground">₹{product.price}</span>
                 </div>
                 <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2">{product.description}</p>
-                <div className="flex items-center gap-1">
-                  <Star className="h-3 w-3 sm:h-4 sm:w-4 fill-yellow-400 text-yellow-400" />
-                  <span className="text-xs sm:text-sm font-medium">{product.rating}</span>
-                  <span className="text-xs sm:text-sm text-muted-foreground">({product.reviews})</span>
-                </div>
+                {product.reviews > 0 ? (
+                  <div className="flex items-center gap-1">
+                    <Star className="h-3 w-3 sm:h-4 sm:w-4 fill-yellow-400 text-yellow-400" />
+                    <span className="text-xs sm:text-sm font-medium">{product.rating}</span>
+                    <span className="text-xs sm:text-sm text-muted-foreground">({product.reviews} reviews)</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1">
+                    <Star className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+                    <span className="text-xs sm:text-sm text-muted-foreground">No reviews yet</span>
+                  </div>
+                )}
                 <div className="flex gap-1 flex-wrap">
                   {product.tags.slice(0, 1).map(tag => (
                     <Badge key={tag} variant="secondary" className="text-xs">{tag}</Badge>
@@ -255,11 +262,17 @@ function TabletMarketplaceView() {
                     <p className="text-xs sm:text-sm text-muted-foreground mt-1">{product.description}</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-1">
-                      <Star className="h-3 w-3 sm:h-4 sm:w-4 fill-yellow-400 text-yellow-400" />
-                      <span className="text-xs sm:text-sm font-medium">{product.rating}</span>
-                    </div>
-                    <span className="text-xs sm:text-sm text-muted-foreground">({product.reviews})</span>
+                    {product.reviews > 0 ? (
+                      <>
+                        <div className="flex items-center gap-1">
+                          <Star className="h-3 w-3 sm:h-4 sm:w-4 fill-yellow-400 text-yellow-400" />
+                          <span className="text-xs sm:text-sm font-medium">{product.rating}</span>
+                        </div>
+                        <span className="text-xs sm:text-sm text-muted-foreground">({product.reviews} reviews)</span>
+                      </>
+                    ) : (
+                      <span className="text-xs sm:text-sm text-muted-foreground">No reviews yet</span>
+                    )}
                     <Badge variant="outline" className="ml-auto text-xs">
                       {product.vendorType}
                     </Badge>
@@ -411,11 +424,17 @@ function DesktopMarketplaceView() {
                     <p className="text-xs sm:text-sm text-muted-foreground mt-1">{product.description}</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-1">
-                      <Star className="h-3 w-3 sm:h-4 sm:w-4 fill-yellow-400 text-yellow-400" />
-                      <span className="text-xs sm:text-sm font-medium">{product.rating}</span>
-                    </div>
-                    <span className="text-xs sm:text-sm text-muted-foreground">({product.reviews})</span>
+                    {product.reviews > 0 ? (
+                      <>
+                        <div className="flex items-center gap-1">
+                          <Star className="h-3 w-3 sm:h-4 sm:w-4 fill-yellow-400 text-yellow-400" />
+                          <span className="text-xs sm:text-sm font-medium">{product.rating}</span>
+                        </div>
+                        <span className="text-xs sm:text-sm text-muted-foreground">({product.reviews} reviews)</span>
+                      </>
+                    ) : (
+                      <span className="text-xs sm:text-sm text-muted-foreground">No reviews yet</span>
+                    )}
                     <Badge variant="outline" className="ml-auto text-xs">
                       {product.vendorType}
                     </Badge>

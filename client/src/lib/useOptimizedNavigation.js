@@ -69,8 +69,8 @@ export const useOAuthRedirect = () => {
     const { navigate } = useOptimizedNavigation();
 
     const handleOAuthSuccess = useCallback((intent = 'login') => {
-        const redirectPath = intent === 'signup' ? '/CarbonCalculator' : '/dashboard';
-        navigate(redirectPath, { replace: true, delay: 100 });
+        // Always redirect to dashboard after OAuth success
+        navigate('/dashboard', { replace: true, delay: 100 });
     }, [navigate]);
 
     return { handleOAuthSuccess };

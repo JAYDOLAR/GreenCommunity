@@ -378,10 +378,14 @@ export async function getTotalEmissions(req, res) {
     const total = result[0]?.total || 0;
 
     // Calculate simple equivalents (you can expand this)
+    // Using EPA standard conversion factors
     const equivalents = {
       trees_planted: Math.round(total / 0.021), // ~21kg CO2 per tree per year
+      trees: Math.round(total / 0.021), // Alias for frontend compatibility
       car_miles_avoided: Math.round(total / 0.404), // ~0.404 kg CO2 per mile
+      cars: (total / 4600).toFixed(3), // ~4.6 metric tons CO2 per car per year
       plastic_bottles_avoided: Math.round(total / 0.003), // ~3g CO2 per bottle
+      kwh: Math.round(total / 0.000417), // ~0.417 kg CO2 per kWh (US average grid)
     };
 
     res.json({ total, equivalents });

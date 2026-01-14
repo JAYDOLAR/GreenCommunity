@@ -263,13 +263,20 @@ const ProductDetail = ({ params }) => {
               </h1>
 
               <div className="flex items-center gap-4 mb-4">
-                <div className="flex items-center gap-1">
-                  <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                  <span className="font-medium">{product.rating}</span>
-                  <span className="text-muted-foreground">
-                    ({product.reviews} reviews)
-                  </span>
-                </div>
+                {product.reviews > 0 ? (
+                  <div className="flex items-center gap-1">
+                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                    <span className="font-medium">{product.rating}</span>
+                    <span className="text-muted-foreground">
+                      ({product.reviews} reviews)
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1">
+                    <Star className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">No reviews yet</span>
+                  </div>
+                )}
                 <div className="flex items-center gap-1 text-green-600">
                   <Leaf className="h-4 w-4" />
                   <span className="text-sm">
@@ -490,12 +497,16 @@ const ProductDetail = ({ params }) => {
                             </p>
                           </div>
                           <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-1">
-                              <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                              <span className="text-xs font-medium">
-                                {relatedProduct.rating}
-                              </span>
-                            </div>
+                            {relatedProduct.reviews > 0 ? (
+                              <div className="flex items-center gap-1">
+                                <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                                <span className="text-xs font-medium">
+                                  {relatedProduct.rating}
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">No reviews</span>
+                            )}
                             <span className="font-bold text-foreground text-sm">
                               ₹{relatedProduct.price}
                             </span>

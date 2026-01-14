@@ -1,4 +1,4 @@
-import User from '../models/User.model.js';
+import { getUserModel } from '../models/User.model.js';
 import Project from '../models/Project.model.js';
 import Order from '../models/Order.model.js';
 import FootprintLog from '../models/FootprintLog.model.js';
@@ -9,6 +9,9 @@ import FootprintLog from '../models/FootprintLog.model.js';
  */
 export const getAnalyticsMetrics = async (req, res) => {
   try {
+    // Get User model from proper database connection
+    const User = await getUserModel();
+    
     const { timeRange = '30d', month, year } = req.query;
 
     // Calculate date ranges

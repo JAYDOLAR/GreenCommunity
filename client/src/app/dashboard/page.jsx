@@ -13,6 +13,7 @@ import {
   FALLBACK_EMISSIONS_BREAKDOWN,
   ACHIEVEMENT_TYPES,
   formatRecentActivities,
+  calculateAchievements,
 } from "@/config/dashboardConfig";
 
 import {
@@ -58,6 +59,7 @@ import Link from "next/link";
 import { useFootprintLog } from "@/lib/useFootprintLog";
 import useStreak from "@/hooks/useStreak";
 import ReactMarkdown from "react-markdown";
+import { API_BASE_URL } from "@/lib/api";
 import ProtectedLayout from "@/components/ProtectedLayout";
 import AuthGuard from "@/components/AuthGuard";
 import ChatBot from "@/components/ChatBot";
@@ -121,7 +123,7 @@ const Dashboard = () => {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch("/api/ai/generate-tips", {
+        const res = await fetch(`${API_BASE_URL}/api/ai/generate-tips`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ electricity: 200, gas: 15, petrol: 30 }),
@@ -281,7 +283,8 @@ const Dashboard = () => {
   // Format recent activities from API data - use recentActivities from hook or fallback to logs
   const displayActivities = formatRecentActivities(recentActivities, logs);
 
-  const achievements = ACHIEVEMENT_TYPES;
+  // Calculate achievements based on real streak data
+  const achievements = calculateAchievements(streakData, logs);
 
   // Use real streak calendar data
   const streakCalendar = getStreakCalendar();
@@ -465,7 +468,7 @@ const Dashboard = () => {
           </Card>
         </div>
 
-        {/* Offset Credits */}
+        {/* Offset Credits - Shows user's carbon offset purchases from project contributions */}
         <div
           className="animate-slide-up h-full"
           style={{ animationDelay: "0.4s" }}
@@ -481,7 +484,7 @@ const Dashboard = () => {
               <div className="space-y-3">
                 <div className="text-xl sm:text-2xl md:text-2xl lg:text-3xl xl:text-3xl font-bold text-foreground">
                   <AnimatedCounter 
-                    end={preferences.carbonUnits === "tons" ? 1.2 : 1200} 
+                    end={0} 
                     decimals={preferences.carbonUnits === "tons" ? 1 : 0} 
                   />
                   <span className="text-xs sm:text-sm md:text-sm lg:text-base font-normal text-muted-foreground ml-1">
@@ -492,11 +495,12 @@ const Dashboard = () => {
                   {t("dashboard:carbon_offset_purchased")}
                 </div>
                 <div className="min-h-[1.5rem]">
-                  <Badge
-                    variant="secondary"
-                    className="bg-success/15 text-success border-success/30 font-semibold animate-pulse-eco text-xs sm:text-xs md:text-sm"
-                  >
-                    50% {t("dashboard:offset_this_month")}
+                  <Link href="/projects">
+                    <Badge
+                      variant="secondary"
+                      className="bg-primary/15 text-primary border-primary/30 font-semibold cursor-pointer hover:bg-primary/25 transition-colors text-xs sm:text-xs md:text-sm"
+                    >
+                      Start Offsetting →
                   </Badge>
                 </div>
               </div>

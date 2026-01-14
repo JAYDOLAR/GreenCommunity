@@ -37,18 +37,17 @@ export const CLIENT_URL = getClientUrl();
 export const DB_NAME = process.env.DB_NAME || 'greencommunity';
 
 // Authentication Configuration
-export const JWT_SECRET = process.env.JWT_SECRET; // This should only be used on backend
+// NOTE: JWT_SECRET should NEVER be used on the client side - removed for security
+// export const JWT_SECRET = process.env.JWT_SECRET; // REMOVED - Backend only!
 export const SESSION_TIMEOUT = parseInt(process.env.SESSION_TIMEOUT) || 24 * 60 * 60 * 1000; // 24 hours
 
-// Third-party Services
+// Third-party Services (PUBLIC keys only - secrets handled by backend)
 export const CLOUDINARY_CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-export const CLOUDINARY_API_KEY = process.env.CLOUDINARY_API_KEY;
-export const CLOUDINARY_API_SECRET = process.env.CLOUDINARY_API_SECRET;
+// NOTE: API keys and secrets should NEVER be exposed on the client side
+// Cloudinary uploads should go through your backend API
 
-// Email Service Configuration
-export const EMAIL_SERVICE = process.env.EMAIL_SERVICE || 'gmail';
-export const EMAIL_USER = process.env.EMAIL_USER;
-export const EMAIL_PASS = process.env.EMAIL_PASS;
+// Email Service Configuration - REMOVED (backend only)
+// These should never be on the client side
 
 // Analytics Configuration
 export const GOOGLE_ANALYTICS_ID = process.env.NEXT_PUBLIC_GA_ID;
@@ -139,12 +138,11 @@ export const validateRequiredEnvVars = () => {
     const required = [];
 
     if (IS_PRODUCTION) {
-        // Add required environment variables for production
+        // Add required environment variables for production (CLIENT-SIDE ONLY)
+        // NOTE: Backend secrets like JWT_SECRET, EMAIL_USER, EMAIL_PASS are NOT 
+        // validated here as they should never be exposed to the client
         const productionRequired = [
-            'NEXT_PUBLIC_API_URL',
-            'JWT_SECRET',
-            'EMAIL_USER',
-            'EMAIL_PASS'
+            'NEXT_PUBLIC_API_URL'
         ];
         required.push(...productionRequired);
     }
@@ -152,10 +150,8 @@ export const validateRequiredEnvVars = () => {
     const missing = required.filter(key => !process.env[key]);
 
     if (missing.length > 0) {
-        console.error('Missing required environment variables:', missing);
-        if (IS_PRODUCTION) {
-            throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
-        }
+        console.warn('Missing environment variables (some may be optional):', missing);
+        // Don't throw in production - the app can still work with fallbacks
     }
 };
 

@@ -31,7 +31,9 @@ export async function POST(request) {
     try {
       console.log('📧 Attempting to send invoice email...');
       
-      const invoiceResponse = await fetch('/api/email/invoice', {
+      // Use the backend server directly for sending emails
+      const serverUrl = process.env.SERVER_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const invoiceResponse = await fetch(`${serverUrl}/api/email/invoice`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

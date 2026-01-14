@@ -198,6 +198,35 @@ export const authAPI = {
     });
   },
 
+  // Password Reset API methods
+  forgotPassword: async (email) => {
+    return apiRequest('/api/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  },
+
+  verifyResetCode: async (email, code) => {
+    return apiRequest('/api/auth/verify-reset-code', {
+      method: 'POST',
+      body: JSON.stringify({ email, code }),
+    });
+  },
+
+  resetPassword: async (token, newPassword) => {
+    return apiRequest('/api/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, newPassword }),
+    });
+  },
+
+  updatePasswordWithCode: async (email, code, newPassword) => {
+    return apiRequest('/api/auth/update-password-with-code', {
+      method: 'POST',
+      body: JSON.stringify({ email, code, newPassword }),
+    });
+  },
+
   // Settings API methods
   getUserSettings: async () => {
     return apiRequest('/api/auth/settings');

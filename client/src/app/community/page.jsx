@@ -320,9 +320,16 @@ const Community = () => {
 
         {/* Challenges Tab */}
         <TabsContent value="challenges" className="space-y-3 sm:space-y-6">
+          {serverChallenges.length === 0 && !loading.challenges && (
+            <div className="bg-muted/50 border border-dashed rounded-lg p-4 text-center">
+              <p className="text-sm text-muted-foreground">
+                <span className="font-medium">Sample challenges shown below.</span> No active challenges available yet. Check back soon!
+              </p>
+            </div>
+          )}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
             {(serverChallenges.length > 0 ? serverChallenges : challenges).map(challenge => (
-              <Card key={challenge._id || challenge.id} className={`card-gradient hover-lift`}>
+              <Card key={challenge._id || challenge.id} className={`card-gradient hover-lift ${serverChallenges.length === 0 ? 'opacity-60' : ''}`}>
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between gap-2">
                     <div className="text-2xl sm:text-3xl">
@@ -459,9 +466,16 @@ const Community = () => {
 
         {/* Groups Tab */}
         <TabsContent value="groups" className="space-y-3 sm:space-y-6">
+          {serverGroups.length === 0 && !loading.groups && (
+            <div className="bg-muted/50 border border-dashed rounded-lg p-4 text-center">
+              <p className="text-sm text-muted-foreground">
+                <span className="font-medium">Sample groups shown below.</span> Create or join a group to get started!
+              </p>
+            </div>
+          )}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6">
             {(serverGroups.length > 0 ? serverGroups : groups).map(group => (
-              <Card key={group._id || group.id} className="card-gradient hover-lift">
+              <Card key={group._id || group.id} className={`card-gradient hover-lift ${serverGroups.length === 0 ? 'opacity-60' : ''}`}>
                 <CardHeader>
                   <div className="flex items-start gap-4">
                     <div className="text-2xl sm:text-4xl">
@@ -554,9 +568,16 @@ const Community = () => {
 
         {/* Events Tab */}
         <TabsContent value="events" className="space-y-3 sm:space-y-6">
+          {serverEvents.length === 0 && !loading.events && (
+            <div className="bg-muted/50 border border-dashed rounded-lg p-4 text-center">
+              <p className="text-sm text-muted-foreground">
+                <span className="font-medium">Sample events shown below.</span> No upcoming events scheduled yet.
+              </p>
+            </div>
+          )}
           <div className="space-y-2 sm:space-y-4">
             {(serverEvents.length > 0 ? serverEvents : events).map(event => (
-              <Card key={event._id || event.id} className="card-gradient hover-lift">
+              <Card key={event._id || event.id} className={`card-gradient hover-lift ${serverEvents.length === 0 ? 'opacity-60' : ''}`}>
                 <CardContent className="p-3 sm:p-6">
                   <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 sm:gap-6">
                     <div className="sm:col-span-3">

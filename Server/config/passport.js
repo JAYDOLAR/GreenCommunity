@@ -1,6 +1,6 @@
 import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
-import User from '../models/User.model.js';
+import { getUserModel } from '../models/User.model.js';
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -12,7 +12,8 @@ passport.use(new GoogleStrategy({
   passReqToCallback: true
 }, async (req, accessToken, refreshToken, profile, done) => {
   try {
-    console.log('Google profile:', profile);
+    // Get user model from proper database connection
+    const User = await getUserModel();
     const email = profile.emails[0].value;
     
     // First, check if user exists with this Google ID
@@ -54,6 +55,7 @@ passport.serializeUser((user, done) => {
 
 passport.deserializeUser(async (id, done) => {
   try {
+    const User = await getUserModel();
     const user = await User.findById(id);
     done(null, user);
   } catch (err) {

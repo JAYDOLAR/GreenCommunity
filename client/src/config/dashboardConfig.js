@@ -37,11 +37,27 @@ export const FALLBACK_RECENT_ACTIVITIES = [
 ];
 
 // Achievement types and descriptions
+// NOTE: These achievements should be dynamically calculated based on user's actual activity data
+// For now, using static definitions - the 'earned' status should come from backend
 export const ACHIEVEMENT_TYPES = [
-    { title: 'Week Streak', description: '7 days of logging', icon: Award, earned: true },
-    { title: 'Green Commuter', description: 'Used public transport 5x', icon: Car, earned: true },
-    { title: 'Plant-Based', description: 'Ate vegetarian for 3 days', icon: Leaf, earned: false },
+    { title: 'Week Streak', description: '7 days of logging', icon: Award, earned: false, requiredStreak: 7 },
+    { title: 'Green Commuter', description: 'Used public transport 5x', icon: Car, earned: false, requiredActions: 5 },
+    { title: 'Plant-Based', description: 'Ate vegetarian for 3 days', icon: Leaf, earned: false, requiredDays: 3 },
 ];
+
+// Helper function to calculate achievements based on user data
+export const calculateAchievements = (streakData, logs) => {
+    return ACHIEVEMENT_TYPES.map(achievement => {
+        let earned = false;
+        
+        if (achievement.title === 'Week Streak' && streakData?.currentStreak >= 7) {
+            earned = true;
+        }
+        // Other achievements would need backend support to track specific activities
+        
+        return { ...achievement, earned };
+    });
+};
 
 // Helper function to generate streak days for a month
 export const generateStreakDays = (year, month, days = 13) => {
