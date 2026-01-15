@@ -25,7 +25,7 @@ import {
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { adminConfigAPI, siteConfigAPI } from '@/lib/api';
-import { toast } from 'sonner';
+import toast from 'react-hot-toast';
 
 const SettingsPage = () => {
   const [isLoading, setIsLoading] = useState(true);
