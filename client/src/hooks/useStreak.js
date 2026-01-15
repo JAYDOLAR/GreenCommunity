@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useUser } from '@/context/UserContext';
+import { API_BASE_URL } from '@/lib/api';
 
 const useStreak = () => {
   const [streakData, setStreakData] = useState({
@@ -20,12 +21,13 @@ const useStreak = () => {
 
     try {
       setLoading(true);
-      const token = localStorage.getItem('authToken');
-      const response = await fetch('/api/auth/streak', {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/api/auth/streak`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
-        }
+        },
+        credentials: 'include'
       });
 
       if (!response.ok) throw new Error(`Failed to fetch streak data (HTTP ${response.status})`);

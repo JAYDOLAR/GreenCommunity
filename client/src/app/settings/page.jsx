@@ -111,7 +111,7 @@ const Settings = () => {
     socialActivity: true,
   });
 
-  const { preferences, setPreferences } = usePreferences();
+  const { preferences, setPreferences, syncPreferencesFromServer } = usePreferences();
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [passwordForm, setPasswordForm] = useState({
     current: "",
@@ -193,11 +193,15 @@ const Settings = () => {
         setNotifications(userData.profile.notificationPreferences);
       }
 
-      // Update app preferences - use userInfo preferences or fallback to profile
-      if (userData.userInfo?.preferences) {
-        setPreferences(userData.userInfo.preferences);
-      } else if (userData.profile?.appPreferences) {
-        setPreferences(userData.profile.appPreferences);
+      // Update app preferences - sync from server to context AND localStorage
+      const serverPrefs = userData.userInfo?.preferences || userData.profile?.appPreferences;
+      if (serverPrefs && Object.keys(serverPrefs).length > 0) {
+        syncPreferencesFromServer(serverPrefs);
+      }
+      
+      // Also update localStorage with fresh user data for preferences sync
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('userData', JSON.stringify(userData));
       }
     } catch (error) {
       console.error("Error loading user settings:", error);

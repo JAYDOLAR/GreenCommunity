@@ -3,7 +3,7 @@ import { getConnection } from '../config/databases.js';
 import { ensureModelRegistered } from '../utils/modelRegistry.js';
 
 const userPointsSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true, unique: true },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
   totalPoints: { type: Number, default: 0, min: 0 },
   history: [{
     challengeId: { type: mongoose.Schema.Types.ObjectId, ref: 'Challenge' },

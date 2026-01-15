@@ -1,6 +1,6 @@
 export default function MainPageSkeleton() {
   return (
-    <div className="min-h-screen bg-gradient-to-r from-green-50 via-white to-white">
+    <div className="skeleton-container min-h-screen bg-gradient-to-r from-green-50 via-white to-white">
       {/* Header Skeleton */}
       <header className="sticky top-0 z-50 border-b border-border/30 backdrop-blur-xl">
         <div className="flex items-center justify-between px-6 h-16">

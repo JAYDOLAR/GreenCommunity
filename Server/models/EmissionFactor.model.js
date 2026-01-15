@@ -117,7 +117,6 @@ const emissionFactorSchema = new mongoose.Schema({
 });
 
 // Indexes
-emissionFactorSchema.index({ activityId: 1 }, { unique: true });
 emissionFactorSchema.index({ category: 1, isActive: 1 });
 emissionFactorSchema.index({ order: 1 });
 

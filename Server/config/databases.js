@@ -30,15 +30,22 @@ const connections = {};
 
 /**
  * Get or create a connection to a specific database
- * @param {string} dbName - Database name from DB_CONFIG
+ * @param {string} dbName - Database key (e.g., 'MAIN_DB') or full name (e.g., 'greencommunity-main')
  * @returns {mongoose.Connection} Database connection
  */
 export const getConnection = async (dbName) => {
-  if (!DB_CONFIG[dbName]) {
-    throw new Error(`Database configuration not found for: ${dbName}`);
+  // Check if dbName is a key in DB_CONFIG (like 'MAIN_DB')
+  let dbFullName = DB_CONFIG[dbName];
+  
+  // If not found as a key, check if dbName itself is a valid database name (value in DB_CONFIG)
+  if (!dbFullName) {
+    const validDbNames = Object.values(DB_CONFIG);
+    if (validDbNames.includes(dbName)) {
+      dbFullName = dbName;
+    } else {
+      throw new Error(`Database configuration not found for: ${dbName}`);
+    }
   }
-
-  const dbFullName = DB_CONFIG[dbName];
 
   if (connections[dbFullName]) {
     return connections[dbFullName];

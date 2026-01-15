@@ -54,6 +54,7 @@ import "react-date-range/dist/styles.css";
 import "react-date-range/dist/theme/default.css";
 import { usePreferences, useTranslation } from "@/context/PreferencesContext";
 import DashboardSkeleton from "@/components/DashboardSkeleton";
+import { PageTransition } from "@/components/ui/page-transition";
 import { Calendar as CustomCalendar } from "@/components/ui/calendar";
 import Link from "next/link";
 import { useFootprintLog } from "@/lib/useFootprintLog";
@@ -175,14 +176,13 @@ const Dashboard = () => {
     setGreetingKey(getGreetingKey());
   }, []);
 
-  if (isLoading || footprintLoading || streakLoading) {
-    return <DashboardSkeleton />;
-  }
-
   // Ensure user is authenticated before rendering dashboard content
-  if (!user) {
+  if (!user && !isLoading) {
     return null; // AuthGuard will handle the redirect
   }
+
+  // Use PageTransition for smooth loading without skeleton flash
+  const isDataLoading = isLoading || footprintLoading || streakLoading;
 
   const isAuthenticated = !!user;
   const name =
@@ -325,7 +325,8 @@ const Dashboard = () => {
     .filter(day => day.hasActivity)
     .map(day => day.date);
 
-  return (
+  // Dashboard content to show after loading
+  const dashboardContent = (
     <div className="px-4 sm:px-8 md:px-10 pt-2 sm:pt-4 md:pt-6 pb-8 sm:pb-12 md:pb-16 space-y-4 sm:space-y-5 md:space-y-4 bg-gradient-to-br from-background via-accent/5 to-primary/5 min-h-screen relative">
       {/* Enhanced Header */}
       <div className="space-y-1 sm:space-y-2 md:space-y-2 animate-fade-in">
@@ -865,6 +866,17 @@ const Dashboard = () => {
       {/* ChatBot */}
       <ChatBot />
     </div>
+  );
+
+  // Use PageTransition to smoothly transition between skeleton and content
+  return (
+    <PageTransition
+      isLoading={isDataLoading}
+      skeleton={<DashboardSkeleton />}
+      minLoadingTime={300}
+    >
+      {dashboardContent}
+    </PageTransition>
   );
 };
 

@@ -1,9 +1,9 @@
 import Skeleton, { SkeletonTheme } from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
 
-const DashboardSkeleton = () => (
+const DashboardSkeleton = ({ className = "" }) => (
   <SkeletonTheme baseColor="#e0e0e0" highlightColor="#f5f5f5">
-    <div className="p-8 space-y-8 bg-gradient-to-br from-background via-accent/5 to-primary/5 min-h-screen relative">
+    <div className={`skeleton-container p-8 space-y-8 bg-gradient-to-br from-background via-accent/5 to-primary/5 min-h-screen relative ${className}`}>
       {/* Header */}
       <div className="space-y-4">
         <div className="flex items-center gap-3">

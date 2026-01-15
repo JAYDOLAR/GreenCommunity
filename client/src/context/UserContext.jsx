@@ -17,6 +17,13 @@ export function UserProvider({ children }) {
   const [hasInitialized, setHasInitialized] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
 
+  // Helper function to dispatch user data update event
+  const dispatchUserDataUpdate = () => {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('userDataUpdated'));
+    }
+  };
+
   // Function to update user after login
   const updateUser = (userData) => {
     setUser(userData);
@@ -25,6 +32,8 @@ export function UserProvider({ children }) {
     // Persist user data to localStorage for better session management
     if (typeof window !== 'undefined' && userData) {
       localStorage.setItem('userData', JSON.stringify(userData));
+      // Dispatch event to sync preferences
+      dispatchUserDataUpdate();
     }
   };
 
@@ -53,6 +62,8 @@ export function UserProvider({ children }) {
       // Update localStorage with fresh data
       if (data.user) {
         localStorage.setItem('userData', JSON.stringify(data.user));
+        // Dispatch event to sync preferences
+        dispatchUserDataUpdate();
       }
 
       setIsLoading(false);
@@ -82,8 +93,10 @@ export function UserProvider({ children }) {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('token');
       localStorage.removeItem('userData');
-      // Clear any other user-related data from localStorage if needed
-      // localStorage.removeItem('userPreferences');
+      // Clear preferences from localStorage to reset to defaults
+      localStorage.removeItem('preferences');
+      // Dispatch event so PreferencesContext can reset to defaults
+      window.dispatchEvent(new CustomEvent('userLoggedOut'));
     }
   };
 
@@ -136,6 +149,8 @@ export function UserProvider({ children }) {
             const userData = JSON.parse(cachedUserData);
             setUser(userData);
             setIsLoading(false);
+            // Dispatch event to sync preferences from cached data
+            dispatchUserDataUpdate();
           } catch (e) {
             localStorage.removeItem('userData');
           }
@@ -160,6 +175,8 @@ export function UserProvider({ children }) {
         // Update localStorage with fresh data
         if (data.user) {
           localStorage.setItem('userData', JSON.stringify(data.user));
+          // Dispatch event to sync preferences
+          dispatchUserDataUpdate();
         }
 
         setIsLoading(false);

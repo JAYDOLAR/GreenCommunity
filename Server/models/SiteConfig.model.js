@@ -138,7 +138,6 @@ const siteConfigSchema = new mongoose.Schema({
 });
 
 // Indexes for faster queries
-siteConfigSchema.index({ key: 1 });
 siteConfigSchema.index({ isActive: 1 });
 
 // Default configurations for each section

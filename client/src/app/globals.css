@@ -525,6 +525,67 @@
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   }
+
+  /* Skeleton loading transitions - prevent blinking */
+  .skeleton-container {
+    animation: skeleton-fade-in 0.3s ease-out forwards;
+  }
+
+  .skeleton-container.skeleton-exit {
+    animation: skeleton-fade-out 0.2s ease-out forwards;
+  }
+
+  @keyframes skeleton-fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes skeleton-fade-out {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+    }
+  }
+
+  /* Page content transition - smooth fade in after loading */
+  .page-content-enter {
+    animation: page-content-fade-in 0.4s ease-out forwards;
+  }
+
+  @keyframes page-content-fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Prevent layout shift during loading */
+  .loading-wrapper {
+    min-height: 100vh;
+    position: relative;
+  }
+
+  /* Skeleton shimmer animation override for smoother effect */
+  .react-loading-skeleton {
+    --base-color: hsl(var(--muted));
+    --highlight-color: hsl(var(--accent));
+    animation-duration: 1.8s !important;
+  }
+
+  .dark .react-loading-skeleton {
+    --base-color: hsl(220 10% 20%);
+    --highlight-color: hsl(220 10% 30%);
+  }
 }
 
 @layer base {
