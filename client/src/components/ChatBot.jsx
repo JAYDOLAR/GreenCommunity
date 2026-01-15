@@ -8,14 +8,23 @@ import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { X, Send, MessageCircle, Sparkles, Bot, Home, HelpCircle, Search, ArrowRight, ChevronRight, PhoneCall, ChevronDown, Hand } from 'lucide-react';
-import { INITIAL_CHATBOT_MESSAGE, QUICK_REPLIES, CHATBOT_TABS, getCommonResponse } from '@/config/chatbotConfig';
+import { 
+  INITIAL_CHATBOT_MESSAGE, 
+  QUICK_REPLIES, 
+  CHATBOT_TABS, 
+  getCommonResponse,
+  getDynamicInitialMessage,
+  getDynamicQuickReplies,
+  getDynamicHelpCategories
+} from '@/config/chatbotConfig';
 
 const ChatBot = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([INITIAL_CHATBOT_MESSAGE]);
   const [input, setInput] = useState('');
   const [mounted, setMounted] = useState(false);
-  const [quickReplies] = useState(QUICK_REPLIES);
+  const [quickReplies, setQuickReplies] = useState(QUICK_REPLIES);
+  const [helpCategories, setHelpCategories] = useState([]);
   const [activeTab, setActiveTab] = useState(CHATBOT_TABS.HOME);
   const [helpQuery, setHelpQuery] = useState('');
   const buttonRef = useRef(null);
@@ -24,6 +33,25 @@ const ChatBot = () => {
 
   useEffect(() => {
     setMounted(true);
+    
+    // Load dynamic config
+    const loadDynamicConfig = async () => {
+      try {
+        const [initialMsg, replies, categories] = await Promise.all([
+          getDynamicInitialMessage(),
+          getDynamicQuickReplies(),
+          getDynamicHelpCategories()
+        ]);
+        
+        setMessages([initialMsg]);
+        setQuickReplies(replies);
+        setHelpCategories(categories);
+      } catch (error) {
+        console.warn('Failed to load dynamic chatbot config, using defaults:', error);
+      }
+    };
+    
+    loadDynamicConfig();
   }, []);
 
   // Close on outside click and ESC
@@ -300,7 +328,11 @@ const ChatBot = () => {
                     <Input value={helpQuery} onChange={(e) => setHelpQuery(e.target.value)} placeholder="Search for help" className="pl-9" />
                   </div>
                   <div className="text-sm font-semibold text-foreground px-1">Collections</div>
-                  {[{ title: 'Creating Your Carbon Report', count: '63 articles' }, { title: 'Engage in Sustainable Procurement', count: '15 articles' }, { title: "Supplier's Help Center", count: '5 articles' }].map((c) => (
+                  {(helpCategories.length > 0 ? helpCategories : [
+                    { title: 'Creating Your Carbon Report', count: '63 articles' },
+                    { title: 'Engage in Sustainable Procurement', count: '15 articles' },
+                    { title: "Supplier's Help Center", count: '5 articles' }
+                  ]).filter(c => !helpQuery || c.title.toLowerCase().includes(helpQuery.toLowerCase())).map((c) => (
                     <button key={c.title} className="w-full rounded-xl border bg-white p-3 flex items-center justify-between shadow-sm text-left">
                       <div>
                         <div className="font-medium text-foreground">{c.title}</div>

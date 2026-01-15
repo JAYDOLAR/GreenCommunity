@@ -728,6 +728,214 @@ export const updateAppPreferences = asyncHandler(async (req, res) => {
   }
 });
 
+// Update User Goals
+export const updateGoals = asyncHandler(async (req, res) => {
+  const {
+    monthlyFootprintTarget,
+    dailyFootprintTarget,
+    monthlyOffsetTarget,
+    monthlyActivityTarget,
+    preferredUnit,
+    showGoalReminders,
+    reminderFrequency,
+    customGoal // For adding a single custom goal
+  } = req.body;
+
+  try {
+    const User = await getUserModel();
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Initialize goals if not exists
+    if (!user.goals) {
+      user.goals = {
+        monthlyFootprintTarget: 2000,
+        dailyFootprintTarget: 2.0,
+        monthlyOffsetTarget: 100,
+        monthlyActivityTarget: 75,
+        customGoals: [],
+        preferredUnit: 'kg',
+        showGoalReminders: true,
+        reminderFrequency: 'weekly'
+      };
+    }
+
+    // Update goal values
+    if (monthlyFootprintTarget !== undefined) {
+      user.goals.monthlyFootprintTarget = monthlyFootprintTarget;
+    }
+    if (dailyFootprintTarget !== undefined) {
+      user.goals.dailyFootprintTarget = dailyFootprintTarget;
+    }
+    if (monthlyOffsetTarget !== undefined) {
+      user.goals.monthlyOffsetTarget = monthlyOffsetTarget;
+    }
+    if (monthlyActivityTarget !== undefined) {
+      user.goals.monthlyActivityTarget = monthlyActivityTarget;
+    }
+    if (preferredUnit !== undefined) {
+      user.goals.preferredUnit = preferredUnit;
+    }
+    if (showGoalReminders !== undefined) {
+      user.goals.showGoalReminders = showGoalReminders;
+    }
+    if (reminderFrequency !== undefined) {
+      user.goals.reminderFrequency = reminderFrequency;
+    }
+
+    // Add custom goal if provided
+    if (customGoal && customGoal.name && customGoal.targetValue) {
+      user.goals.customGoals.push({
+        name: customGoal.name,
+        description: customGoal.description || '',
+        targetValue: customGoal.targetValue,
+        currentValue: customGoal.currentValue || 0,
+        unit: customGoal.unit || 'units',
+        category: customGoal.category || 'other',
+        deadline: customGoal.deadline ? new Date(customGoal.deadline) : null,
+        createdAt: new Date()
+      });
+    }
+
+    await user.save();
+
+    res.status(200).json({
+      message: 'Goals updated successfully',
+      goals: user.goals
+    });
+  } catch (error) {
+    console.error('Goals update error:', error);
+    res.status(500).json({ message: 'Error updating goals' });
+  }
+});
+
+// Get User Goals
+export const getGoals = asyncHandler(async (req, res) => {
+  try {
+    const User = await getUserModel();
+    const user = await User.findById(req.user.id).select('goals');
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const goals = user.goals || {
+      monthlyFootprintTarget: 2000,
+      dailyFootprintTarget: 2.0,
+      monthlyOffsetTarget: 100,
+      monthlyActivityTarget: 75,
+      customGoals: [],
+      preferredUnit: 'kg',
+      showGoalReminders: true,
+      reminderFrequency: 'weekly'
+    };
+
+    res.status(200).json({
+      success: true,
+      goals
+    });
+  } catch (error) {
+    console.error('Get goals error:', error);
+    res.status(500).json({ message: 'Error fetching goals' });
+  }
+});
+
+// Delete Custom Goal
+export const deleteCustomGoal = asyncHandler(async (req, res) => {
+  const { goalId } = req.params;
+
+  try {
+    const User = await getUserModel();
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (!user.goals || !user.goals.customGoals) {
+      return res.status(404).json({ message: 'No custom goals found' });
+    }
+
+    const goalIndex = user.goals.customGoals.findIndex(
+      g => g._id.toString() === goalId
+    );
+
+    if (goalIndex === -1) {
+      return res.status(404).json({ message: 'Goal not found' });
+    }
+
+    user.goals.customGoals.splice(goalIndex, 1);
+    await user.save();
+
+    res.status(200).json({
+      message: 'Custom goal deleted successfully',
+      goals: user.goals
+    });
+  } catch (error) {
+    console.error('Delete goal error:', error);
+    res.status(500).json({ message: 'Error deleting goal' });
+  }
+});
+
+// Update Custom Goal Progress
+export const updateCustomGoalProgress = asyncHandler(async (req, res) => {
+  const { goalId } = req.params;
+  const { currentValue, isCompleted } = req.body;
+
+  try {
+    const User = await getUserModel();
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (!user.goals || !user.goals.customGoals) {
+      return res.status(404).json({ message: 'No custom goals found' });
+    }
+
+    const goal = user.goals.customGoals.find(
+      g => g._id.toString() === goalId
+    );
+
+    if (!goal) {
+      return res.status(404).json({ message: 'Goal not found' });
+    }
+
+    if (currentValue !== undefined) {
+      goal.currentValue = currentValue;
+    }
+
+    if (isCompleted !== undefined) {
+      goal.isCompleted = isCompleted;
+      if (isCompleted) {
+        goal.completedAt = new Date();
+      } else {
+        goal.completedAt = null;
+      }
+    }
+
+    // Auto-complete if target reached
+    if (goal.currentValue >= goal.targetValue && !goal.isCompleted) {
+      goal.isCompleted = true;
+      goal.completedAt = new Date();
+    }
+
+    await user.save();
+
+    res.status(200).json({
+      message: 'Goal progress updated successfully',
+      goal
+    });
+  } catch (error) {
+    console.error('Update goal progress error:', error);
+    res.status(500).json({ message: 'Error updating goal progress' });
+  }
+});
+
 // Get User Profile and Settings
 export const getUserSettings = asyncHandler(async (req, res) => {
   try {
@@ -752,6 +960,12 @@ export const getUserSettings = asyncHandler(async (req, res) => {
         marketplace_activity: user.marketplace_activity,
         googleId: user.googleId, // Include Google ID to determine authentication method
         isGoogleAuth: !!user.googleId, // Boolean flag for easier frontend use
+        goals: user.goals || {
+          monthlyFootprintTarget: 2000,
+          dailyFootprintTarget: 2.0,
+          monthlyOffsetTarget: 100,
+          monthlyActivityTarget: 75
+        },
         userInfo: userInfo ? {
           name: userInfo.name,
           phone: userInfo.phone,

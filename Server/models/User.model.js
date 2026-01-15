@@ -251,6 +251,47 @@ const userSchema = new mongoose.Schema({
     }
   },
 
+  // Sustainability Goals
+  goals: {
+    // Monthly carbon footprint target (in kg CO2)
+    monthlyFootprintTarget: { type: Number, default: 2000 },
+    // Daily footprint target (in tons CO2)
+    dailyFootprintTarget: { type: Number, default: 2.0 },
+    // Monthly offset target (in kg CO2)
+    monthlyOffsetTarget: { type: Number, default: 100 },
+    // Monthly activity target (number of eco-friendly activities)
+    monthlyActivityTarget: { type: Number, default: 75 },
+    // Custom goals
+    customGoals: [{
+      name: { type: String, required: true, trim: true },
+      description: { type: String, trim: true },
+      targetValue: { type: Number, required: true },
+      currentValue: { type: Number, default: 0 },
+      unit: { type: String, default: 'units' },
+      category: { 
+        type: String, 
+        enum: ['transport', 'energy', 'diet', 'shopping', 'waste', 'lifestyle', 'other'],
+        default: 'other'
+      },
+      deadline: { type: Date },
+      isCompleted: { type: Boolean, default: false },
+      completedAt: { type: Date },
+      createdAt: { type: Date, default: Date.now }
+    }],
+    // Goal preferences
+    preferredUnit: {
+      type: String,
+      enum: ['kg', 'tons'],
+      default: 'kg'
+    },
+    showGoalReminders: { type: Boolean, default: true },
+    reminderFrequency: {
+      type: String,
+      enum: ['daily', 'weekly', 'monthly'],
+      default: 'weekly'
+    }
+  },
+
   // Streak Tracking
   streakData: {
     currentStreak: { type: Number, default: 0 },

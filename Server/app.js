@@ -25,6 +25,7 @@ import dotenv from "dotenv";
 import aiRoutes from "./routes/ai.routes.js";
 import blockchainRouter from "./blockchain.js";
 import blockchainApiRoutes from "./routes/blockchain.routes.js";
+import siteconfigRoutes from "./routes/siteconfig.routes.js";
 import { startBlockchainListeners } from './services/blockchain.listener.js';
 import { syncHistoricalEvents } from './services/blockchain.sync.js';
 
@@ -151,6 +152,7 @@ async function createServer() {
   app.use("/api/admin", adminRoutes);
   app.use("/api/email", emailRoutes);
   app.use('/api/blockchain', blockchainApiRoutes);
+  app.use('/api/config', siteconfigRoutes);
   // Simple blockchain demo endpoints (non /api for clarity/tests)
   app.use('/blockchain', blockchainRouter);
 

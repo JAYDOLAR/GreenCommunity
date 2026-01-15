@@ -19,6 +19,10 @@ import {
   updateProfile,
   updateNotificationPreferences,
   updateAppPreferences,
+  updateGoals,
+  getGoals,
+  deleteCustomGoal,
+  updateCustomGoalProgress,
   getUserSettings,
   generate2FASecret,
   verify2FAToken,
@@ -97,6 +101,13 @@ router.get('/settings', authenticate, getUserSettings);
 router.post('/update-profile', authenticate, updateProfile);
 router.post('/update-notifications', authenticate, updateNotificationPreferences);
 router.post('/update-preferences', authenticate, updateAppPreferences);
+
+// Goals Routes
+router.get('/goals', authenticate, getGoals);
+router.post('/goals', authenticate, updateGoals);
+router.put('/goals', authenticate, updateGoals);
+router.delete('/goals/:goalId', authenticate, deleteCustomGoal);
+router.put('/goals/:goalId/progress', authenticate, updateCustomGoalProgress);
 
 // Data Management Routes
 router.post('/export-data', authenticate, exportUserData);

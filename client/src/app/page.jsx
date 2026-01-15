@@ -18,7 +18,7 @@ import {
   Play,
   ArrowDownCircle
 } from 'lucide-react';
-import { FaTwitter, FaFacebook, FaLinkedin, FaInstagram } from 'react-icons/fa';
+import { FaTwitter, FaFacebook, FaLinkedin, FaInstagram, FaGithub, FaYoutube, FaDiscord } from 'react-icons/fa';
 import { HiArrowRight } from 'react-icons/hi2';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -27,11 +27,16 @@ import toast, { Toaster } from 'react-hot-toast';
 import { motion } from 'framer-motion';
 import { useOptimizedNavigation } from '@/lib/useOptimizedNavigation';
 import { RedirectLoader, PageLoader } from '@/components/LoadingComponents';
-import { publicAPI } from '@/lib/api';
+import { publicAPI, siteConfigAPI } from '@/lib/api';
 
 const LandingPage = () => {
   const [mounted, setMounted] = useState(false);
   const [globalStats, setGlobalStats] = useState(null);
+  const [landingConfig, setLandingConfig] = useState(null);
+  const [footerConfig, setFooterConfig] = useState(null);
+  const [socialConfig, setSocialConfig] = useState(null);
+  const [newsletterEmail, setNewsletterEmail] = useState('');
+  const [isSubscribing, setIsSubscribing] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -39,9 +44,55 @@ const LandingPage = () => {
     publicAPI.getGlobalStats()
       .then(data => setGlobalStats(data))
       .catch(() => setGlobalStats(null)); // Keep null on error, will show defaults
+    
+    // Fetch landing page config
+    siteConfigAPI.getLandingConfig()
+      .then(res => {
+        if (res.success) setLandingConfig(res.data);
+      })
+      .catch(() => setLandingConfig(null));
+    
+    // Fetch footer config
+    siteConfigAPI.getFooterConfig()
+      .then(res => {
+        if (res.success) setFooterConfig(res.data);
+      })
+      .catch(() => setFooterConfig(null));
+    
+    // Fetch social links
+    siteConfigAPI.getSocialConfig()
+      .then(res => {
+        if (res.success) setSocialConfig(res.data);
+      })
+      .catch(() => setSocialConfig(null));
   }, []);
 
-  const features = [
+  // Newsletter subscription handler
+  const handleNewsletterSubmit = async (e) => {
+    e.preventDefault();
+    if (!newsletterEmail) {
+      toast.error('Please enter your email address');
+      return;
+    }
+    
+    setIsSubscribing(true);
+    try {
+      const result = await siteConfigAPI.subscribeNewsletter(newsletterEmail);
+      if (result.success) {
+        toast.success(result.message || 'Successfully subscribed to newsletter!');
+        setNewsletterEmail('');
+      } else {
+        toast.error(result.message || 'Failed to subscribe');
+      }
+    } catch (error) {
+      toast.error('Failed to subscribe. Please try again.');
+    } finally {
+      setIsSubscribing(false);
+    }
+  };
+
+  // Default features if API fails
+  const defaultFeatures = [
     {
       icon: Calculator,
       title: "Carbon Footprint Calculator",
@@ -68,31 +119,31 @@ const LandingPage = () => {
     }
   ];
 
-  const stats = [
-    { 
-      value: globalStats ? `${globalStats.totalUsers >= 1000 ? Math.floor(globalStats.totalUsers / 1000) + 'K+' : globalStats.totalUsers}` : '...', 
-      label: "Climate Champions", 
-      subtext: globalStats ? `Growing ${globalStats.growthRate}% MoM` : 'Loading...' 
-    },
-    { 
-      value: globalStats ? `${globalStats.avgCarbonReduction}%` : '...', 
-      label: "Average Carbon Reduction", 
-      subtext: "Members consistently reduce their carbon footprint" 
-    },
-    { 
-      value: "100%", 
-      label: "Real-time Impact Tracking", 
-      subtext: "Monitor your sustainability journey" 
-    }
-  ];
+  // Icon mapping for dynamic features
+  const iconMap = {
+    calculator: Calculator,
+    leaf: Leaf,
+    users: Users,
+    target: Target,
+    globe: Globe,
+    'trending-down': TrendingDown,
+    'shopping-cart': ShoppingCart,
+    'bar-chart': BarChart3,
+    'check-circle': CheckCircle,
+    trophy: Target, // Using Target as fallback for trophy
+    book: Play, // Using Play as fallback for book
+  };
 
-  const toolkit = [
-    { title: "Verified Offset Projects", icon: CheckCircle },
-    { title: "MSME Sustainability Hub", icon: Target },
-    { title: "Expert-led Webinars", icon: Play }
-  ];
+  // Get features from config or use defaults
+  const features = landingConfig?.features?.length > 0 
+    ? landingConfig.features.map(f => ({
+        ...f,
+        icon: iconMap[f.icon] || Leaf
+      }))
+    : defaultFeatures;
 
-  const testimonials = [
+  // Default testimonials if API fails
+  const defaultTestimonials = [
     {
       name: "Bhavya Sonigra",
       role: "Founder of EcoTech Solutions",
@@ -115,6 +166,66 @@ const LandingPage = () => {
       avatar: "/chiko.jpeg"
     }
   ];
+
+  // Get testimonials from config or use defaults
+  const testimonials = landingConfig?.testimonials?.length > 0 
+    ? landingConfig.testimonials.map(t => ({
+        name: t.name,
+        role: t.role,
+        badge: t.badge || 'Community Member',
+        quote: t.content,
+        avatar: t.avatar || '/avatars/default.png'
+      }))
+    : defaultTestimonials;
+
+  // Get stats from config or use dynamic/default values
+  const statsData = landingConfig?.stats || {};
+  const stats = [
+    { 
+      value: globalStats ? `${globalStats.totalUsers >= 1000 ? Math.floor(globalStats.totalUsers / 1000) + 'K+' : globalStats.totalUsers}` : (statsData.activeUsers || '10K+'), 
+      label: "Climate Champions", 
+      subtext: globalStats ? `Growing ${globalStats.growthRate}% MoM` : `Growing ${statsData.monthlyGrowth || '15%'} MoM`
+    },
+    { 
+      value: globalStats ? `${globalStats.avgCarbonReduction}%` : (statsData.carbonReduction || '30%'), 
+      label: "Average Carbon Reduction", 
+      subtext: "Members consistently reduce their carbon footprint" 
+    },
+    { 
+      value: "100%", 
+      label: "Real-time Impact Tracking", 
+      subtext: "Monitor your sustainability journey" 
+    }
+  ];
+
+  // Get social links from config
+  const socialLinks = socialConfig?.links || [];
+  
+  // Social icon mapping
+  const socialIconMap = {
+    twitter: FaTwitter,
+    facebook: FaFacebook,
+    linkedin: FaLinkedin,
+    instagram: FaInstagram,
+    github: FaGithub,
+    youtube: FaYoutube,
+    discord: FaDiscord
+  };
+
+  // Social color mapping
+  const socialColorMap = {
+    twitter: '#1DA1F2',
+    facebook: '#1877F2',
+    linkedin: '#0A66C2',
+    instagram: '#E4405F',
+    github: '#333',
+    youtube: '#FF0000',
+    discord: '#5865F2'
+  };
+
+  // Get footer links grouped by category
+  const footerLinks = footerConfig?.links || {};
+  const currentYear = footerConfig?.copyrightYear || new Date().getFullYear();
 
   const router = useRouter();
   const protectedClickCount = useRef(0);
@@ -603,20 +714,24 @@ const LandingPage = () => {
                 <p className="text-sm text-gray-600 mb-4">
                   Get sustainability tips and product updates
                 </p>
-                <form className="flex flex-col sm:flex-row gap-3">
+                <form className="flex flex-col sm:flex-row gap-3" onSubmit={handleNewsletterSubmit}>
                   <input
                     type="email"
                     placeholder="Enter your email"
+                    value={newsletterEmail}
+                    onChange={(e) => setNewsletterEmail(e.target.value)}
                     className="border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-300 flex-1 bg-gray-50 hover:bg-white"
                     style={{ fontFamily: "'Inter', sans-serif" }}
                     required
+                    disabled={isSubscribing}
                   />
                   <button
                     type="submit"
-                    className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-semibold text-sm whitespace-nowrap transition-all duration-300 transform hover:scale-105 active:scale-95 hover:shadow-lg cursor-pointer shadow-sm"
+                    disabled={isSubscribing}
+                    className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-semibold text-sm whitespace-nowrap transition-all duration-300 transform hover:scale-105 active:scale-95 hover:shadow-lg cursor-pointer shadow-sm disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                     style={{ fontFamily: "'Inter', sans-serif" }}
                   >
-                    Subscribe
+                    {isSubscribing ? 'Subscribing...' : 'Subscribe'}
                   </button>
                 </form>
               </div>
@@ -630,29 +745,21 @@ const LandingPage = () => {
                     <div className="font-bold text-gray-900 text-lg" style={{ fontFamily: "'Inter', sans-serif" }}>Platform</div>
                   </div>
                   <ul className="text-sm text-gray-600 space-y-3" style={{ fontFamily: "'Inter', sans-serif" }}>
-                    <li>
-                      <a href="#" className="hover:text-green-600 transition-all duration-300 block py-1 hover:translate-x-1">
-                        Carbon Calculator
-                      </a>
-                    </li>
-                    <li>
-                      <Link href="/marketplace"
-                        onClick={handleMarketplaceRoute}
-                        className="hover:text-green-600 transition-all duration-300 block py-1 hover:translate-x-1"
-                      >
-                        Offset Marketplace
-                      </Link>
-                    </li>
-                    <li>
-                      <a href="#" className="hover:text-green-600 transition-all duration-300 block py-1 hover:translate-x-1">
-                        Reduction Tips
-                      </a>
-                    </li>
-                    <li>
-                      <a href="#" className="hover:text-green-600 transition-all duration-300 block py-1 hover:translate-x-1">
-                        Community Hub
-                      </a>
-                    </li>
+                    {(footerLinks.product?.length > 0 ? footerLinks.product : [
+                      { label: 'Carbon Calculator', url: '/CarbonCalculator' },
+                      { label: 'Offset Marketplace', url: '/marketplace' },
+                      { label: 'Reduction Tips', url: '/tips' },
+                      { label: 'Community Hub', url: '/community' }
+                    ]).map((link, idx) => (
+                      <li key={idx}>
+                        <Link 
+                          href={link.url}
+                          className="hover:text-green-600 transition-all duration-300 block py-1 hover:translate-x-1"
+                        >
+                          {link.label}
+                        </Link>
+                      </li>
+                    ))}
                   </ul>
                 </div>
                 <div>
@@ -660,26 +767,21 @@ const LandingPage = () => {
                     <div className="font-bold text-gray-900 text-lg" style={{ fontFamily: "'Inter', sans-serif" }}>Resources</div>
                   </div>
                   <ul className="text-sm text-gray-600 space-y-3" style={{ fontFamily: "'Inter', sans-serif" }}>
-                    <li>
-                      <a href="#" className="hover:text-green-600 transition-all duration-300 block py-1 hover:translate-x-1">
-                        Blog
-                      </a>
-                    </li>
-                    <li>
-                      <a href="#" className="hover:text-green-600 transition-all duration-300 block py-1 hover:translate-x-1">
-                        Case Studies
-                      </a>
-                    </li>
-                    <li>
-                      <a href="#" className="hover:text-green-600 transition-all duration-300 block py-1 hover:translate-x-1">
-                        Research
-                      </a>
-                    </li>
-                    <li>
-                      <a href="#" className="hover:text-green-600 transition-all duration-300 block py-1 hover:translate-x-1">
-                        Webinars
-                      </a>
-                    </li>
+                    {(footerLinks.resources?.length > 0 ? footerLinks.resources : [
+                      { label: 'Blog', url: '/blog' },
+                      { label: 'Case Studies', url: '/case-studies' },
+                      { label: 'Research', url: '/research' },
+                      { label: 'Webinars', url: '/webinars' }
+                    ]).map((link, idx) => (
+                      <li key={idx}>
+                        <Link 
+                          href={link.url}
+                          className="hover:text-green-600 transition-all duration-300 block py-1 hover:translate-x-1"
+                        >
+                          {link.label}
+                        </Link>
+                      </li>
+                    ))}
                   </ul>
                 </div>
                 <div>
@@ -687,26 +789,21 @@ const LandingPage = () => {
                     <div className="font-bold text-gray-900 text-lg" style={{ fontFamily: "'Inter', sans-serif" }}>Company</div>
                   </div>
                   <ul className="text-sm text-gray-600 space-y-3" style={{ fontFamily: "'Inter', sans-serif" }}>
-                    <li>
-                      <a href="#" className="hover:text-green-600 transition-all duration-300 block py-1 hover:translate-x-1">
-                        About Us
-                      </a>
-                    </li>
-                    <li>
-                      <a href="#" className="hover:text-green-600 transition-all duration-300 block py-1 hover:translate-x-1">
-                        Careers
-                      </a>
-                    </li>
-                    <li>
-                      <a href="#" className="hover:text-green-600 transition-all duration-300 block py-1 hover:translate-x-1">
-                        Contact
-                      </a>
-                    </li>
-                    <li>
-                      <a href="#" className="hover:text-green-600 transition-all duration-300 block py-1 hover:translate-x-1">
-                        Privacy
-                      </a>
-                    </li>
+                    {(footerLinks.company?.length > 0 ? footerLinks.company : [
+                      { label: 'About Us', url: '/about' },
+                      { label: 'Careers', url: '/careers' },
+                      { label: 'Contact', url: '/contact' },
+                      { label: 'Privacy', url: '/privacy' }
+                    ]).map((link, idx) => (
+                      <li key={idx}>
+                        <Link 
+                          href={link.url}
+                          className="hover:text-green-600 transition-all duration-300 block py-1 hover:translate-x-1"
+                        >
+                          {link.label}
+                        </Link>
+                      </li>
+                    ))}
                   </ul>
                 </div>
               </div>
@@ -718,31 +815,60 @@ const LandingPage = () => {
             <div className="flex flex-col md:flex-row items-center justify-between gap-6">
               <div className="flex items-center gap-6">
                 <div className="text-sm text-gray-500" style={{ fontFamily: "'Inter', sans-serif" }}>
-                  &copy; 2025 GreenCommunity. All rights reserved.
+                  &copy; {currentYear} {footerConfig?.companyName || 'GreenCommunity'}. All rights reserved.
                 </div>
                 <div className="hidden md:flex items-center gap-4 text-xs text-gray-400">
-                  <a href="#" className="hover:text-green-600 transition-colors duration-300">Terms</a>
-                  <span>•</span>
-                  <a href="#" className="hover:text-green-600 transition-colors duration-300">Privacy</a>
-                  <span>•</span>
-                  <a href="#" className="hover:text-green-600 transition-colors duration-300">Cookies</a>
+                  {(footerLinks.legal?.length > 0 ? footerLinks.legal : [
+                    { label: 'Terms', url: '/terms' },
+                    { label: 'Privacy', url: '/privacy' },
+                    { label: 'Cookies', url: '/cookies' }
+                  ]).map((link, idx) => (
+                    <span key={idx} className="flex items-center gap-4">
+                      <Link href={link.url} className="hover:text-green-600 transition-colors duration-300">{link.label}</Link>
+                      {idx < (footerLinks.legal?.length || 3) - 1 && <span>•</span>}
+                    </span>
+                  ))}
                 </div>
               </div>
 
               <div className="flex items-center gap-1">
                 <div className="text-xs text-gray-400 mr-3"></div>
-                <a href="#" aria-label="Twitter" className="p-2 rounded-full bg-gray-100 hover:bg-blue-50 transition-all duration-300 transform hover:scale-110 hover:shadow-md group">
-                  <FaTwitter className="w-4 h-4 text-gray-400 group-hover:text-[#1DA1F2] transition-colors duration-300" />
-                </a>
-                <a href="#" aria-label="Facebook" className="p-2 rounded-full bg-gray-100 hover:bg-blue-50 transition-all duration-300 transform hover:scale-110 hover:shadow-md group">
-                  <FaFacebook className="w-4 h-4 text-gray-400 group-hover:text-[#1877F2] transition-colors duration-300" />
-                </a>
-                <a href="#" aria-label="LinkedIn" className="p-2 rounded-full bg-gray-100 hover:bg-blue-50 transition-all duration-300 transform hover:scale-110 hover:shadow-md group">
-                  <FaLinkedin className="w-4 h-4 text-gray-400 group-hover:text-[#0A66C2] transition-colors duration-300" />
-                </a>
-                <a href="#" aria-label="Instagram" className="p-2 rounded-full bg-gray-100 hover:bg-pink-50 transition-all duration-300 transform hover:scale-110 hover:shadow-md group">
-                  <FaInstagram className="w-4 h-4 text-gray-400 group-hover:text-[#E4405F] transition-colors duration-300" />
-                </a>
+                {socialLinks.length > 0 ? (
+                  socialLinks.map((social, idx) => {
+                    const SocialIcon = socialIconMap[social.platform] || FaTwitter;
+                    const hoverColor = socialColorMap[social.platform] || '#1DA1F2';
+                    return (
+                      <a 
+                        key={idx}
+                        href={social.url} 
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={social.platform} 
+                        className="p-2 rounded-full bg-gray-100 hover:bg-blue-50 transition-all duration-300 transform hover:scale-110 hover:shadow-md group"
+                      >
+                        <SocialIcon 
+                          className="w-4 h-4 text-gray-400 transition-colors duration-300" 
+                          style={{ '--hover-color': hoverColor }}
+                        />
+                      </a>
+                    );
+                  })
+                ) : (
+                  <>
+                    <a href="https://twitter.com/greencommunity" target="_blank" rel="noopener noreferrer" aria-label="Twitter" className="p-2 rounded-full bg-gray-100 hover:bg-blue-50 transition-all duration-300 transform hover:scale-110 hover:shadow-md group">
+                      <FaTwitter className="w-4 h-4 text-gray-400 group-hover:text-[#1DA1F2] transition-colors duration-300" />
+                    </a>
+                    <a href="https://facebook.com/greencommunity" target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="p-2 rounded-full bg-gray-100 hover:bg-blue-50 transition-all duration-300 transform hover:scale-110 hover:shadow-md group">
+                      <FaFacebook className="w-4 h-4 text-gray-400 group-hover:text-[#1877F2] transition-colors duration-300" />
+                    </a>
+                    <a href="https://linkedin.com/company/greencommunity" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn" className="p-2 rounded-full bg-gray-100 hover:bg-blue-50 transition-all duration-300 transform hover:scale-110 hover:shadow-md group">
+                      <FaLinkedin className="w-4 h-4 text-gray-400 group-hover:text-[#0A66C2] transition-colors duration-300" />
+                    </a>
+                    <a href="https://instagram.com/greencommunity" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="p-2 rounded-full bg-gray-100 hover:bg-pink-50 transition-all duration-300 transform hover:scale-110 hover:shadow-md group">
+                      <FaInstagram className="w-4 h-4 text-gray-400 group-hover:text-[#E4405F] transition-colors duration-300" />
+                    </a>
+                  </>
+                )}
               </div>
             </div>
           </div>

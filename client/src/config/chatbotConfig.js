@@ -1,7 +1,72 @@
 // ChatBot Configuration
 // This file contains chatbot-related constants and configurations
-// TODO: Make messages and quick replies configurable via admin panel
+// Data can be fetched dynamically from backend APIs
 
+import { siteConfigAPI } from '@/lib/api';
+
+// Cache for chatbot config from API
+let chatbotConfigCache = null;
+let chatbotConfigCacheTime = null;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+// Fetch chatbot config from API with caching
+export const fetchChatbotConfig = async () => {
+    try {
+        const now = Date.now();
+        if (chatbotConfigCache && chatbotConfigCacheTime && (now - chatbotConfigCacheTime) < CACHE_DURATION) {
+            return chatbotConfigCache;
+        }
+        
+        const response = await siteConfigAPI.getChatbotConfig();
+        if (response.success && response.config) {
+            chatbotConfigCache = response.config;
+            chatbotConfigCacheTime = now;
+            return response.config;
+        }
+        return null;
+    } catch (error) {
+        console.warn('Failed to fetch chatbot config from API, using defaults:', error);
+        return null;
+    }
+};
+
+// Get dynamic initial message
+export const getDynamicInitialMessage = async () => {
+    const config = await fetchChatbotConfig();
+    if (config?.welcomeMessage) {
+        return {
+            role: 'assistant',
+            content: config.welcomeMessage
+        };
+    }
+    return INITIAL_CHATBOT_MESSAGE;
+};
+
+// Get dynamic quick replies
+export const getDynamicQuickReplies = async () => {
+    const config = await fetchChatbotConfig();
+    if (config?.quickReplies && config.quickReplies.length > 0) {
+        return config.quickReplies.map(qr => qr.text);
+    }
+    return QUICK_REPLIES;
+};
+
+// Get dynamic help categories
+export const getDynamicHelpCategories = async () => {
+    const config = await fetchChatbotConfig();
+    if (config?.helpCategories && config.helpCategories.length > 0) {
+        return config.helpCategories;
+    }
+    return HELP_CATEGORIES;
+};
+
+// Clear cache (useful for admin updates)
+export const clearChatbotConfigCache = () => {
+    chatbotConfigCache = null;
+    chatbotConfigCacheTime = null;
+};
+
+// Default static values (fallback)
 export const INITIAL_CHATBOT_MESSAGE = {
     role: 'assistant',
     content: 'Hi! I\'m your eco-assistant. How can I help you today?'

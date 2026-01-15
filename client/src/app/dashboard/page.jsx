@@ -59,7 +59,7 @@ import Link from "next/link";
 import { useFootprintLog } from "@/lib/useFootprintLog";
 import useStreak from "@/hooks/useStreak";
 import ReactMarkdown from "react-markdown";
-import { API_BASE_URL } from "@/lib/api";
+import { API_BASE_URL, goalsAPI } from "@/lib/api";
 import ProtectedLayout from "@/components/ProtectedLayout";
 import AuthGuard from "@/components/AuthGuard";
 import ChatBot from "@/components/ChatBot";
@@ -71,6 +71,7 @@ const Dashboard = () => {
   const { user, isLoading } = useUser();
   const [greetingKey, setGreetingKey] = useState("greeting_morning"); // Default fallback
   const [date, setDate] = useState(new Date());
+  const [userGoals, setUserGoals] = useState(null);
 
   const currencySymbols = {
     usd: "$",
@@ -110,6 +111,31 @@ const Dashboard = () => {
     getTodayStatus,
     refreshStreak
   } = useStreak();
+
+  // Fetch user goals
+  useEffect(() => {
+    const fetchGoals = async () => {
+      try {
+        const result = await goalsAPI.getGoals();
+        if (result.success && result.goals) {
+          setUserGoals(result.goals);
+        }
+      } catch (error) {
+        console.error('Failed to fetch user goals:', error);
+        // Use default goals on error
+        setUserGoals({
+          monthlyFootprintTarget: 2000,
+          dailyFootprintTarget: 2.0,
+          monthlyOffsetTarget: 100,
+          monthlyActivityTarget: 75
+        });
+      }
+    };
+    
+    if (user) {
+      fetchGoals();
+    }
+  }, [user]);
 
   // Refresh streak when logs change (new log added)
   useEffect(() => {
@@ -168,7 +194,11 @@ const Dashboard = () => {
     preferences.carbonUnits === "tons"
       ? (monthlyEmissions || 0) / 1000  // Convert kg to tons
       : (monthlyEmissions || 0);        // Keep in kg
-  const targetFootprint = preferences.carbonUnits === "tons" ? 2.0 : 2000; // 2 tons or 2000 kg per month target
+  
+  // Use user's custom goals or defaults
+  const defaultTargetKg = userGoals?.monthlyFootprintTarget || 2000;
+  const defaultTargetTons = userGoals?.dailyFootprintTarget || 2.0;
+  const targetFootprint = preferences.carbonUnits === "tons" ? defaultTargetTons : defaultTargetKg;
   const goalProgress =
     isAuthenticated && targetFootprint > 0 && !isNaN(currentFootprint)
       ? Math.min((currentFootprint / targetFootprint) * 100, 100)

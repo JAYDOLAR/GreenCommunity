@@ -541,6 +541,90 @@ export const publicAPI = {
   }
 };
 
+// Site Configuration API (no auth required for public endpoints)
+export const siteConfigAPI = {
+  // Landing page config
+  getLandingConfig: async () => {
+    return apiRequest('/api/config/landing');
+  },
+  // Footer config
+  getFooterConfig: async () => {
+    return apiRequest('/api/config/footer');
+  },
+  // Social links
+  getSocialConfig: async () => {
+    return apiRequest('/api/config/social');
+  },
+  // Chatbot config
+  getChatbotConfig: async () => {
+    return apiRequest('/api/config/chatbot');
+  },
+  // General config
+  getGeneralConfig: async () => {
+    return apiRequest('/api/config/general');
+  },
+  // Newsletter
+  subscribeNewsletter: async (email, name = '', source = 'landing') => {
+    return apiRequest('/api/config/newsletter/subscribe', {
+      method: 'POST',
+      body: JSON.stringify({ email, name, source })
+    });
+  },
+  unsubscribeNewsletter: async (email, reason = '') => {
+    return apiRequest('/api/config/newsletter/unsubscribe', {
+      method: 'POST',
+      body: JSON.stringify({ email, reason })
+    });
+  },
+  // Emission factors
+  getEmissionFactors: async () => {
+    return apiRequest('/api/config/emissions');
+  },
+  getEmissionFactorsByCategory: async (category) => {
+    return apiRequest(`/api/config/emissions/category/${category}`);
+  },
+  calculateEmission: async (activityId, value) => {
+    return apiRequest('/api/config/emissions/calculate', {
+      method: 'POST',
+      body: JSON.stringify({ activityId, value })
+    });
+  },
+  // Currency rates
+  getCurrencyRates: async () => {
+    return apiRequest('/api/config/currency');
+  },
+  getCurrencyRate: async (currency) => {
+    return apiRequest(`/api/config/currency/${currency}`);
+  },
+  convertCurrency: async (amount, from, to) => {
+    return apiRequest(`/api/config/currency/convert?amount=${amount}&from=${from}&to=${to}`);
+  }
+};
+
+// User Goals API
+export const goalsAPI = {
+  getGoals: async () => {
+    return apiRequest('/api/auth/goals');
+  },
+  updateGoals: async (goals) => {
+    return apiRequest('/api/auth/goals', {
+      method: 'POST',
+      body: JSON.stringify(goals)
+    });
+  },
+  deleteCustomGoal: async (goalId) => {
+    return apiRequest(`/api/auth/goals/${goalId}`, {
+      method: 'DELETE'
+    });
+  },
+  updateCustomGoalProgress: async (goalId, progress) => {
+    return apiRequest(`/api/auth/goals/${goalId}/progress`, {
+      method: 'PUT',
+      body: JSON.stringify(progress)
+    });
+  }
+};
+
 // Notifications API
 export const notificationsAPI = {
   getAll: async () => {
@@ -551,5 +635,174 @@ export const notificationsAPI = {
   },
   markAllAsRead: async () => {
     return apiRequest('/api/auth/notifications/read-all', { method: 'PUT' });
+  }
+};
+
+// Admin Site Configuration API (requires admin auth)
+export const adminConfigAPI = {
+  // Get all configs
+  getAllConfigs: async () => {
+    return apiRequest('/api/config/admin/configs');
+  },
+  
+  // Seed all defaults
+  seedAllDefaults: async () => {
+    return apiRequest('/api/config/admin/seed-all', { method: 'POST' });
+  },
+  
+  // ===== FEATURES =====
+  addFeature: async (feature) => {
+    return apiRequest('/api/config/admin/features', {
+      method: 'POST',
+      body: JSON.stringify(feature)
+    });
+  },
+  updateFeature: async (featureId, updates) => {
+    return apiRequest(`/api/config/admin/features/${featureId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates)
+    });
+  },
+  deleteFeature: async (featureId) => {
+    return apiRequest(`/api/config/admin/features/${featureId}`, {
+      method: 'DELETE'
+    });
+  },
+  
+  // ===== TESTIMONIALS =====
+  addTestimonial: async (testimonial) => {
+    return apiRequest('/api/config/admin/testimonials', {
+      method: 'POST',
+      body: JSON.stringify(testimonial)
+    });
+  },
+  updateTestimonial: async (testimonialId, updates) => {
+    return apiRequest(`/api/config/admin/testimonials/${testimonialId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates)
+    });
+  },
+  deleteTestimonial: async (testimonialId) => {
+    return apiRequest(`/api/config/admin/testimonials/${testimonialId}`, {
+      method: 'DELETE'
+    });
+  },
+  
+  // ===== FOOTER LINKS =====
+  addFooterLink: async (link) => {
+    return apiRequest('/api/config/admin/footer-links', {
+      method: 'POST',
+      body: JSON.stringify(link)
+    });
+  },
+  updateFooterLink: async (linkId, updates) => {
+    return apiRequest(`/api/config/admin/footer-links/${linkId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates)
+    });
+  },
+  deleteFooterLink: async (linkId) => {
+    return apiRequest(`/api/config/admin/footer-links/${linkId}`, {
+      method: 'DELETE'
+    });
+  },
+  
+  // ===== SOCIAL LINKS =====
+  addSocialLink: async (link) => {
+    return apiRequest('/api/config/admin/social-links', {
+      method: 'POST',
+      body: JSON.stringify(link)
+    });
+  },
+  updateSocialLink: async (linkId, updates) => {
+    return apiRequest(`/api/config/admin/social-links/${linkId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates)
+    });
+  },
+  deleteSocialLink: async (linkId) => {
+    return apiRequest(`/api/config/admin/social-links/${linkId}`, {
+      method: 'DELETE'
+    });
+  },
+  
+  // ===== QUICK REPLIES =====
+  addQuickReply: async (reply) => {
+    return apiRequest('/api/config/admin/quick-replies', {
+      method: 'POST',
+      body: JSON.stringify(reply)
+    });
+  },
+  updateQuickReply: async (replyId, updates) => {
+    return apiRequest(`/api/config/admin/quick-replies/${replyId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates)
+    });
+  },
+  deleteQuickReply: async (replyId) => {
+    return apiRequest(`/api/config/admin/quick-replies/${replyId}`, {
+      method: 'DELETE'
+    });
+  },
+  
+  // ===== SECTION UPDATES =====
+  updateLandingHero: async (data) => {
+    return apiRequest('/api/config/admin/landing/hero', {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    });
+  },
+  updateLandingStats: async (data) => {
+    return apiRequest('/api/config/admin/landing/stats', {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    });
+  },
+  updateFooterInfo: async (data) => {
+    return apiRequest('/api/config/admin/footer/info', {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    });
+  },
+  updateChatbotSettings: async (data) => {
+    return apiRequest('/api/config/admin/chatbot/settings', {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    });
+  },
+  updateGeneralSettings: async (data) => {
+    return apiRequest('/api/config/admin/general/settings', {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    });
+  },
+  
+  // ===== NEWSLETTER =====
+  getNewsletterSubscribers: async (status = '', page = 1, limit = 50) => {
+    let url = `/api/config/admin/newsletter/subscribers?page=${page}&limit=${limit}`;
+    if (status) url += `&status=${status}`;
+    return apiRequest(url);
+  },
+  
+  // ===== EMISSION FACTORS =====
+  seedEmissionFactors: async () => {
+    return apiRequest('/api/config/admin/emissions/seed', { method: 'POST' });
+  },
+  updateEmissionFactor: async (activityId, updates) => {
+    return apiRequest(`/api/config/admin/emissions/${activityId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates)
+    });
+  },
+  
+  // ===== CURRENCY RATES =====
+  seedCurrencyRates: async () => {
+    return apiRequest('/api/config/admin/currency/seed', { method: 'POST' });
+  },
+  updateCurrencyRate: async (currency, rate, source = 'manual') => {
+    return apiRequest(`/api/config/admin/currency/${currency}`, {
+      method: 'PUT',
+      body: JSON.stringify({ rate, source })
+    });
   }
 };

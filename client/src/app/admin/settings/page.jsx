@@ -1,502 +1,1060 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
-  Settings, 
-  Bell, 
   Globe, 
-  Shield, 
-  Mail,
   Save,
   RefreshCw,
   Database,
-  Palette,
-  Users,
-  Lock
+  Plus,
+  Trash2,
+  Loader2,
+  Home,
+  MessageSquare,
+  Layout,
+  Share2,
+  Star,
+  FileText
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { adminConfigAPI, siteConfigAPI } from '@/lib/api';
+import { toast } from 'sonner';
 
 const SettingsPage = () => {
-  const [generalSettings, setGeneralSettings] = useState({
-    siteName: 'Green Community',
-    siteDescription: 'Empowering communities to create a sustainable future through carbon offset projects',
-    contactEmail: 'admin@greencommunity.com',
-    supportEmail: 'support@greencommunity.com',
-    timezone: 'UTC',
-    language: 'en',
-    maintenanceMode: false
-  });
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState('landing');
+  
+  // Site Config Data
+  const [landingConfig, setLandingConfig] = useState(null);
+  const [footerConfig, setFooterConfig] = useState(null);
+  const [socialConfig, setSocialConfig] = useState(null);
+  const [chatbotConfig, setChatbotConfig] = useState(null);
+  const [generalConfig, setGeneralConfig] = useState(null);
+  
+  // New item forms
+  const [newFeature, setNewFeature] = useState({ icon: '', title: '', description: '' });
+  const [newTestimonial, setNewTestimonial] = useState({ name: '', role: '', content: '', rating: 5, avatar: '' });
+  const [newFooterLink, setNewFooterLink] = useState({ category: 'Company', label: '', href: '' });
+  const [newSocialLink, setNewSocialLink] = useState({ platform: '', url: '', icon: '' });
+  const [newQuickReply, setNewQuickReply] = useState({ text: '', action: '' });
 
-  const [notificationSettings, setNotificationSettings] = useState({
-    emailNotifications: true,
-    pushNotifications: true,
-    projectUpdates: true,
-    userReports: true,
-    systemAlerts: true,
-    marketingEmails: false
-  });
+  // Load all configs on mount
+  useEffect(() => {
+    loadAllConfigs();
+  }, []);
 
-  const [securitySettings, setSecuritySettings] = useState({
-    twoFactorAuth: true,
-    sessionTimeout: 30,
-    passwordPolicy: 'strong',
-    loginAttempts: 5,
-    ipWhitelist: false
-  });
-
-  const [appearanceSettings, setAppearanceSettings] = useState({
-    primaryColor: '#10b981',
-    accentColor: '#059669',
-    logoUrl: '/logo.png',
-    faviconUrl: '/favicon.ico'
-  });
-
-  const handleGeneralSettingChange = (key, value) => {
-    setGeneralSettings(prev => ({ ...prev, [key]: value }));
+  const loadAllConfigs = async () => {
+    setIsLoading(true);
+    try {
+      const [landing, footer, social, chatbot, general] = await Promise.all([
+        siteConfigAPI.getLandingConfig(),
+        siteConfigAPI.getFooterConfig(),
+        siteConfigAPI.getSocialConfig(),
+        siteConfigAPI.getChatbotConfig(),
+        siteConfigAPI.getGeneralConfig()
+      ]);
+      
+      setLandingConfig(landing.success ? landing.data : null);
+      setFooterConfig(footer.success ? footer.data : null);
+      setSocialConfig(social.success ? social.data : null);
+      setChatbotConfig(chatbot.success ? chatbot.data : null);
+      setGeneralConfig(general.success ? general.data : null);
+    } catch (error) {
+      console.error('Failed to load configs:', error);
+      toast.error('Failed to load settings');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleNotificationSettingChange = (key, value) => {
-    setNotificationSettings(prev => ({ ...prev, [key]: value }));
+  // Feature CRUD
+  const handleAddFeature = async () => {
+    if (!newFeature.title || !newFeature.description) {
+      toast.error('Please fill in title and description');
+      return;
+    }
+    setIsSaving(true);
+    try {
+      const result = await adminConfigAPI.addFeature(newFeature);
+      if (result.success) {
+        toast.success('Feature added successfully');
+        setNewFeature({ icon: '', title: '', description: '' });
+        loadAllConfigs();
+      } else {
+        toast.error(result.message || 'Failed to add feature');
+      }
+    } catch (error) {
+      toast.error('Failed to add feature');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleSecuritySettingChange = (key, value) => {
-    setSecuritySettings(prev => ({ ...prev, [key]: value }));
+  const handleDeleteFeature = async (id) => {
+    if (!confirm('Are you sure you want to delete this feature?')) return;
+    setIsSaving(true);
+    try {
+      const result = await adminConfigAPI.deleteFeature(id);
+      if (result.success) {
+        toast.success('Feature deleted');
+        loadAllConfigs();
+      } else {
+        toast.error(result.message || 'Failed to delete feature');
+      }
+    } catch (error) {
+      toast.error('Failed to delete feature');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleAppearanceSettingChange = (key, value) => {
-    setAppearanceSettings(prev => ({ ...prev, [key]: value }));
+  // Testimonial CRUD
+  const handleAddTestimonial = async () => {
+    if (!newTestimonial.name || !newTestimonial.content) {
+      toast.error('Please fill in name and content');
+      return;
+    }
+    setIsSaving(true);
+    try {
+      const result = await adminConfigAPI.addTestimonial(newTestimonial);
+      if (result.success) {
+        toast.success('Testimonial added successfully');
+        setNewTestimonial({ name: '', role: '', content: '', rating: 5, avatar: '' });
+        loadAllConfigs();
+      } else {
+        toast.error(result.message || 'Failed to add testimonial');
+      }
+    } catch (error) {
+      toast.error('Failed to add testimonial');
+    } finally {
+      setIsSaving(false);
+    }
   };
+
+  const handleDeleteTestimonial = async (id) => {
+    if (!confirm('Are you sure you want to delete this testimonial?')) return;
+    setIsSaving(true);
+    try {
+      const result = await adminConfigAPI.deleteTestimonial(id);
+      if (result.success) {
+        toast.success('Testimonial deleted');
+        loadAllConfigs();
+      } else {
+        toast.error(result.message || 'Failed to delete testimonial');
+      }
+    } catch (error) {
+      toast.error('Failed to delete testimonial');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Hero Section Update
+  const handleUpdateHero = async () => {
+    if (!landingConfig?.hero) return;
+    setIsSaving(true);
+    try {
+      const result = await adminConfigAPI.updateLandingHero(landingConfig.hero);
+      if (result.success) {
+        toast.success('Hero section updated');
+        loadAllConfigs();
+      } else {
+        toast.error(result.message || 'Failed to update hero section');
+      }
+    } catch (error) {
+      toast.error('Failed to update hero section');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Stats Update
+  const handleUpdateStats = async () => {
+    if (!landingConfig?.stats) return;
+    setIsSaving(true);
+    try {
+      const result = await adminConfigAPI.updateLandingStats(landingConfig.stats);
+      if (result.success) {
+        toast.success('Stats updated');
+        loadAllConfigs();
+      } else {
+        toast.error(result.message || 'Failed to update stats');
+      }
+    } catch (error) {
+      toast.error('Failed to update stats');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Footer Info Update
+  const handleUpdateFooterInfo = async () => {
+    if (!footerConfig) return;
+    setIsSaving(true);
+    try {
+      const result = await adminConfigAPI.updateFooterInfo({
+        companyName: footerConfig.companyName,
+        description: footerConfig.description,
+        copyright: footerConfig.copyright
+      });
+      if (result.success) {
+        toast.success('Footer info updated');
+        loadAllConfigs();
+      } else {
+        toast.error(result.message || 'Failed to update footer info');
+      }
+    } catch (error) {
+      toast.error('Failed to update footer info');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Chatbot Settings Update
+  const handleUpdateChatbotSettings = async () => {
+    if (!chatbotConfig) return;
+    setIsSaving(true);
+    try {
+      const result = await adminConfigAPI.updateChatbotSettings({
+        initialMessage: chatbotConfig.initialMessage,
+        botName: chatbotConfig.botName,
+        welcomeText: chatbotConfig.welcomeText
+      });
+      if (result.success) {
+        toast.success('Chatbot settings updated');
+        loadAllConfigs();
+      } else {
+        toast.error(result.message || 'Failed to update chatbot settings');
+      }
+    } catch (error) {
+      toast.error('Failed to update chatbot settings');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Quick Reply CRUD
+  const handleAddQuickReply = async () => {
+    if (!newQuickReply.text) {
+      toast.error('Please enter quick reply text');
+      return;
+    }
+    setIsSaving(true);
+    try {
+      const result = await adminConfigAPI.addQuickReply(newQuickReply);
+      if (result.success) {
+        toast.success('Quick reply added');
+        setNewQuickReply({ text: '', action: '' });
+        loadAllConfigs();
+      } else {
+        toast.error(result.message || 'Failed to add quick reply');
+      }
+    } catch (error) {
+      toast.error('Failed to add quick reply');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDeleteQuickReply = async (id) => {
+    if (!confirm('Delete this quick reply?')) return;
+    setIsSaving(true);
+    try {
+      const result = await adminConfigAPI.deleteQuickReply(id);
+      if (result.success) {
+        toast.success('Quick reply deleted');
+        loadAllConfigs();
+      } else {
+        toast.error(result.message || 'Failed to delete quick reply');
+      }
+    } catch (error) {
+      toast.error('Failed to delete quick reply');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Social Link CRUD
+  const handleAddSocialLink = async () => {
+    if (!newSocialLink.platform || !newSocialLink.url) {
+      toast.error('Please fill platform and URL');
+      return;
+    }
+    setIsSaving(true);
+    try {
+      const result = await adminConfigAPI.addSocialLink(newSocialLink);
+      if (result.success) {
+        toast.success('Social link added');
+        setNewSocialLink({ platform: '', url: '', icon: '' });
+        loadAllConfigs();
+      } else {
+        toast.error(result.message || 'Failed to add social link');
+      }
+    } catch (error) {
+      toast.error('Failed to add social link');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDeleteSocialLink = async (id) => {
+    if (!confirm('Delete this social link?')) return;
+    setIsSaving(true);
+    try {
+      const result = await adminConfigAPI.deleteSocialLink(id);
+      if (result.success) {
+        toast.success('Social link deleted');
+        loadAllConfigs();
+      } else {
+        toast.error(result.message || 'Failed to delete social link');
+      }
+    } catch (error) {
+      toast.error('Failed to delete social link');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Footer Link CRUD
+  const handleAddFooterLink = async () => {
+    if (!newFooterLink.category || !newFooterLink.label || !newFooterLink.href) {
+      toast.error('Please fill all fields');
+      return;
+    }
+    setIsSaving(true);
+    try {
+      const result = await adminConfigAPI.addFooterLink(newFooterLink);
+      if (result.success) {
+        toast.success('Footer link added');
+        setNewFooterLink({ category: 'Company', label: '', href: '' });
+        loadAllConfigs();
+      } else {
+        toast.error(result.message || 'Failed to add footer link');
+      }
+    } catch (error) {
+      toast.error('Failed to add footer link');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDeleteFooterLink = async (id) => {
+    if (!confirm('Delete this footer link?')) return;
+    setIsSaving(true);
+    try {
+      const result = await adminConfigAPI.deleteFooterLink(id);
+      if (result.success) {
+        toast.success('Footer link deleted');
+        loadAllConfigs();
+      } else {
+        toast.error(result.message || 'Failed to delete footer link');
+      }
+    } catch (error) {
+      toast.error('Failed to delete footer link');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Seed All Defaults
+  const handleSeedDefaults = async () => {
+    if (!confirm('This will reset ALL site configs to defaults. Continue?')) return;
+    setIsSaving(true);
+    try {
+      const result = await adminConfigAPI.seedAllDefaults();
+      if (result.success) {
+        toast.success('All configs reset to defaults');
+        loadAllConfigs();
+      } else {
+        toast.error(result.message || 'Failed to reset configs');
+      }
+    } catch (error) {
+      toast.error('Failed to reset configs');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-green-600" />
+        <span className="ml-2">Loading settings...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Settings</h1>
-          <p className="text-muted-foreground">Configure platform settings and preferences</p>
+          <h1 className="text-3xl font-bold text-foreground">Site Settings</h1>
+          <p className="text-muted-foreground">Manage your site content and configuration</p>
         </div>
-        <div className="grid grid-cols-2 md:flex gap-2 w-full md:w-auto">
-          <Button variant="outline" className="w-full justify-center md:w-auto md:justify-start">
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Reset to Default
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={loadAllConfigs} disabled={isLoading}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+            Refresh
           </Button>
-          <Button className="w-full justify-center md:w-auto md:justify-start">
-            <Save className="h-4 w-4 mr-2" />
-            Save Changes
+          <Button variant="destructive" onClick={handleSeedDefaults} disabled={isSaving}>
+            <Database className="h-4 w-4 mr-2" />
+            Reset to Defaults
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* General Settings */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Globe className="h-5 w-5" />
-              General Settings
-            </CardTitle>
-            <CardDescription>Basic platform configuration</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="siteName">Site Name</Label>
-              <Input
-                id="siteName"
-                value={generalSettings.siteName}
-                onChange={(e) => handleGeneralSettingChange('siteName', e.target.value)}
-                className="mt-1"
-              />
-            </div>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="landing">
+            <Home className="h-4 w-4 mr-2" />
+            Landing
+          </TabsTrigger>
+          <TabsTrigger value="features">
+            <Layout className="h-4 w-4 mr-2" />
+            Features
+          </TabsTrigger>
+          <TabsTrigger value="testimonials">
+            <Star className="h-4 w-4 mr-2" />
+            Testimonials
+          </TabsTrigger>
+          <TabsTrigger value="footer">
+            <FileText className="h-4 w-4 mr-2" />
+            Footer
+          </TabsTrigger>
+          <TabsTrigger value="chatbot">
+            <MessageSquare className="h-4 w-4 mr-2" />
+            Chatbot
+          </TabsTrigger>
+        </TabsList>
 
-            <div>
-              <Label htmlFor="siteDescription">Site Description</Label>
-              <Textarea
-                id="siteDescription"
-                value={generalSettings.siteDescription}
-                onChange={(e) => handleGeneralSettingChange('siteDescription', e.target.value)}
-                className="mt-1"
-                rows={3}
-              />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Landing Page Tab */}
+        <TabsContent value="landing" className="space-y-6">
+          {/* Hero Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Globe className="h-5 w-5" />
+                Hero Section
+              </CardTitle>
+              <CardDescription>Configure the main hero banner on the landing page</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="contactEmail">Contact Email</Label>
+                <Label htmlFor="heroTitle">Title</Label>
                 <Input
-                  id="contactEmail"
-                  type="email"
-                  value={generalSettings.contactEmail}
-                  onChange={(e) => handleGeneralSettingChange('contactEmail', e.target.value)}
+                  id="heroTitle"
+                  value={landingConfig?.hero?.title || ''}
+                  onChange={(e) => setLandingConfig(prev => ({
+                    ...prev,
+                    hero: { ...prev?.hero, title: e.target.value }
+                  }))}
                   className="mt-1"
                 />
               </div>
               <div>
-                <Label htmlFor="supportEmail">Support Email</Label>
-                <Input
-                  id="supportEmail"
-                  type="email"
-                  value={generalSettings.supportEmail}
-                  onChange={(e) => handleGeneralSettingChange('supportEmail', e.target.value)}
+                <Label htmlFor="heroSubtitle">Subtitle</Label>
+                <Textarea
+                  id="heroSubtitle"
+                  value={landingConfig?.hero?.subtitle || ''}
+                  onChange={(e) => setLandingConfig(prev => ({
+                    ...prev,
+                    hero: { ...prev?.hero, subtitle: e.target.value }
+                  }))}
                   className="mt-1"
+                  rows={3}
                 />
               </div>
-            </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="ctaText">CTA Button Text</Label>
+                  <Input
+                    id="ctaText"
+                    value={landingConfig?.hero?.ctaText || ''}
+                    onChange={(e) => setLandingConfig(prev => ({
+                      ...prev,
+                      hero: { ...prev?.hero, ctaText: e.target.value }
+                    }))}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="ctaLink">CTA Button Link</Label>
+                  <Input
+                    id="ctaLink"
+                    value={landingConfig?.hero?.ctaLink || ''}
+                    onChange={(e) => setLandingConfig(prev => ({
+                      ...prev,
+                      hero: { ...prev?.hero, ctaLink: e.target.value }
+                    }))}
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+              <Button onClick={handleUpdateHero} disabled={isSaving}>
+                {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+                Save Hero Section
+              </Button>
+            </CardContent>
+          </Card>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="timezone">Timezone</Label>
-                <Select value={generalSettings.timezone} onValueChange={(value) => handleGeneralSettingChange('timezone', value)}>
-                  <SelectTrigger className="mt-1">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="UTC">UTC</SelectItem>
-                    <SelectItem value="EST">EST</SelectItem>
-                    <SelectItem value="PST">PST</SelectItem>
-                    <SelectItem value="GMT">GMT</SelectItem>
-                  </SelectContent>
-                </Select>
+          {/* Stats Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Statistics</CardTitle>
+              <CardDescription>Numbers shown on the landing page</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {landingConfig?.stats?.map((stat, index) => (
+                  <div key={index} className="space-y-2">
+                    <Label>Stat {index + 1} Value</Label>
+                    <Input
+                      value={stat.value || ''}
+                      onChange={(e) => {
+                        const newStats = [...(landingConfig?.stats || [])];
+                        newStats[index] = { ...newStats[index], value: e.target.value };
+                        setLandingConfig(prev => ({ ...prev, stats: newStats }));
+                      }}
+                    />
+                    <Label>Label</Label>
+                    <Input
+                      value={stat.label || ''}
+                      onChange={(e) => {
+                        const newStats = [...(landingConfig?.stats || [])];
+                        newStats[index] = { ...newStats[index], label: e.target.value };
+                        setLandingConfig(prev => ({ ...prev, stats: newStats }));
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+              <Button onClick={handleUpdateStats} disabled={isSaving}>
+                {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+                Save Stats
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Features Tab */}
+        <TabsContent value="features" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Add New Feature</CardTitle>
+              <CardDescription>Features displayed on the landing page</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="featureIcon">Icon Name (e.g., Leaf, Globe)</Label>
+                  <Input
+                    id="featureIcon"
+                    value={newFeature.icon}
+                    onChange={(e) => setNewFeature(prev => ({ ...prev, icon: e.target.value }))}
+                    placeholder="Leaf"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="featureTitle">Title</Label>
+                  <Input
+                    id="featureTitle"
+                    value={newFeature.title}
+                    onChange={(e) => setNewFeature(prev => ({ ...prev, title: e.target.value }))}
+                    placeholder="Feature Title"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="featureDesc">Description</Label>
+                  <Input
+                    id="featureDesc"
+                    value={newFeature.description}
+                    onChange={(e) => setNewFeature(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder="Feature description..."
+                  />
+                </div>
+              </div>
+              <Button onClick={handleAddFeature} disabled={isSaving}>
+                {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plus className="h-4 w-4 mr-2" />}
+                Add Feature
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Current Features</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {landingConfig?.features?.map((feature, index) => (
+                  <div key={feature._id || index} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <Badge variant="outline">{feature.icon || 'No icon'}</Badge>
+                      <div>
+                        <p className="font-medium">{feature.title}</p>
+                        <p className="text-sm text-muted-foreground">{feature.description}</p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      onClick={() => handleDeleteFeature(feature._id)}
+                      disabled={isSaving}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+                {(!landingConfig?.features || landingConfig.features.length === 0) && (
+                  <p className="text-muted-foreground text-center py-4">No features added yet</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Testimonials Tab */}
+        <TabsContent value="testimonials" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Add New Testimonial</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="testimonialName">Name</Label>
+                  <Input
+                    id="testimonialName"
+                    value={newTestimonial.name}
+                    onChange={(e) => setNewTestimonial(prev => ({ ...prev, name: e.target.value }))}
+                    placeholder="John Doe"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="testimonialRole">Role</Label>
+                  <Input
+                    id="testimonialRole"
+                    value={newTestimonial.role}
+                    onChange={(e) => setNewTestimonial(prev => ({ ...prev, role: e.target.value }))}
+                    placeholder="CEO, Company"
+                  />
+                </div>
               </div>
               <div>
-                <Label htmlFor="language">Language</Label>
-                <Select value={generalSettings.language} onValueChange={(value) => handleGeneralSettingChange('language', value)}>
-                  <SelectTrigger className="mt-1">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="en">English</SelectItem>
-                    <SelectItem value="es">Spanish</SelectItem>
-                    <SelectItem value="fr">French</SelectItem>
-                    <SelectItem value="de">German</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="testimonialContent">Content</Label>
+                <Textarea
+                  id="testimonialContent"
+                  value={newTestimonial.content}
+                  onChange={(e) => setNewTestimonial(prev => ({ ...prev, content: e.target.value }))}
+                  placeholder="What they said about your service..."
+                  rows={3}
+                />
               </div>
-            </div>
-
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
-              <div>
-                <Label htmlFor="maintenanceMode">Maintenance Mode</Label>
-                <p className="text-sm text-muted-foreground">Temporarily disable the platform</p>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="testimonialRating">Rating (1-5)</Label>
+                  <Select
+                    value={newTestimonial.rating?.toString()}
+                    onValueChange={(value) => setNewTestimonial(prev => ({ ...prev, rating: parseInt(value) }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[1, 2, 3, 4, 5].map(n => (
+                        <SelectItem key={n} value={n.toString()}>{n} Star{n > 1 ? 's' : ''}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="testimonialAvatar">Avatar URL (optional)</Label>
+                  <Input
+                    id="testimonialAvatar"
+                    value={newTestimonial.avatar}
+                    onChange={(e) => setNewTestimonial(prev => ({ ...prev, avatar: e.target.value }))}
+                    placeholder="/avatars/user.jpg"
+                  />
+                </div>
               </div>
-              <Switch
-                id="maintenanceMode"
-                checked={generalSettings.maintenanceMode}
-                onCheckedChange={(checked) => handleGeneralSettingChange('maintenanceMode', checked)}
-              />
-            </div>
-          </CardContent>
-        </Card>
+              <Button onClick={handleAddTestimonial} disabled={isSaving}>
+                {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plus className="h-4 w-4 mr-2" />}
+                Add Testimonial
+              </Button>
+            </CardContent>
+          </Card>
 
-        {/* Notification Settings */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Bell className="h-5 w-5" />
-              Notification Settings
-            </CardTitle>
-            <CardDescription>Configure notification preferences</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
-              <div>
-                <Label htmlFor="emailNotifications">Email Notifications</Label>
-                <p className="text-sm text-muted-foreground">Receive notifications via email</p>
+          <Card>
+            <CardHeader>
+              <CardTitle>Current Testimonials</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {landingConfig?.testimonials?.map((testimonial, index) => (
+                  <div key={testimonial._id || index} className="flex items-start justify-between p-4 border rounded-lg">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <p className="font-medium">{testimonial.name}</p>
+                        <Badge variant="secondary">{testimonial.role}</Badge>
+                        <div className="flex">
+                          {[...Array(testimonial.rating || 5)].map((_, i) => (
+                            <Star key={i} className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                          ))}
+                        </div>
+                      </div>
+                      <p className="text-sm text-muted-foreground">{testimonial.content}</p>
+                    </div>
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      onClick={() => handleDeleteTestimonial(testimonial._id)}
+                      disabled={isSaving}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+                {(!landingConfig?.testimonials || landingConfig.testimonials.length === 0) && (
+                  <p className="text-muted-foreground text-center py-4">No testimonials added yet</p>
+                )}
               </div>
-              <Switch
-                id="emailNotifications"
-                checked={notificationSettings.emailNotifications}
-                onCheckedChange={(checked) => handleNotificationSettingChange('emailNotifications', checked)}
-              />
-            </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+        {/* Footer Tab */}
+        <TabsContent value="footer" className="space-y-6">
+          {/* Footer Info */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Footer Information</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="pushNotifications">Push Notifications</Label>
-                <p className="text-sm text-muted-foreground">Receive browser push notifications</p>
-              </div>
-              <Switch
-                id="pushNotifications"
-                checked={notificationSettings.pushNotifications}
-                onCheckedChange={(checked) => handleNotificationSettingChange('pushNotifications', checked)}
-              />
-            </div>
-
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
-              <div>
-                <Label htmlFor="projectUpdates">Project Updates</Label>
-                <p className="text-sm text-muted-foreground">Get notified about project changes</p>
-              </div>
-              <Switch
-                id="projectUpdates"
-                checked={notificationSettings.projectUpdates}
-                onCheckedChange={(checked) => handleNotificationSettingChange('projectUpdates', checked)}
-              />
-            </div>
-
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
-              <div>
-                <Label htmlFor="userReports">User Reports</Label>
-                <p className="text-sm text-muted-foreground">Receive user report notifications</p>
-              </div>
-              <Switch
-                id="userReports"
-                checked={notificationSettings.userReports}
-                onCheckedChange={(checked) => handleNotificationSettingChange('userReports', checked)}
-              />
-            </div>
-
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
-              <div>
-                <Label htmlFor="systemAlerts">System Alerts</Label>
-                <p className="text-sm text-muted-foreground">Critical system notifications</p>
-              </div>
-              <Switch
-                id="systemAlerts"
-                checked={notificationSettings.systemAlerts}
-                onCheckedChange={(checked) => handleNotificationSettingChange('systemAlerts', checked)}
-              />
-            </div>
-
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
-              <div>
-                <Label htmlFor="marketingEmails">Marketing Emails</Label>
-                <p className="text-sm text-muted-foreground">Receive promotional content</p>
-              </div>
-              <Switch
-                id="marketingEmails"
-                checked={notificationSettings.marketingEmails}
-                onCheckedChange={(checked) => handleNotificationSettingChange('marketingEmails', checked)}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Security Settings */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Shield className="h-5 w-5" />
-              Security Settings
-            </CardTitle>
-            <CardDescription>Configure security and authentication</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
-              <div>
-                <Label htmlFor="twoFactorAuth">Two-Factor Authentication</Label>
-                <p className="text-sm text-muted-foreground">Require 2FA for admin accounts</p>
-              </div>
-              <Switch
-                id="twoFactorAuth"
-                checked={securitySettings.twoFactorAuth}
-                onCheckedChange={(checked) => handleSecuritySettingChange('twoFactorAuth', checked)}
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="sessionTimeout">Session Timeout (minutes)</Label>
-              <Select value={securitySettings.sessionTimeout.toString()} onValueChange={(value) => handleSecuritySettingChange('sessionTimeout', parseInt(value))}>
-                <SelectTrigger className="mt-1">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="15">15 minutes</SelectItem>
-                  <SelectItem value="30">30 minutes</SelectItem>
-                  <SelectItem value="60">1 hour</SelectItem>
-                  <SelectItem value="120">2 hours</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label htmlFor="passwordPolicy">Password Policy</Label>
-              <Select value={securitySettings.passwordPolicy} onValueChange={(value) => handleSecuritySettingChange('passwordPolicy', value)}>
-                <SelectTrigger className="mt-1">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="basic">Basic (8+ characters)</SelectItem>
-                  <SelectItem value="strong">Strong (12+ chars, symbols)</SelectItem>
-                  <SelectItem value="very-strong">Very Strong (16+ chars, mixed)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label htmlFor="loginAttempts">Max Login Attempts</Label>
-              <Select value={securitySettings.loginAttempts.toString()} onValueChange={(value) => handleSecuritySettingChange('loginAttempts', parseInt(value))}>
-                <SelectTrigger className="mt-1">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="3">3 attempts</SelectItem>
-                  <SelectItem value="5">5 attempts</SelectItem>
-                  <SelectItem value="10">10 attempts</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
-              <div>
-                <Label htmlFor="ipWhitelist">IP Whitelist</Label>
-                <p className="text-sm text-muted-foreground">Restrict admin access to specific IPs</p>
-              </div>
-              <Switch
-                id="ipWhitelist"
-                checked={securitySettings.ipWhitelist}
-                onCheckedChange={(checked) => handleSecuritySettingChange('ipWhitelist', checked)}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Appearance Settings */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Palette className="h-5 w-5" />
-              Appearance Settings
-            </CardTitle>
-            <CardDescription>Customize platform appearance</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="primaryColor">Primary Color</Label>
+                <Label htmlFor="companyName">Company Name</Label>
                 <Input
-                  id="primaryColor"
-                  type="color"
-                  value={appearanceSettings.primaryColor}
-                  onChange={(e) => handleAppearanceSettingChange('primaryColor', e.target.value)}
-                  className="mt-1 h-10"
+                  id="companyName"
+                  value={footerConfig?.companyName || ''}
+                  onChange={(e) => setFooterConfig(prev => ({ ...prev, companyName: e.target.value }))}
                 />
               </div>
               <div>
-                <Label htmlFor="accentColor">Accent Color</Label>
-                <Input
-                  id="accentColor"
-                  type="color"
-                  value={appearanceSettings.accentColor}
-                  onChange={(e) => handleAppearanceSettingChange('accentColor', e.target.value)}
-                  className="mt-1 h-10"
+                <Label htmlFor="footerDescription">Description</Label>
+                <Textarea
+                  id="footerDescription"
+                  value={footerConfig?.description || ''}
+                  onChange={(e) => setFooterConfig(prev => ({ ...prev, description: e.target.value }))}
+                  rows={2}
                 />
               </div>
-            </div>
+              <div>
+                <Label htmlFor="copyright">Copyright Text</Label>
+                <Input
+                  id="copyright"
+                  value={footerConfig?.copyright || ''}
+                  onChange={(e) => setFooterConfig(prev => ({ ...prev, copyright: e.target.value }))}
+                />
+              </div>
+              <Button onClick={handleUpdateFooterInfo} disabled={isSaving}>
+                {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+                Save Footer Info
+              </Button>
+            </CardContent>
+          </Card>
 
-            <div>
-              <Label htmlFor="logoUrl">Logo URL</Label>
-              <Input
-                id="logoUrl"
-                value={appearanceSettings.logoUrl}
-                onChange={(e) => handleAppearanceSettingChange('logoUrl', e.target.value)}
-                className="mt-1"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="faviconUrl">Favicon URL</Label>
-              <Input
-                id="faviconUrl"
-                value={appearanceSettings.faviconUrl}
-                onChange={(e) => handleAppearanceSettingChange('faviconUrl', e.target.value)}
-                className="mt-1"
-              />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Database Settings */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Database className="h-5 w-5" />
-            Database Settings
-          </CardTitle>
-          <CardDescription>Database configuration and maintenance</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-            <div className="p-4 border rounded-lg">
-              <h4 className="font-medium mb-2">Database Status</h4>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span>Status</span>
-                  <Badge className="bg-green-100 text-green-800">Connected</Badge>
+          {/* Footer Links */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Add Footer Link</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <Label>Category</Label>
+                  <Select
+                    value={newFooterLink.category}
+                    onValueChange={(value) => setNewFooterLink(prev => ({ ...prev, category: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Company">Company</SelectItem>
+                      <SelectItem value="Resources">Resources</SelectItem>
+                      <SelectItem value="Legal">Legal</SelectItem>
+                      <SelectItem value="Support">Support</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-                <div className="flex justify-between">
-                  <span>Size</span>
-                  <span>2.4 GB</span>
+                <div>
+                  <Label>Label</Label>
+                  <Input
+                    value={newFooterLink.label}
+                    onChange={(e) => setNewFooterLink(prev => ({ ...prev, label: e.target.value }))}
+                    placeholder="About Us"
+                  />
                 </div>
-                <div className="flex justify-between">
-                  <span>Tables</span>
-                  <span>24</span>
+                <div>
+                  <Label>URL</Label>
+                  <Input
+                    value={newFooterLink.href}
+                    onChange={(e) => setNewFooterLink(prev => ({ ...prev, href: e.target.value }))}
+                    placeholder="/about"
+                  />
                 </div>
               </div>
-            </div>
-            
-            <div className="p-4 border rounded-lg">
-              <h4 className="font-medium mb-2">Backup Status</h4>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span>Last Backup</span>
-                  <span>2 hours ago</span>
+              <Button onClick={handleAddFooterLink} disabled={isSaving}>
+                {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plus className="h-4 w-4 mr-2" />}
+                Add Link
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Current Footer Links</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {footerConfig?.links?.map((link, index) => (
+                  <div key={link._id || index} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <Badge>{link.category}</Badge>
+                      <span className="font-medium">{link.label}</span>
+                      <span className="text-sm text-muted-foreground">{link.href}</span>
+                    </div>
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      onClick={() => handleDeleteFooterLink(link._id)}
+                      disabled={isSaving}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+                {(!footerConfig?.links || footerConfig.links.length === 0) && (
+                  <p className="text-muted-foreground text-center py-4">No footer links added yet</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Social Links */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Add Social Link</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <Label>Platform</Label>
+                  <Select
+                    value={newSocialLink.platform}
+                    onValueChange={(value) => setNewSocialLink(prev => ({ ...prev, platform: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select platform" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="facebook">Facebook</SelectItem>
+                      <SelectItem value="twitter">Twitter/X</SelectItem>
+                      <SelectItem value="instagram">Instagram</SelectItem>
+                      <SelectItem value="linkedin">LinkedIn</SelectItem>
+                      <SelectItem value="youtube">YouTube</SelectItem>
+                      <SelectItem value="github">GitHub</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-                <div className="flex justify-between">
-                  <span>Next Backup</span>
-                  <span>22 hours</span>
+                <div>
+                  <Label>URL</Label>
+                  <Input
+                    value={newSocialLink.url}
+                    onChange={(e) => setNewSocialLink(prev => ({ ...prev, url: e.target.value }))}
+                    placeholder="https://..."
+                  />
                 </div>
-                <div className="flex justify-between">
-                  <span>Auto Backup</span>
-                  <Badge className="bg-green-100 text-green-800">Enabled</Badge>
+                <div>
+                  <Label>Icon (optional)</Label>
+                  <Input
+                    value={newSocialLink.icon}
+                    onChange={(e) => setNewSocialLink(prev => ({ ...prev, icon: e.target.value }))}
+                    placeholder="Facebook"
+                  />
                 </div>
               </div>
-            </div>
-            
-            <div className="p-4 border rounded-lg">
-              <h4 className="font-medium mb-2">Performance</h4>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span>Response Time</span>
-                  <span>45ms</span>
+              <Button onClick={handleAddSocialLink} disabled={isSaving}>
+                {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plus className="h-4 w-4 mr-2" />}
+                Add Social Link
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Current Social Links</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-3">
+                {socialConfig?.links?.map((link, index) => (
+                  <div key={link._id || index} className="flex items-center gap-2 p-2 border rounded-lg">
+                    <Share2 className="h-4 w-4" />
+                    <span className="font-medium capitalize">{link.platform}</span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6"
+                      onClick={() => handleDeleteSocialLink(link._id)}
+                      disabled={isSaving}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+                {(!socialConfig?.links || socialConfig.links.length === 0) && (
+                  <p className="text-muted-foreground">No social links added yet</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Chatbot Tab */}
+        <TabsContent value="chatbot" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Chatbot Settings</CardTitle>
+              <CardDescription>Configure the AI chatbot behavior</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="botName">Bot Name</Label>
+                <Input
+                  id="botName"
+                  value={chatbotConfig?.botName || ''}
+                  onChange={(e) => setChatbotConfig(prev => ({ ...prev, botName: e.target.value }))}
+                  placeholder="Eco Assistant"
+                />
+              </div>
+              <div>
+                <Label htmlFor="welcomeText">Welcome Text</Label>
+                <Input
+                  id="welcomeText"
+                  value={chatbotConfig?.welcomeText || ''}
+                  onChange={(e) => setChatbotConfig(prev => ({ ...prev, welcomeText: e.target.value }))}
+                  placeholder="Welcome message..."
+                />
+              </div>
+              <div>
+                <Label htmlFor="initialMessage">Initial Message</Label>
+                <Textarea
+                  id="initialMessage"
+                  value={chatbotConfig?.initialMessage || ''}
+                  onChange={(e) => setChatbotConfig(prev => ({ ...prev, initialMessage: e.target.value }))}
+                  placeholder="Hello! How can I help you today?"
+                  rows={3}
+                />
+              </div>
+              <Button onClick={handleUpdateChatbotSettings} disabled={isSaving}>
+                {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+                Save Chatbot Settings
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Quick Replies */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Add Quick Reply</CardTitle>
+              <CardDescription>Suggested replies shown to users</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label>Text</Label>
+                  <Input
+                    value={newQuickReply.text}
+                    onChange={(e) => setNewQuickReply(prev => ({ ...prev, text: e.target.value }))}
+                    placeholder="Calculate my footprint"
+                  />
                 </div>
-                <div className="flex justify-between">
-                  <span>Uptime</span>
-                  <span>99.9%</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Active Connections</span>
-                  <span>12</span>
+                <div>
+                  <Label>Action (optional)</Label>
+                  <Input
+                    value={newQuickReply.action}
+                    onChange={(e) => setNewQuickReply(prev => ({ ...prev, action: e.target.value }))}
+                    placeholder="calculate_footprint"
+                  />
                 </div>
               </div>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-6">
-            <Button variant="outline" className="w-full justify-center">
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Optimize Database
-            </Button>
-            <Button variant="outline" className="w-full justify-center">
-              <Database className="h-4 w-4 mr-2" />
-              Create Backup
-            </Button>
-            <Button variant="outline" className="w-full justify-center">
-              <Lock className="h-4 w-4 mr-2" />
-              Security Scan
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+              <Button onClick={handleAddQuickReply} disabled={isSaving}>
+                {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plus className="h-4 w-4 mr-2" />}
+                Add Quick Reply
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Current Quick Replies</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-2">
+                {chatbotConfig?.quickReplies?.map((reply, index) => (
+                  <div key={reply._id || index} className="flex items-center gap-2 p-2 border rounded-lg bg-accent/50">
+                    <MessageSquare className="h-4 w-4" />
+                    <span>{reply.text}</span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6"
+                      onClick={() => handleDeleteQuickReply(reply._id)}
+                      disabled={isSaving}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+                {(!chatbotConfig?.quickReplies || chatbotConfig.quickReplies.length === 0) && (
+                  <p className="text-muted-foreground">No quick replies added yet</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Help Categories */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Help Categories</CardTitle>
+              <CardDescription>Categories shown in the chatbot help tab</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {chatbotConfig?.helpCategories?.map((cat, index) => (
+                  <div key={index} className="p-3 border rounded-lg">
+                    <p className="font-medium">{cat.title}</p>
+                    <p className="text-sm text-muted-foreground">{cat.count}</p>
+                  </div>
+                ))}
+                {(!chatbotConfig?.helpCategories || chatbotConfig.helpCategories.length === 0) && (
+                  <p className="text-muted-foreground text-center py-4">No help categories configured</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
 
-export default SettingsPage; 
+export default SettingsPage;

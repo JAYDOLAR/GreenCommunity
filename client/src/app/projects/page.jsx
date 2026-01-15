@@ -256,23 +256,78 @@ const Projects = () => {
     );
   }
 
-  const regions = [
-    { value: 'all', label: 'All Regions' },
-    { value: 'north-india', label: 'North India' },
-    { value: 'south-india', label: 'South India' },
-    { value: 'west-india', label: 'West India' },
-    { value: 'east-india', label: 'East India' },
-    { value: 'central-india', label: 'Central India' },
-    { value: 'northeast-india', label: 'Northeast India' },
-  ];
+  // Derive regions from actual project data
+  const regions = React.useMemo(() => {
+    const defaultRegions = [
+      { value: 'all', label: 'All Regions' },
+      { value: 'north-india', label: 'North India' },
+      { value: 'south-india', label: 'South India' },
+      { value: 'west-india', label: 'West India' },
+      { value: 'east-india', label: 'East India' },
+      { value: 'central-india', label: 'Central India' },
+      { value: 'northeast-india', label: 'Northeast India' },
+    ];
+    
+    if (projects.length === 0) return defaultRegions;
+    
+    // Extract unique regions from projects
+    const uniqueRegions = [...new Set(projects.map(p => p.region).filter(Boolean))];
+    
+    // If we have project data, derive regions from it
+    if (uniqueRegions.length > 0) {
+      return [
+        { value: 'all', label: 'All Regions' },
+        ...uniqueRegions.map(region => ({
+          value: region,
+          label: region.split('-').map(word => 
+            word.charAt(0).toUpperCase() + word.slice(1)
+          ).join(' ')
+        }))
+      ];
+    }
+    
+    return defaultRegions;
+  }, [projects]);
 
-  const projectTypes = [
-    { value: 'all', label: 'All Types' },
-    { value: 'forestry', label: 'Forestry & Land Use' },
-    { value: 'renewable', label: 'Renewable Energy' },
-    { value: 'water', label: 'Water Conservation' },
-    { value: 'agriculture', label: 'Sustainable Agriculture' },
-  ];
+  // Derive project types from actual project data
+  const projectTypes = React.useMemo(() => {
+    const typeLabels = {
+      'forestry': 'Forestry & Land Use',
+      'renewable': 'Renewable Energy',
+      'water': 'Water Conservation',
+      'agriculture': 'Sustainable Agriculture',
+      'waste': 'Waste Management',
+      'transportation': 'Clean Transportation',
+      'industry': 'Industrial Efficiency',
+      'community': 'Community Projects'
+    };
+    
+    const defaultTypes = [
+      { value: 'all', label: 'All Types' },
+      { value: 'forestry', label: 'Forestry & Land Use' },
+      { value: 'renewable', label: 'Renewable Energy' },
+      { value: 'water', label: 'Water Conservation' },
+      { value: 'agriculture', label: 'Sustainable Agriculture' },
+    ];
+    
+    if (projects.length === 0) return defaultTypes;
+    
+    // Extract unique types from projects
+    const uniqueTypes = [...new Set(projects.map(p => p.type).filter(Boolean))];
+    
+    // If we have project data, derive types from it
+    if (uniqueTypes.length > 0) {
+      return [
+        { value: 'all', label: 'All Types' },
+        ...uniqueTypes.map(type => ({
+          value: type,
+          label: typeLabels[type] || type.charAt(0).toUpperCase() + type.slice(1)
+        }))
+      ];
+    }
+    
+    return defaultTypes;
+  }, [projects]);
 
   // Fetch projects from API
   useEffect(() => {

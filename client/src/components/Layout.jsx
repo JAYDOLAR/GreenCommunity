@@ -2,7 +2,6 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import FloatingParticles from './FloatingParticles';
-import ProfessionalProgress from './ProfessionalProgress';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Leaf, Menu, X, User, TrendingUp, LogOut, LayoutDashboard, FileText, ShoppingCart, TreePine, Users, Settings, Bell } from 'lucide-react';
@@ -33,7 +32,6 @@ export default function Layout({ children }) {
   const locationText = [city, country].filter(Boolean).join(', ');
   const hasLocation = Boolean(locationText);
   const [fallbackLocation, setFallbackLocation] = useState('');
-  const monthlyGoal = isAuthenticated ? 75 : 0;
   const pathname = usePathname();
   const isMobile = useMediaQuery({ maxWidth: 767 });
   const isTablet = useMediaQuery({ minWidth: 768, maxWidth: 1024 });

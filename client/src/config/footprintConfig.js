@@ -1,9 +1,115 @@
 // Footprint Log Configuration
 // This file contains all the activity types, categories, and emission factors
-// TODO: Move this data to be fetched from backend APIs
+// Data can be fetched dynamically from backend APIs
 
-import { Car, Plane, Home, Utensils, Trash2, RefreshCw, Train, Bus, Bike, RotateCcw, Zap, Ship } from 'lucide-react';
+import { Car, Plane, Home, Utensils, Trash2, RefreshCw, Train, Bus, Bike, RotateCcw, Zap, Ship, Droplets, ShoppingBag } from 'lucide-react';
+import { siteConfigAPI } from '@/lib/api';
 
+// Icon mapping for dynamic activity types
+const ICON_MAP = {
+    Car, Plane, Home, Utensils, Trash2, RefreshCw, Train, Bus, Bike, RotateCcw, Zap, Ship, Droplets, ShoppingBag
+};
+
+// Cache for emission factors from API
+let emissionFactorsCache = null;
+let emissionFactorsCacheTime = null;
+const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
+
+// Fetch emission factors from API with caching
+export const fetchEmissionFactors = async () => {
+    try {
+        const now = Date.now();
+        if (emissionFactorsCache && emissionFactorsCacheTime && (now - emissionFactorsCacheTime) < CACHE_DURATION) {
+            return emissionFactorsCache;
+        }
+        
+        const response = await siteConfigAPI.getEmissionFactors();
+        if (response.success && response.factors) {
+            emissionFactorsCache = response.factors;
+            emissionFactorsCacheTime = now;
+            return response.factors;
+        }
+        return null;
+    } catch (error) {
+        console.warn('Failed to fetch emission factors from API, using defaults:', error);
+        return null;
+    }
+};
+
+// Get dynamic activity types with API factors merged
+export const getDynamicActivityTypes = async () => {
+    const apiFactors = await fetchEmissionFactors();
+    
+    if (!apiFactors || apiFactors.length === 0) {
+        return ACTIVITY_TYPES;
+    }
+    
+    // Merge API factors with default activity types
+    return ACTIVITY_TYPES.map(activity => {
+        const apiMatch = apiFactors.find(f => f.activityType === activity.value);
+        if (apiMatch) {
+            return {
+                ...activity,
+                factor: apiMatch.factor,
+                unit: apiMatch.unit || activity.unit
+            };
+        }
+        return activity;
+    });
+};
+
+// Get category factors from API
+export const getCategoryFactors = async (category) => {
+    const apiFactors = await fetchEmissionFactors();
+    if (apiFactors) {
+        return apiFactors.filter(f => f.category === category);
+    }
+    return ACTIVITY_TYPES.filter(a => a.category === category);
+};
+
+// Calculate emissions using API factors
+export const calculateEmission = async (activityType, value, modifiers = {}) => {
+    const apiFactors = await fetchEmissionFactors();
+    let baseFactor;
+    
+    if (apiFactors) {
+        const apiMatch = apiFactors.find(f => f.activityType === activityType);
+        if (apiMatch) {
+            baseFactor = apiMatch.factor;
+        }
+    }
+    
+    if (!baseFactor) {
+        const activity = ACTIVITY_TYPES.find(a => a.value === activityType);
+        baseFactor = activity?.factor || 0;
+    }
+    
+    let emission = value * baseFactor;
+    
+    // Apply modifiers
+    if (modifiers.fuelType) {
+        const fuelModifier = FUEL_TYPES.find(f => f.value === modifiers.fuelType);
+        if (fuelModifier) emission *= fuelModifier.factor;
+    }
+    
+    if (modifiers.flightClass) {
+        const classModifier = FLIGHT_CLASSES.find(f => f.value === modifiers.flightClass);
+        if (classModifier) emission *= classModifier.factor;
+    }
+    
+    if (modifiers.energySource) {
+        const sourceModifier = ENERGY_SOURCES.find(s => s.value === modifiers.energySource);
+        if (sourceModifier) emission *= sourceModifier.factor;
+    }
+    
+    if (modifiers.passengers && modifiers.passengers > 1) {
+        emission /= modifiers.passengers;
+    }
+    
+    return Math.round(emission * 100) / 100;
+};
+
+// Default static activity types (fallback)
 export const ACTIVITY_TYPES = [
     // Transportation
     {
@@ -423,4 +529,33 @@ export const getActivitiesByCategory = (category) => {
 // Helper function to get all categories
 export const getCategories = () => {
     return [...new Set(ACTIVITY_TYPES.map(type => type.category))];
+};
+
+// Async version that uses API data
+export const getActivityTypeAsync = async (value) => {
+    const dynamicTypes = await getDynamicActivityTypes();
+    return dynamicTypes.find(type => type.value === value);
+};
+
+// Async version that uses API data
+export const getActivitiesByCategoryAsync = async (category) => {
+    const dynamicTypes = await getDynamicActivityTypes();
+    return dynamicTypes.filter(type => type.category === category);
+};
+
+// Async version that uses API data
+export const getCategoriesAsync = async () => {
+    const dynamicTypes = await getDynamicActivityTypes();
+    return [...new Set(dynamicTypes.map(type => type.category))];
+};
+
+// Get icon component for activity type
+export const getActivityIcon = (iconName) => {
+    return ICON_MAP[iconName] || Home;
+};
+
+// Clear cache (useful for admin updates)
+export const clearEmissionFactorsCache = () => {
+    emissionFactorsCache = null;
+    emissionFactorsCacheTime = null;
 };
