@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import ProjectView from "@/components/ProjectView";
 import { useParams, useRouter } from "next/navigation";
 import { projectsApi } from '@/lib/projectsApi';
+import useCurrency from '@/hooks/useCurrency';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -48,6 +49,23 @@ const ProjectDetailContent = ({ params }) => {
   const [relatedProjects, setRelatedProjects] = useState([]);
 
   const [rawId, setRawId] = useState(null);
+  const { formatPrice, convert, getSymbol, userCurrency } = useCurrency();
+  
+  // Format project funding amounts in user's preferred currency
+  const formatProjectPrice = (amountInINR) => formatPrice(amountInINR, 'INR');
+  const formatProjectPriceCr = (amountInINR) => {
+    const converted = convert(amountInINR, 'INR', userCurrency);
+    const symbol = getSymbol(userCurrency);
+    // Format large amounts appropriately based on currency
+    if (userCurrency === 'INR') {
+      return `${symbol}${(converted / 10000000).toFixed(1)}Cr`;
+    } else {
+      // For other currencies, use millions (M) notation
+      return converted >= 1000000 
+        ? `${symbol}${(converted / 1000000).toFixed(1)}M`
+        : `${symbol}${converted.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+    }
+  };
 
   // Resolve params (handles Promise in Next.js 15) without direct property access
   useEffect(() => {
@@ -366,18 +384,13 @@ const ProjectDetailContent = ({ params }) => {
                     </div>
                     <div>
                       <p className="text-2xl font-bold text-blue-600">
-                        ₹{(project.currentFunding / 10000000).toFixed(1)}Cr
+                        {formatProjectPriceCr(project.currentFunding)}
                       </p>
                       <p className="text-xs text-muted-foreground">Raised</p>
                     </div>
                     <div>
                       <p className="text-2xl font-bold text-orange-600">
-                        ₹
-                        {(
-                          Math.max(0, (project.totalFunding || 0) - (project.currentFunding || 0)) /
-                          10000000
-                        ).toFixed(1)}
-                        Cr
+                        {formatProjectPriceCr(Math.max(0, (project.totalFunding || 0) - (project.currentFunding || 0)))}
                       </p>
                       <p className="text-xs text-muted-foreground">Needed</p>
                     </div>
@@ -470,8 +483,7 @@ const ProjectDetailContent = ({ params }) => {
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Current Funding</span>
                   <span className="font-medium">
-                    ₹{(project.currentFunding / 10000000).toFixed(1)}Cr / ₹
-                    {(project.totalFunding / 10000000).toFixed(1)}Cr
+                    {formatProjectPriceCr(project.currentFunding)} / {formatProjectPriceCr(project.totalFunding)}
                   </span>
                 </div>
                 <Progress value={fundingPercentage} className="h-3" />
@@ -515,8 +527,7 @@ const ProjectDetailContent = ({ params }) => {
               <div className="space-y-4">
                 <div>
                   <Label className="text-sm">
-                    Contribution Amount: ₹
-                    {(contributionAmount[0] * 83).toLocaleString()}
+                    Contribution Amount: {formatProjectPrice(contributionAmount[0] * 83)}
                   </Label>
                   <Slider
                     value={contributionAmount}
@@ -571,8 +582,7 @@ const ProjectDetailContent = ({ params }) => {
                   <div className="space-y-4 py-4">
                     <div>
                       <Label className="text-sm">
-                        Contribution Amount: ₹
-                        {(contributionAmount[0] * 83).toLocaleString()}
+                        Contribution Amount: {formatProjectPrice(contributionAmount[0] * 83)}
                       </Label>
                       <Slider
                         value={contributionAmount}
@@ -618,9 +628,9 @@ const ProjectDetailContent = ({ params }) => {
                       }}
                       disabled={isLoading}
                     >
-                      {isLoading
+                    {isLoading
                         ? "Processing..."
-                        : `Contribute ₹${contributionAmount[0].toLocaleString()}`}
+                        : `Contribute ${formatProjectPrice(contributionAmount[0])}`}
                     </Button>
                   </DialogFooter>
                 </DialogContent>

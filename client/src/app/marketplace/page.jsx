@@ -18,12 +18,15 @@ import Layout from '@/components/Layout';
 import { MARKETPLACE_CATEGORIES, USD_TO_INR } from '@/config/marketplaceConfig';
 import { marketplaceApi } from '@/lib/marketplaceApi';
 import { useTranslation } from 'react-i18next';
+import useCurrency from '@/hooks/useCurrency';
+import { ProductCardSkeleton } from '@/components/MarketplaceSkeleton';
 
 // Shared data and logic
 const categories = MARKETPLACE_CATEGORIES;
 
 function MobileMarketplaceView() {
   const { t } = useTranslation();
+  const { formatPrice } = useCurrency();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [products, setProducts] = useState([]);
@@ -95,9 +98,7 @@ function MobileMarketplaceView() {
       {/* Products List */}
       <div className="flex flex-col gap-3 sm:gap-4">
         {isLoading ? (
-          <div className="text-center py-6 sm:py-8">
-            <div className="text-muted-foreground text-sm sm:text-base">Loading products...</div>
-          </div>
+          [...Array(6)].map((_, i) => <ProductCardSkeleton key={i} variant="list" />)
         ) : filteredProducts.length > 0 ? (
           filteredProducts.map(product => (
             <Card
@@ -112,7 +113,7 @@ function MobileMarketplaceView() {
               <div className="flex-1 space-y-2">
                 <div className="flex items-center justify-between">
                   <h3 className="font-semibold text-sm text-foreground leading-tight">{product.name}</h3>
-                  <span className="font-bold text-sm text-foreground">₹{product.price}</span>
+                  <span className="font-bold text-sm text-foreground">{formatPrice(product.price, product.currency || 'INR')}</span>
                 </div>
                 <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2">{product.description}</p>
                 {product.reviews > 0 ? (
@@ -151,6 +152,7 @@ function MobileMarketplaceView() {
 
 function TabletMarketplaceView() {
   const { t } = useTranslation();
+  const { formatPrice } = useCurrency();
   const [viewMode, setViewMode] = useState('grid');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -224,9 +226,7 @@ function TabletMarketplaceView() {
         ? 'grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 md:gap-6'
         : 'space-y-3 sm:space-y-4 md:space-y-6'}>
         {isLoading ? (
-          <div className="text-center py-6 sm:py-8 md:py-10">
-            <div className="text-muted-foreground text-sm sm:text-base md:text-lg">Loading products...</div>
-          </div>
+          [...Array(6)].map((_, i) => <ProductCardSkeleton key={i} variant={viewMode === 'grid' ? 'grid' : 'list'} />)
         ) : filteredProducts.length > 0 ? (
           filteredProducts.map(product => (
             <Card
@@ -256,7 +256,7 @@ function TabletMarketplaceView() {
                     <div className="flex items-start justify-between gap-2">
                       <h3 className="font-semibold text-sm sm:text-base text-foreground leading-tight">{product.name}</h3>
                       <div className="text-right shrink-0">
-                        <div className="font-bold text-sm sm:text-base text-foreground">₹{product.price}</div>
+                        <div className="font-bold text-sm sm:text-base text-foreground">{formatPrice(product.price, product.currency || 'INR')}</div>
                       </div>
                     </div>
                     <p className="text-xs sm:text-sm text-muted-foreground mt-1">{product.description}</p>
@@ -312,6 +312,7 @@ function TabletMarketplaceView() {
 
 function DesktopMarketplaceView() {
   const { t } = useTranslation();
+  const { formatPrice } = useCurrency();
   const [viewMode, setViewMode] = useState('grid');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -385,9 +386,7 @@ function DesktopMarketplaceView() {
         ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 lg:gap-8'
         : 'space-y-4 sm:space-y-6'}>
         {isLoading ? (
-          <div className="text-center py-8 sm:py-10 lg:py-12">
-            <div className="text-muted-foreground text-base sm:text-lg lg:text-xl">Loading products...</div>
-          </div>
+          [...Array(8)].map((_, i) => <ProductCardSkeleton key={i} variant={viewMode === 'grid' ? 'grid' : 'list'} />)
         ) : filteredProducts.length > 0 ? (
           filteredProducts.map(product => (
             <Card
@@ -418,7 +417,7 @@ function DesktopMarketplaceView() {
                     <div className="flex items-start justify-between gap-2">
                       <h3 className="font-semibold text-sm sm:text-base text-foreground leading-tight">{product.name}</h3>
                       <div className="text-right shrink-0">
-                        <div className="font-bold text-sm sm:text-base text-foreground">₹{product.price}</div>
+                        <div className="font-bold text-sm sm:text-base text-foreground">{formatPrice(product.price, product.currency || 'INR')}</div>
                       </div>
                     </div>
                     <p className="text-xs sm:text-sm text-muted-foreground mt-1">{product.description}</p>

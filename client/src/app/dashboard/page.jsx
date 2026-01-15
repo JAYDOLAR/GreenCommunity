@@ -59,6 +59,7 @@ import { Calendar as CustomCalendar } from "@/components/ui/calendar";
 import Link from "next/link";
 import { useFootprintLog } from "@/lib/useFootprintLog";
 import useStreak from "@/hooks/useStreak";
+import useCurrency from "@/hooks/useCurrency";
 import ReactMarkdown from "react-markdown";
 import { API_BASE_URL, goalsAPI } from "@/lib/api";
 import ProtectedLayout from "@/components/ProtectedLayout";
@@ -70,17 +71,12 @@ const Dashboard = () => {
   const { t } = useTranslation(["dashboard", "common"]);
   const { preferences } = usePreferences();
   const { user, isLoading } = useUser();
+  const { getSymbol, userCurrency } = useCurrency();
   const [greetingKey, setGreetingKey] = useState("greeting_morning"); // Default fallback
   const [date, setDate] = useState(new Date());
   const [userGoals, setUserGoals] = useState(null);
 
-  const currencySymbols = {
-    usd: "$",
-    eur: "€",
-    inr: "₹",
-  };
-
-  const currency = currencySymbols[preferences.currency] || "$";
+  const currency = getSymbol(userCurrency);
   // General units removed; only carbonUnits retained elsewhere
 
   const getGreetingKey = () => {

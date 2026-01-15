@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { usePreferences } from '@/context/PreferencesContext';
+import useCurrency from '@/hooks/useCurrency';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -29,10 +30,29 @@ const ProjectView = ({ project, allProjects }) => {
   const [contributionAmount, setContributionAmount] = useState([50]);
   const [isLoading, setIsLoading] = useState(false);
   const { preferences } = usePreferences();
+  const { formatPrice, convert, getSymbol, userCurrency } = useCurrency();
   const carbonUnit = (preferences?.carbonUnits || 'kg');
   // project.co2Removed assumed stored in tons; convert for display if needed
   const toPreferred = (tonsValue) => carbonUnit === 'kg' ? `${(tonsValue * 1000).toLocaleString()} kg` : `${tonsValue.toLocaleString()} tons`;
   const formatImpact = (tonsValue) => carbonUnit === 'kg' ? `${(tonsValue * 1000).toFixed(2)} kg` : `${tonsValue.toFixed(2)} tons`;
+  
+  // Format project funding amounts in user's preferred currency
+  const formatProjectPrice = (amountInINR) => formatPrice(amountInINR, 'INR');
+  const formatProjectPriceCr = (amountInINR) => {
+    const converted = convert(amountInINR, 'INR', userCurrency);
+    const symbol = getSymbol(userCurrency);
+    // Format large amounts appropriately based on currency
+    if (userCurrency === 'INR') {
+      return `${symbol}${(converted / 10000000).toFixed(1)}Cr`;
+    } else {
+      // For other currencies, use millions (M) notation
+      return converted >= 1000000 
+        ? `${symbol}${(converted / 1000000).toFixed(1)}M`
+        : `${symbol}${converted.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+    }
+  };
+  // Convert USD contribution amount to INR for display and payment
+  const contributionInINR = contributionAmount[0] * 83;
 
   if (!project) {
     return (
@@ -168,11 +188,11 @@ const ProjectView = ({ project, allProjects }) => {
                       <p className="text-xs text-muted-foreground">Funded</p>
                     </div>
                     <div>
-                      <p className="text-2xl font-bold text-blue-600">₹{(project.currentFunding/10000000).toFixed(1)}Cr</p>
+                      <p className="text-2xl font-bold text-blue-600">{formatProjectPriceCr(project.currentFunding)}</p>
                       <p className="text-xs text-muted-foreground">Raised</p>
                     </div>
                     <div>
-                      <p className="text-2xl font-bold text-orange-600">₹{((project.totalFunding - project.currentFunding)/10000000).toFixed(1)}Cr</p>
+                      <p className="text-2xl font-bold text-orange-600">{formatProjectPriceCr(project.totalFunding - project.currentFunding)}</p>
                       <p className="text-xs text-muted-foreground">Needed</p>
                     </div>
                   </div>
@@ -250,7 +270,7 @@ const ProjectView = ({ project, allProjects }) => {
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Current Funding</span>
                   <span className="font-medium">
-                    ₹{(project.currentFunding/10000000).toFixed(1)}Cr / ₹{(project.totalFunding/10000000).toFixed(1)}Cr
+                    {formatProjectPriceCr(project.currentFunding)} / {formatProjectPriceCr(project.totalFunding)}
                   </span>
                 </div>
                 <Progress value={fundingPercentage} className="h-3" />
@@ -285,7 +305,7 @@ const ProjectView = ({ project, allProjects }) => {
               <h3 className="font-semibold text-foreground mb-2">Make a Contribution</h3>
               <div className="space-y-4">
                 <div>
-                  <Label className="text-sm">Contribution Amount: ₹{(contributionAmount[0] * 83).toLocaleString()}</Label>
+                  <Label className="text-sm">Contribution Amount: {formatProjectPrice(contributionAmount[0] * 83)}</Label>
                   <Slider
                     value={contributionAmount}
                     onValueChange={setContributionAmount}
@@ -331,7 +351,7 @@ const ProjectView = ({ project, allProjects }) => {
                   </DialogHeader>
                   <div className="space-y-4 py-4">
                     <div>
-                      <Label className="text-sm">Contribution Amount: ₹{(contributionAmount[0] * 83).toLocaleString()}</Label>
+                      <Label className="text-sm">Contribution Amount: {formatProjectPrice(contributionAmount[0] * 83)}</Label>
                       <Slider
                         value={contributionAmount}
                         onValueChange={setContributionAmount}
@@ -365,7 +385,7 @@ const ProjectView = ({ project, allProjects }) => {
                       }}
                       disabled={isLoading}
                     >
-                      {isLoading ? 'Processing...' : `Contribute ₹${(contributionAmount[0] * 83).toLocaleString()}`}
+                      {isLoading ? 'Processing...' : `Contribute ${formatProjectPrice(contributionAmount[0] * 83)}`}
                     </Button>
                   </DialogFooter>
                 </DialogContent>

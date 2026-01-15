@@ -43,6 +43,7 @@ import ChatBot from '@/components/ChatBot';
 import AuthGuard from '@/components/AuthGuard';
 import Layout from '@/components/Layout';
 import { usePreferences } from '@/context/PreferencesContext';
+import useCurrency from '@/hooks/useCurrency';
 
 // Dynamically import Leaflet components to avoid SSR issues
 const MapContainer = dynamic(() => import('react-leaflet').then(mod => mod.MapContainer), {
@@ -88,10 +89,27 @@ const Projects = () => {
   // Load Leaflet setup
   useLeafletSetup();
   const { preferences } = usePreferences();
+  const { formatPrice, convert, getSymbol, userCurrency } = useCurrency();
   const carbonUnit = preferences?.carbonUnits || 'kg';
   const formatCO2 = (tonsValue) => carbonUnit === 'kg' ? `${(tonsValue * 1000).toLocaleString()} kg CO₂` : `${tonsValue.toLocaleString()} tons CO₂`;
   const displayCO2Value = (tonsValue) => carbonUnit === 'kg' ? (tonsValue * 1000).toLocaleString() : tonsValue.toLocaleString();
   const formatImpact = (tonsValue) => carbonUnit === 'kg' ? `${(tonsValue * 1000).toFixed(2)} kg CO₂` : `${tonsValue.toFixed(2)} tons CO₂`;
+  
+  // Format project funding amounts in user's preferred currency
+  const formatProjectPrice = (amountInINR) => formatPrice(amountInINR, 'INR');
+  const formatProjectPriceCr = (amountInINR) => {
+    const converted = convert(amountInINR, 'INR', userCurrency);
+    const symbol = getSymbol(userCurrency);
+    // Format large amounts appropriately based on currency
+    if (userCurrency === 'INR') {
+      return `${symbol}${(converted / 10000000).toFixed(1)}Cr`;
+    } else {
+      // For other currencies, use millions (M) notation
+      return converted >= 1000000 
+        ? `${symbol}${(converted / 1000000).toFixed(1)}M`
+        : `${symbol}${converted.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+    }
+  };
   
   const [viewMode, setViewMode] = useState(() => {
     // Initialize from localStorage if available, otherwise default to 'list'
@@ -1182,7 +1200,7 @@ const Projects = () => {
                             </div>
                             <div className="text-center">
                               <div className="text-lg sm:text-xl font-bold text-primary">
-                                ₹{project.co2PerRupee > 0 ? Math.round(1 / project.co2PerRupee).toLocaleString() : 'N/A'}
+                                {project.co2PerRupee > 0 ? formatProjectPrice(Math.round(1 / project.co2PerRupee)) : 'N/A'}
                               </div>
                               <div className="text-xs sm:text-sm text-muted-foreground">per ton CO₂</div>
                             </div>
@@ -1193,7 +1211,7 @@ const Projects = () => {
                             <div className="flex justify-between text-sm">
                               <span className="text-xs sm:text-sm text-muted-foreground">Funding Progress</span>
                               <span className="font-medium text-xs sm:text-sm">
-                                ₹{((project.currentFunding || 0) / 10000000).toFixed(1)}Cr / ₹{((project.fundingGoal || 0) / 10000000).toFixed(1)}Cr
+                                {formatProjectPriceCr(project.currentFunding || 0)} / {formatProjectPriceCr(project.fundingGoal || 0)}
                               </span>
                             </div>
                             <Progress value={project.fundingPercentage || fundingPercentage} className="h-2 sm:h-3 progress-eco" />
@@ -1268,7 +1286,7 @@ const Projects = () => {
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div>
-                <Label className="text-xs sm:text-sm">Contribution Amount: ₹{contributionAmount[0].toLocaleString()}</Label>
+                <Label className="text-xs sm:text-sm">Contribution Amount: {formatProjectPrice(contributionAmount[0])}</Label>
                 <Slider
                   value={contributionAmount}
                   onValueChange={setContributionAmount}
@@ -1278,8 +1296,8 @@ const Projects = () => {
                   className="mt-2"
                 />
                 <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                  <span>₹1,000</span>
-                  <span>₹1,00,000</span>
+                  <span>{formatProjectPrice(1000)}</span>
+                  <span>{formatProjectPrice(100000)}</span>
                 </div>
                 
                 {/* Preset amounts */}
@@ -1292,7 +1310,7 @@ const Projects = () => {
                       className="text-xs"
                       onClick={() => setContributionAmount([amount])}
                     >
-                      ₹{amount.toLocaleString()}
+                      {formatProjectPrice(amount)}
                     </Button>
                   ))}
                 </div>
@@ -1324,7 +1342,7 @@ const Projects = () => {
                 }}
                 disabled={isLoading}
               >
-                {isLoading ? 'Processing...' : `Contribute ₹${contributionAmount[0].toLocaleString()}`}
+                {isLoading ? 'Processing...' : `Contribute ${formatProjectPrice(contributionAmount[0])}`}
               </Button>
             </DialogFooter>
           </DialogContent>

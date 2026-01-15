@@ -48,6 +48,7 @@ import { authAPI } from "@/lib/api";
 import { footprintLogAPI } from "@/lib/footprintlogApi";
 import { challengesAPI } from "@/lib/api";
 import { useUser } from "@/context/UserContext";
+import useCurrency from "@/hooks/useCurrency";
 import toast from "react-hot-toast";
 
 import ProtectedLayout from "@/components/ProtectedLayout";
@@ -59,6 +60,7 @@ import TrustedDevicesManager from "@/components/TrustedDevicesManager";
 const Settings = () => {
   const { t } = useTranslation(["preferences", "common"]);
   const { user, updateUser, refreshUser, isLoading: userLoading } = useUser();
+  const { currencyRates, loading: currencyLoading } = useCurrency();
   const [activeTab, setActiveTab] = useState("profile");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -587,7 +589,7 @@ const Settings = () => {
               <div className="flex flex-col gap-2 w-full md:w-auto z-10 flex-shrink-0">
                 <Button
                   variant="destructive"
-                  className="w-full md:w-auto shadow-lg hover:shadow-xl transition-all px-6"
+                  className="w-full md:w-auto shadow-lg hover:shadow-xl transition-all px-6 text-white"
                   onClick={async () => {
                     try {
                       await authAPI.logout();
@@ -815,78 +817,6 @@ const Settings = () => {
                 </CardContent>
               </Card>
             </div>
-            <div className="space-y-6">
-              <Card className="card-eco">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-base md:text-lg">
-                    <Trophy className="h-4 w-4 md:h-5 md:w-5" />
-                    {t("preferences:achievements")}
-                  </CardTitle>
-                  <CardDescription className="text-xs md:text-sm">
-                    Your environmental milestones
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div className="flex sm:flex-col items-center gap-3 sm:gap-0 sm:text-center p-3 bg-yellow-500/10 rounded-lg border border-yellow-500/20">
-                      <Trophy className="h-10 w-10 sm:mb-2 text-yellow-500 flex-shrink-0" />
-                      <div className="text-sm sm:text-xs font-medium text-foreground">
-                        {t("Eco Warrior")}
-                      </div>
-                    </div>
-                    <div className="flex sm:flex-col items-center gap-3 sm:gap-0 sm:text-center p-3 bg-green-500/10 rounded-lg border border-green-500/20">
-                      <Leaf className="h-10 w-10 sm:mb-2 text-green-500 flex-shrink-0" />
-                      <div className="text-sm sm:text-xs font-medium text-foreground">
-                        {t("Plant Protector")}
-                      </div>
-                    </div>
-                    <div className="flex sm:flex-col items-center gap-3 sm:gap-0 sm:text-center p-3 bg-blue-500/10 rounded-lg border border-blue-500/20">
-                      <Recycle className="h-10 w-10 sm:mb-2 text-blue-500 flex-shrink-0" />
-                      <div className="text-sm sm:text-xs font-medium text-foreground">
-                        {t("Zero Waste")}
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="card-gradient">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-base md:text-lg">
-                    <MapPin className="h-4 w-4 md:h-5 md:w-5" />
-                    Quick Info
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex items-start gap-3 p-3 bg-accent/30 rounded-lg">
-                    <Mail className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs md:text-sm text-muted-foreground">Email</p>
-                      <p className="text-sm md:text-base font-medium truncate">
-                        {profileData.email || "Not set"}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3 p-3 bg-accent/30 rounded-lg">
-                    <Phone className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs md:text-sm text-muted-foreground">Phone</p>
-                      <p className="text-sm md:text-base font-medium">
-                        {profileData.phone || "Not set"}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3 p-3 bg-accent/30 rounded-lg">
-                    <MapPin className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs md:text-sm text-muted-foreground">Location</p>
-                      <p className="text-sm md:text-base font-medium">
-                        {profileData.location || "Not set"}
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
           </div>
         </TabsContent>
         {/* Notifications Tab */}
@@ -1108,12 +1038,30 @@ const Settings = () => {
                     }
                   >
                     <SelectTrigger className="mt-1">
-                      <SelectValue />
+                      <SelectValue placeholder="Select currency" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="usd">USD ($)</SelectItem>
-                      <SelectItem value="eur">EUR (€)</SelectItem>
-                      <SelectItem value="inr">INR (₹)</SelectItem>
+                      {currencyLoading ? (
+                        <SelectItem value={preferences.currency || "usd"} disabled>
+                          Loading currencies...
+                        </SelectItem>
+                      ) : currencyRates.length > 0 ? (
+                        currencyRates.map((curr) => (
+                          <SelectItem 
+                            key={curr.currency} 
+                            value={curr.currency.toLowerCase()}
+                          >
+                            {curr.currency} ({curr.symbol}) - {curr.name}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <>
+                          <SelectItem value="usd">USD ($) - US Dollar</SelectItem>
+                          <SelectItem value="eur">EUR (€) - Euro</SelectItem>
+                          <SelectItem value="inr">INR (₹) - Indian Rupee</SelectItem>
+                          <SelectItem value="gbp">GBP (£) - British Pound</SelectItem>
+                        </>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>

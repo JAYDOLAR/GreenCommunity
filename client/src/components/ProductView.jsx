@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import useCurrency from '@/hooks/useCurrency';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -18,6 +19,7 @@ import {
 const ProductView = ({ product, allProducts }) => {
   const router = useRouter();
   const [selectedImage, setSelectedImage] = useState(0);
+  const { formatPrice } = useCurrency();
 
   if (!product) {
     return (
@@ -131,11 +133,11 @@ const ProductView = ({ product, allProducts }) => {
               <div className="flex items-center gap-4 mb-4">
                 <div className="flex items-center gap-2">
                   <span className="text-2xl font-bold text-foreground">
-                    ₹{product.price}
+                    {formatPrice(product.price, product.currency || 'INR')}
                   </span>
                   {product.originalPrice && (
                     <span className="text-lg text-muted-foreground line-through">
-                      ₹{product.originalPrice}
+                      {formatPrice(product.originalPrice, product.currency || 'INR')}
                     </span>
                   )}
                 </div>
@@ -311,7 +313,7 @@ const ProductView = ({ product, allProducts }) => {
                             <span className="text-xs font-medium">{relatedProduct.rating}</span>
                           </div>
                           <span className="font-bold text-foreground text-sm">
-                            ₹{relatedProduct.price}
+                            {formatPrice(relatedProduct.price, relatedProduct.currency || 'INR')}
                           </span>
                         </div>
                         <div className="flex items-center justify-center">
