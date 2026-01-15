@@ -224,7 +224,7 @@ let EmissionFactor = null;
 export const getEmissionFactorModel = async () => {
   if (EmissionFactor) return EmissionFactor;
   
-  const conn = await getConnection(DB_NAMES.MAIN);
+  const conn = await getConnection(DB_NAMES.MAIN_DB);
   EmissionFactor = conn.models.EmissionFactor || 
     conn.model('EmissionFactor', emissionFactorSchema);
   return EmissionFactor;

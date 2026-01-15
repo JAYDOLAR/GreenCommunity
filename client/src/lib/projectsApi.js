@@ -1,5 +1,62 @@
 import { apiRequest, API_BASE_URL } from './api';
 
+// Calculate time remaining from end date
+const calculateTimeRemaining = (endDate, status) => {
+  if (!endDate) return 'Ongoing';
+  
+  const end = new Date(endDate);
+  const now = new Date();
+  
+  // If project is completed, show completed status
+  if (status === 'completed') return 'Completed';
+  
+  // If end date has passed
+  if (end < now) {
+    return 'Completed';
+  }
+  
+  const diffMs = end - now;
+  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+  
+  if (diffDays <= 0) return 'Ending today';
+  if (diffDays === 1) return '1 day';
+  if (diffDays < 7) return `${diffDays} days`;
+  if (diffDays < 30) {
+    const weeks = Math.floor(diffDays / 7);
+    return weeks === 1 ? '1 week' : `${weeks} weeks`;
+  }
+  if (diffDays < 365) {
+    const months = Math.floor(diffDays / 30);
+    return months === 1 ? '1 month' : `${months} months`;
+  }
+  
+  const years = Math.floor(diffDays / 365);
+  const remainingMonths = Math.floor((diffDays % 365) / 30);
+  
+  if (remainingMonths > 0) {
+    return years === 1 
+      ? `1 year ${remainingMonths}mo` 
+      : `${years} years`;
+  }
+  return years === 1 ? '1 year' : `${years} years`;
+};
+
+// Format date to readable string
+const formatDate = (dateString) => {
+  if (!dateString) return null;
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return null;
+    return date.toLocaleDateString('en-IN', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  } catch {
+    return null;
+  }
+};
+
 // Transform backend project to client format
 const transformProject = (backendProject) => {
   // Handle image format (can be string or object with url/publicId)
@@ -15,6 +72,15 @@ const transformProject = (backendProject) => {
     }
   }
 
+  // Get the end date from various possible fields
+  const endDate = backendProject.expectedCompletion || backendProject.endDate || null;
+  const startDate = backendProject.startDate || backendProject.createdAt || backendProject.created_at;
+  const status = backendProject.status || 'pending';
+  
+  // Calculate funding goal (prefer fundingGoal, fallback to totalFunding)
+  const fundingGoal = backendProject.fundingGoal || backendProject.totalFunding || 0;
+  const currentFunding = backendProject.currentFunding || 0;
+  
   return {
     id: backendProject._id,
     _id: backendProject._id,
@@ -22,17 +88,27 @@ const transformProject = (backendProject) => {
     description: backendProject.description,
     location: backendProject.location,
     type: backendProject.type,
-    status: backendProject.status || 'pending',
+    status: status,
     image: imageUrl,
-    totalFunding: backendProject.totalFunding || backendProject.fundingGoal || 0,
-    fundingGoal: backendProject.fundingGoal || backendProject.totalFunding || 0,
-    currentFunding: backendProject.currentFunding || 0,
+    // Funding fields - use fundingGoal as the target
+    fundingGoal: fundingGoal,
+    totalFunding: fundingGoal, // Alias for backward compatibility
+    currentFunding: currentFunding,
+    fundingPercentage: fundingGoal > 0 ? Math.min(100, (currentFunding / fundingGoal) * 100) : 0,
     contributors: backendProject.contributors || 0,
     co2Removed: backendProject.co2Removed || backendProject.impact?.carbonOffset || 0,
     verified: backendProject.verified || false,
     featured: backendProject.featured || false,
+    // Date fields with proper formatting
     createdDate: backendProject.created_at || backendProject.createdAt,
-    expectedCompletion: backendProject.expectedCompletion || backendProject.endDate,
+    startDate: startDate,
+    endDate: endDate,
+    expectedCompletion: endDate,
+    // Formatted date strings for display
+    startDateFormatted: formatDate(startDate),
+    endDateFormatted: formatDate(endDate),
+    // Calculated time remaining
+    timeRemaining: calculateTimeRemaining(endDate, status),
     teamSize: backendProject.teamSize || 0,
     carbonOffsetTarget: backendProject.carbonOffsetTarget || 0,
     co2PerRupee: backendProject.co2PerRupee || 0.001,

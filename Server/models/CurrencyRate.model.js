@@ -198,7 +198,7 @@ let CurrencyRate = null;
 export const getCurrencyRateModel = async () => {
   if (CurrencyRate) return CurrencyRate;
   
-  const conn = await getConnection(DB_NAMES.MAIN);
+  const conn = await getConnection(DB_NAMES.MAIN_DB);
   CurrencyRate = conn.models.CurrencyRate || 
     conn.model('CurrencyRate', currencyRateSchema);
   return CurrencyRate;

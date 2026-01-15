@@ -20,7 +20,6 @@ import {
   MapPin,
   Award,
   Users,
-  Calendar,
   Target,
   Heart,
   Search,
@@ -410,9 +409,27 @@ const Projects = () => {
     }
   };
 
+  // Helper function to safely extract coordinates
+  const getCoordinates = (coords) => {
+    if (!coords) return null;
+    // Handle array format [lng, lat]
+    if (Array.isArray(coords) && coords.length >= 2) {
+      return { lng: coords[0], lat: coords[1] };
+    }
+    // Handle object format { lat, lng } or { latitude, longitude }
+    if (typeof coords === 'object') {
+      const lat = coords.lat ?? coords.latitude;
+      const lng = coords.lng ?? coords.longitude ?? coords.lon;
+      if (lat !== undefined && lng !== undefined) {
+        return { lng, lat };
+      }
+    }
+    return null;
+  };
+
   // Map View Component
   const MapView = () => {
-    const filteredMapProjects = filteredProjects.filter(project => project.coordinates);
+    const filteredMapProjects = filteredProjects.filter(project => getCoordinates(project.coordinates) !== null);
     const [mapError, setMapError] = useState(false);
     const [mapLoaded, setMapLoaded] = useState(false);
     const [hoveredProject, setHoveredProject] = useState(null);
@@ -598,7 +615,9 @@ const Projects = () => {
 
           {/* Project markers */}
           {filteredMapProjects.map((project, index) => {
-            const [lng, lat] = project.coordinates;
+            const coords = getCoordinates(project.coordinates);
+            if (!coords) return null;
+            const { lng, lat } = coords;
             const left = ((lng + 180) / 360) * 100;
             const top = ((90 - lat) / 180) * 100;
 
@@ -680,7 +699,9 @@ const Projects = () => {
 
           {/* Carbon offset projects markers */}
           {showCarbonProjects && Object.keys(customIcons).length > 0 && filteredMapProjects.map((project, index) => {
-            const [lng, lat] = project.coordinates;
+            const coords = getCoordinates(project.coordinates);
+            if (!coords) return null;
+            const { lng, lat } = coords;
             const customIcon = getCustomIcon(project.type);
 
             // Only render marker if we have a valid icon
@@ -735,8 +756,9 @@ const Projects = () => {
 
           {/* Vendor markers */}
           {showVendors && Object.keys(vendorIcons).length > 0 && vendors.map((vendor, index) => {
-            if (!vendor.coordinates) return null;
-            const [lng, lat] = vendor.coordinates;
+            const vendorCoords = getCoordinates(vendor.coordinates);
+            if (!vendorCoords) return null;
+            const { lng, lat } = vendorCoords;
 
             return (
               <Marker
@@ -785,8 +807,9 @@ const Projects = () => {
 
           {/* Working project markers */}
           {showWorkingProjects && Object.keys(workingProjectIcons).length > 0 && workingProjects.map((project, index) => {
-            if (!project.coordinates) return null;
-            const [lng, lat] = project.coordinates;
+            const wpCoords = getCoordinates(project.coordinates);
+            if (!wpCoords) return null;
+            const { lng, lat } = wpCoords;
 
             return (
               <Marker
@@ -835,8 +858,9 @@ const Projects = () => {
 
           {/* Event markers */}
           {showEvents && Object.keys(eventIcons).length > 0 && events.map((event, index) => {
-            if (!event.coordinates) return null;
-            const [lng, lat] = event.coordinates;
+            const eventCoords = getCoordinates(event.coordinates);
+            if (!eventCoords) return null;
+            const { lng, lat } = eventCoords;
 
             return (
               <Marker
@@ -1169,12 +1193,12 @@ const Projects = () => {
                             <div className="flex justify-between text-sm">
                               <span className="text-xs sm:text-sm text-muted-foreground">Funding Progress</span>
                               <span className="font-medium text-xs sm:text-sm">
-                                ₹{(project.currentFunding / 10000000).toFixed(1)}Cr / ₹{(project.totalFunding / 10000000).toFixed(1)}Cr
+                                ₹{((project.currentFunding || 0) / 10000000).toFixed(1)}Cr / ₹{((project.fundingGoal || 0) / 10000000).toFixed(1)}Cr
                               </span>
                             </div>
-                            <Progress value={fundingPercentage} className="h-2 sm:h-3 progress-eco" />
+                            <Progress value={project.fundingPercentage || fundingPercentage} className="h-2 sm:h-3 progress-eco" />
                             <div className="text-xs sm:text-sm text-muted-foreground">
-                              {fundingPercentage.toFixed(0)}% funded
+                              {(project.fundingPercentage || fundingPercentage).toFixed(0)}% funded
                             </div>
                           </div>
 

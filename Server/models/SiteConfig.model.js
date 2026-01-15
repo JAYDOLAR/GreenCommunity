@@ -177,17 +177,12 @@ const DEFAULT_CONFIGS = {
       { category: 'product', label: 'Calculator', url: '/CarbonCalculator', isActive: true, order: 1 },
       { category: 'product', label: 'Marketplace', url: '/marketplace', isActive: true, order: 2 },
       { category: 'product', label: 'Projects', url: '/projects', isActive: true, order: 3 },
-      { category: 'company', label: 'About Us', url: '/about', isActive: true, order: 0 },
-      { category: 'company', label: 'Careers', url: '/careers', isActive: true, order: 1 },
-      { category: 'company', label: 'Blog', url: '/blog', isActive: true, order: 2 },
-      { category: 'company', label: 'Contact', url: '/contact', isActive: true, order: 3 },
-      { category: 'resources', label: 'Documentation', url: '/docs', isActive: true, order: 0 },
-      { category: 'resources', label: 'FAQ', url: '/faq', isActive: true, order: 1 },
-      { category: 'resources', label: 'Support', url: '/support', isActive: true, order: 2 },
-      { category: 'resources', label: 'Community', url: '/community', isActive: true, order: 3 },
-      { category: 'legal', label: 'Privacy Policy', url: '/privacy', isActive: true, order: 0 },
-      { category: 'legal', label: 'Terms of Service', url: '/terms', isActive: true, order: 1 },
-      { category: 'legal', label: 'Cookie Policy', url: '/cookies', isActive: true, order: 2 }
+      { category: 'company', label: 'Community', url: '/community', isActive: true, order: 0 },
+      { category: 'company', label: 'Settings', url: '/settings', isActive: true, order: 1 },
+      { category: 'resources', label: 'Footprint Log', url: '/footprintlog', isActive: true, order: 0 },
+      { category: 'resources', label: 'Marketplace', url: '/marketplace', isActive: true, order: 1 },
+      { category: 'legal', label: 'Login', url: '/login', isActive: true, order: 0 },
+      { category: 'legal', label: 'Sign Up', url: '/Signup', isActive: true, order: 1 }
     ]
   },
   social: {
@@ -528,7 +523,7 @@ let SiteConfig = null;
 export const getSiteConfigModel = async () => {
   if (SiteConfig) return SiteConfig;
   
-  const conn = await getConnection(DB_NAMES.MAIN);
+  const conn = await getConnection(DB_NAMES.MAIN_DB);
   SiteConfig = conn.models.SiteConfig || conn.model('SiteConfig', siteConfigSchema);
   return SiteConfig;
 };

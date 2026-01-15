@@ -137,7 +137,7 @@ let NewsletterSubscriber = null;
 export const getNewsletterSubscriberModel = async () => {
   if (NewsletterSubscriber) return NewsletterSubscriber;
   
-  const conn = await getConnection(DB_NAMES.MAIN);
+  const conn = await getConnection(DB_NAMES.MAIN_DB);
   NewsletterSubscriber = conn.models.NewsletterSubscriber || 
     conn.model('NewsletterSubscriber', newsletterSubscriberSchema);
   return NewsletterSubscriber;

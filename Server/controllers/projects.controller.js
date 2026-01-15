@@ -279,13 +279,17 @@ export const getProjectById = asyncHandler(async (req, res) => {
     // Enhance project data with computed fields for frontend compatibility
     const enhancedProject = {
       ...project,
-      totalFunding: project.totalFunding || project.fundingGoal || 0,
+      fundingGoal: project.fundingGoal || project.totalFunding || 0,
+      totalFunding: project.fundingGoal || project.totalFunding || 0,
       currentFunding: project.currentFunding || 0,
       contributors: project.contributors || 0,
       co2Removed: project.co2Removed || project.impact?.carbonOffset || 0,
+      startDate: project.startDate || project.created_at || project.createdAt,
+      endDate: project.endDate || project.expectedCompletion,
       expectedCompletion: project.endDate || project.expectedCompletion,
       teamSize: project.teamSize || project.organization?.teamSize || 0,
-      carbonOffsetTarget: project.carbonOffsetTarget || project.impact?.carbonOffset || 0
+      carbonOffsetTarget: project.carbonOffsetTarget || project.impact?.carbonOffset || 0,
+      status: project.status || 'active'
     };
     
     res.json({

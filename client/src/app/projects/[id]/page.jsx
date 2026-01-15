@@ -71,20 +71,45 @@ const ProjectDetailContent = ({ params }) => {
     };
   }, [params, urlParams]);
 
-  // Helper function to calculate time remaining
-  const calculateTimeRemaining = (expectedCompletion) => {
-    if (!expectedCompletion) return 'Ongoing';
+  // Helper function to calculate time remaining (enhanced version)
+  const calculateTimeRemaining = (endDate, status) => {
+    if (!endDate) return 'Ongoing';
+    
+    const end = new Date(endDate);
     const now = new Date();
-    const end = new Date(expectedCompletion);
-    const diff = end - now;
-    if (diff <= 0) return 'Completed';
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    if (days > 30) return `${Math.floor(days / 30)} months`;
-    return `${days} days`;
+    
+    // If project is completed, show completed status
+    if (status === 'completed') return 'Completed';
+    
+    // If end date has passed
+    if (end < now) {
+      return 'Completed';
+    }
+    
+    const diffMs = end - now;
+    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+    
+    if (diffDays <= 0) return 'Ending today';
+    if (diffDays === 1) return '1 day';
+    if (diffDays < 7) return `${diffDays} days`;
+    if (diffDays < 30) {
+      const weeks = Math.floor(diffDays / 7);
+      return weeks === 1 ? '1 week' : `${weeks} weeks`;
+    }
+    if (diffDays < 365) {
+      const months = Math.floor(diffDays / 30);
+      return months === 1 ? '1 month' : `${months} months`;
+    }
+    
+    const years = Math.floor(diffDays / 365);
+    return years === 1 ? '1 year' : `${years} years`;
   };
 
   // Helper function to enhance project data
   const enhanceProjectData = (projectData) => {
+    const fundingGoal = projectData.fundingGoal || projectData.totalFunding || 0;
+    const currentFunding = projectData.currentFunding || 0;
+    
     return {
       ...projectData,
       benefits: projectData.benefits || [
@@ -98,12 +123,14 @@ const ProjectDetailContent = ({ params }) => {
         'Gold Standard',
         'Climate Action Reserve'
       ],
-      timeRemaining: calculateTimeRemaining(projectData.expectedCompletion),
+      timeRemaining: projectData.timeRemaining || calculateTimeRemaining(projectData.expectedCompletion || projectData.endDate, projectData.status),
       co2PerRupee: projectData.co2PerRupee || 0.001, // Default ratio
-      currentFunding: projectData.currentFunding || 0,
-      totalFunding: projectData.totalFunding || projectData.fundingGoal || 0,
+      currentFunding: currentFunding,
+      totalFunding: fundingGoal,
+      fundingGoal: fundingGoal,
+      fundingPercentage: fundingGoal > 0 ? Math.min(100, (currentFunding / fundingGoal) * 100) : 0,
       contributors: projectData.contributors || 0,
-      co2Removed: projectData.co2Removed || 0
+      co2Removed: projectData.co2Removed || projectData.impact?.carbonOffset || 0
     };
   };
 
@@ -187,8 +214,8 @@ const ProjectDetailContent = ({ params }) => {
     );
   }
 
-  const fundingPercentage =
-    (project.currentFunding / project.totalFunding) * 100;
+  const fundingPercentage = project.fundingPercentage || 
+    (project.totalFunding > 0 ? Math.min(100, (project.currentFunding / project.totalFunding) * 100) : 0);
 
   const getProjectIcon = (type) => {
     switch (type) {
@@ -347,7 +374,7 @@ const ProjectDetailContent = ({ params }) => {
                       <p className="text-2xl font-bold text-orange-600">
                         ₹
                         {(
-                          (project.totalFunding - project.currentFunding) /
+                          Math.max(0, (project.totalFunding || 0) - (project.currentFunding || 0)) /
                           10000000
                         ).toFixed(1)}
                         Cr

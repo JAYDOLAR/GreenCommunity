@@ -14,6 +14,7 @@ if (!process.env.MONGO_URI) {
 
 // Database configurations
 const DB_CONFIG = {
+  MAIN_DB: 'greencommunity-main',
   AUTH_DB: 'greencommunity-auth',
   USER_INFO_DB: 'greencommunity-user-info',
   MARKETPLACE_DB: 'greencommunity-marketplace',
@@ -93,6 +94,9 @@ export const connectAllDatabases = async () => {
       socketTimeoutMS: 45000,
     });
     console.log(`✅ Default connection established to ${DB_CONFIG.AUTH_DB}`);
+
+    // Connect to main database (for site config, newsletter, etc.)
+    await getConnection('MAIN_DB');
 
     // Connect to auth database
     await getConnection('AUTH_DB');
