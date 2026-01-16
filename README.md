@@ -1,288 +1,298 @@
-# Green Community - Environmental Impact Tracking Platform
+# 🌍 Green Community — Carbon Footprint Tracker & Credit Marketplace
 
-A comprehensive platform for tracking environmental impact, managing carbon footprints, and building a sustainable community. This project includes a modern React/Next.js frontend and a robust Node.js backend with MongoDB integration.
+> **One-liner:** A platform that helps individuals track their carbon footprint, participate in sustainability challenges, and trade verified carbon credits on the blockchain.
 
-## 🌱 Features
+[![SDG 13 - Climate Action](https://img.shields.io/badge/SDG%2013-Climate%20Action-green?style=flat-square)](https://sdgs.un.org/goals/goal13)
+[![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg?style=flat-square)](https://opensource.org/licenses/ISC)
 
-- **Carbon Footprint Calculator**: Track and calculate personal carbon emissions
-- **Community Dashboard**: Connect with environmentally conscious users
-- **Marketplace**: Browse and purchase eco-friendly products
-- **User Management**: Complete authentication and profile management
-- **Admin Panel**: Administrative tools for platform management
-- **Real-time Chat**: Community interaction features
- - **AI Coach (Gemini)**: Gemini Pro powered coach and tips
+---
+
+## 🎯 The Problem
+
+**Who has this problem?** Meet Priya, a 28-year-old IT professional in Bangalore. She drives 45 minutes to work, runs AC 8 hours a day, and orders food delivery most nights. She *wants* to reduce her impact but has no idea if switching to an EV matters more than eating less meat. Or consider Arjun, a college student in Pune who joined his campus sustainability club—they want to run a carbon challenge but have no way to track if members actually reduced emissions.
+
+**How do they cope today?** Most people have no idea how much CO₂ their lifestyle generates. Those who care resort to fragmented solutions—manual spreadsheets, generic carbon calculators that don't localize to Indian consumption patterns (most use US/EU emission factors), or donating to opaque offset programs with no verification. Priya tried three apps; none knew that her electricity comes from Maharashtra's coal-heavy grid (0.82 kgCO₂/kWh vs. Karnataka's 0.71).
+
+**Why it's hard to solve:** Carbon accounting is complex. IPCC emission factors vary by region, activity type, and energy source. India's Central Electricity Authority publishes grid emission factors, but no consumer app uses them. Most offset markets lack transparency—you pay ₹500 but can't verify the credits were ever retired or if the project even exists.
+
+**Why blockchain?** Traditional carbon registries are opaque databases controlled by single entities. Blockchain provides: (1) immutable proof that credits were actually retired, (2) public verification anyone can audit, (3) NFT certificates users can show as proof of offset. No more "trust us, we planted trees."
+
+---
+
+## ✅ Our Solution
+
+**GreenCommunity** provides:
+
+1. **Personal Carbon Footprint Tracking** — Log daily activities (transport, food, energy, purchases) and get IPCC-based emission calculations localized for India
+2. **Community Challenges** — Gamified sustainability goals that reward participation with points and recognition
+3. **Blockchain-Verified Carbon Marketplace** — Purchase carbon credits from verified projects; all transactions recorded on-chain with NFT retirement certificates
+4. **AI-Powered Sustainability Coach** — Gemini Pro integration provides personalized tips and answers environmental questions
+
+---
+
+## 🌱 Key Features
+
+| Feature | Description |
+|---------|-------------|
+| 🧮 **Carbon Calculator** | IPCC-compliant emission calculations with India-specific factors |
+| 📊 **Analytics Dashboard** | Visualize your footprint trends over time |
+| 🏆 **Challenges & Events** | Community sustainability challenges with leaderboards |
+| 🛒 **Carbon Credit Marketplace** | Buy verified credits from registered projects |
+| ⛓️ **Blockchain Integration** | On-chain credit registry + NFT retirement certificates |
+| 🤖 **AI Coach** | Gemini Pro-powered sustainability assistant |
+| 👥 **Community Groups** | Connect with like-minded environmentalists |
+| 🔐 **Secure Auth** | JWT + 2FA + Google OAuth |
+
+---
 
 ## 🛠️ Tech Stack
 
-**Frontend (Client):**
-- Next.js 14+ with Turbopack
-- React with modern hooks
-- Tailwind CSS for styling
-- Radix UI components
-- Shadcn/ui component library
+| Layer | Technologies |
+|-------|-------------|
+| **Frontend** | Next.js 15, React, Tailwind CSS, Radix UI, Shadcn/ui, Three.js, Recharts, Leaflet |
+| **Backend** | Node.js, Express.js, MongoDB/Mongoose, JWT, Passport.js, Cloudinary |
+| **Blockchain** | Solidity, Hardhat 3, Ethers.js, ERC-721 (NFT Certificates), IPFS |
+| **Payments** | Razorpay (fiat/UPI), ETH/MATIC (crypto) |
+| **AI** | Google Gemini Pro API |
+| **DevOps** | Docker, Docker Compose |
 
-**Backend (Server):**
-- Node.js with Express.js
-- MongoDB with Mongoose ODM
-- JWT authentication
-- Cloudinary for image storage
-- bcryptjs for password hashing
-- Email service integration
+---
 
-## Prerequisites
+## 👥 Team
 
-- [Docker](https://www.docker.com/products/docker-desktop) installed on your system
-- [Docker Compose](https://docs.docker.com/compose/install/) installed on your system
-- [Node.js](https://nodejs.org/) (if running locally without Docker)
+| Name | Role |
+|------|------|
+| Jay Dolar | Full-Stack Developer |
+| Bhavaya Sonigra | Full-Stack Developer |
+| Nemin Haria | Full-Stack Developer |
 
-Environment variables (client):
-- `GEMINI_API_KEY` for AI endpoints `/api/ai/*`
+---
 
-## 🚀 Quick Start with Docker
+## 🚀 Quick Start
 
-1.  **Clone the repository**
+### Prerequisites
 
-    ```bash
-    git clone https://github.com/Bhavya-Sonigra/GreenCommunity.git
-    cd GreenCommunity
-    ```
+- [Node.js 18+](https://nodejs.org/)
+- [Docker](https://www.docker.com/products/docker-desktop) (optional, for containerized setup)
+- MongoDB (local or [MongoDB Atlas](https://www.mongodb.com/atlas))
 
-2.  **Environment Configuration**
-
-    Create a `.env` file in the `Server/` directory with the following variables:
-
-    ```env
-    MONGO_URI=your_mongodb_connection_string
-    JWT_SECRET=your_jwt_secret_key
-    JWT_REFRESH_SECRET=your_jwt_refresh_secret
-    EMAIL_USER=your_email@gmail.com
-    EMAIL_PASS=your_email_app_password
-    CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
-    CLOUDINARY_API_KEY=your_cloudinary_api_key
-    CLOUDINARY_API_SECRET=your_cloudinary_api_secret
-    CLIENT_URL=http://localhost:3000
-    SERVER_URL=http://localhost:5000
-    ```
-
-3.  **Run the deployment script**
-
-    Two deployment scripts are provided for different operating systems:
-
-    **For Windows PowerShell:**
-
-    ```powershell
-    .\deploy.ps1
-    ```
-
-    **For Linux and macOS:**
-
-    ```bash
-    chmod +x deploy.sh
-    ./deploy.sh
-    ```
-
-    The deployment script will:
-    - Verify Docker and Docker Compose installation
-    - Check for the required `.env` file in the Server directory
-    - Build Docker images with no cache for fresh builds
-    - Stop any existing containers and remove orphaned volumes
-    - Start all services in detached mode
-    - Display container status and recent logs
-
-## 🔧 Manual Setup (Without Docker)
-
-If you prefer to run the application locally without Docker:
-
-1. **Install dependencies for both client and server:**
-
-   ```bash
-   # Install server dependencies
-   cd Server
-   npm install
-   
-   # Install client dependencies
-   cd ../client
-   npm install
-   ```
-
-2. **Start the development servers:**
-
-   ```bash
-   # Start the backend server (from Server directory)
-   cd Server
-   npm run dev
-   
-   # Start the frontend client (from client directory, in a new terminal)
-   cd client
-   npm run dev
-   ```
-
-## 🌐 Accessing the Application
-
-Once deployed, the application will be available at:
-
--   **Frontend (Client):** [http://localhost:3000](http://localhost:3000)
--   **Backend API (Server):** [http://localhost:5000](http://localhost:5000)
-
-## 📱 API Testing
-
-The project includes Postman collections for API testing:
-
-- Import `GreenCommunity-Postman-Collection-Clean.json` into Postman
-- Use `requests.http` file for REST client testing in VS Code
-
-## 🔧 Development Commands
-
-**Docker Commands:**
+### Option 1: Docker (Recommended)
 
 ```bash
-# View real-time logs
-docker-compose logs -f
+# Clone the repository
+git clone https://github.com/JAYDOLAR/GreenCommunity.git
+cd GreenCommunity
 
-# View logs for specific service
-docker-compose logs -f server
-docker-compose logs -f client
+# Create Server/.env (see Environment Variables section below)
 
-# Stop all services
-docker-compose down
-
-# Stop and remove volumes
-docker-compose down --volumes
-
-# Restart all services
-docker-compose restart
-
-# Rebuild and restart
-docker-compose down && docker-compose build --no-cache && docker-compose up -d
+# Run with Docker
+./deploy.sh        # Linux/macOS
+.\deploy.ps1       # Windows PowerShell
 ```
 
-**Development Scripts:**
+### Option 2: Manual Setup
 
 ```bash
-# Server development with auto-reload
-cd Server && npm run dev
+# Clone and install
+git clone https://github.com/JAYDOLAR/GreenCommunity.git
+cd GreenCommunity
 
-# Client development with Turbopack
-cd client && npm run dev
+# Backend
+cd Server && npm install && npm run dev
 
-# Build for production
-cd client && npm run build
-
-# Run linting
-cd client && npm run lint
+# Frontend (new terminal)
+cd client && npm install && npm run dev
 ```
+
+**Access the app:**
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:5000
+
+---
 
 ## 📁 Project Structure
 
 ```
 GreenCommunity/
-├── client/                 # Next.js Frontend
-│   ├── src/
-│   │   ├── app/           # App Router pages
-│   │   ├── components/    # Reusable React components
-│   │   └── lib/          # Utility functions
-│   ├── public/           # Static assets
-│   └── Dockerfile        # Client container config
-├── Server/               # Node.js Backend
-│   ├── config/          # Database and service configs
-│   ├── controllers/     # Route handlers
-│   ├── middleware/      # Auth and validation middleware
-│   ├── models/         # MongoDB schemas
-│   ├── routes/         # API route definitions
-│   ├── services/       # Business logic services
-│   └── Dockerfile      # Server container config
-├── docker-compose.yml   # Multi-container setup
-├── deploy.ps1          # Windows deployment script
-├── deploy.sh           # Unix deployment script
-└── README.md           # Project documentation
+├── client/                 # Next.js 15 Frontend
+│   ├── src/app/           # App Router pages
+│   ├── src/components/    # Reusable UI components
+│   └── src/context/       # React Context (auth, wallet)
+├── Server/                # Express.js Backend
+│   ├── controllers/       # Route handlers
+│   ├── models/           # MongoDB schemas
+│   ├── services/         # Business logic (blockchain, IPFS)
+│   └── lib/              # IPCC emission calculator engine
+├── blockchain/           # Smart Contracts
+│   ├── contracts/        # Solidity (Marketplace, NFT)
+│   └── scripts/          # Deploy scripts
+└── docker-compose.yml    # Container orchestration
 ```
 
-## 🧪 Testing
+---
 
-Test files are available for API testing:
+## 🔧 Environment Variables
 
-- `test-footprintlog.js` - JavaScript test file for footprint logging
-- `test-footprintlog.ps1` - PowerShell test script
-- `requests.http` - HTTP request collection for VS Code REST Client
-
-## 🔒 Security Features
-
-- JWT-based authentication with refresh tokens
-- Password hashing with bcryptjs
-- Input validation and sanitization
-- CORS configuration
-- Secure cookie handling
-- Environment variable protection
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## 📝 Environment Variables
-
-Ensure your `Server/.env` file includes all necessary variables:
+Create `Server/.env`:
 
 ```env
 # Database
-MONGO_URI=mongodb+srv://username:password@cluster.mongodb.net/database
+MONGO_URI=mongodb+srv://username:password@cluster.mongodb.net/greencommunity
 
 # JWT Secrets
-JWT_SECRET=your_very_secure_jwt_secret
-JWT_REFRESH_SECRET=your_very_secure_refresh_secret
+JWT_SECRET=your_jwt_secret
+JWT_REFRESH_SECRET=your_refresh_secret
 
-# Email Configuration
+# Email (for password reset, notifications)
 EMAIL_USER=your-email@gmail.com
-EMAIL_PASS=your-app-specific-password
+EMAIL_PASS=your-app-password
 
-# Cloudinary (for image uploads)
+# Cloudinary (image uploads)
 CLOUDINARY_CLOUD_NAME=your-cloud-name
 CLOUDINARY_API_KEY=your-api-key
 CLOUDINARY_API_SECRET=your-api-secret
 
 # URLs
-CLIENT_URL=https://www.green-community.app
-SERVER_URL=https://www.green-community.app
+CLIENT_URL=http://localhost:3000
+SERVER_URL=http://localhost:5000
+
+# Blockchain (optional - for marketplace)
+BLOCKCHAIN_RPC_URL=http://127.0.0.1:8545
+MARKETPLACE_CONTRACT_ADDRESS=0x...
+CERTIFICATE_CONTRACT_ADDRESS=0x...
 ```
 
-## 🚨 Troubleshooting
+Create `client/.env.local`:
 
-**Common Issues:**
-
-1. **Port already in use**: Stop existing services or change ports in docker-compose.yml
-2. **Environment variables**: Ensure all required variables are set in Server/.env
-3. **Docker issues**: Restart Docker Desktop and try rebuilding containers
-4. **Database connection**: Verify MongoDB URI and network connectivity
-
-**Debug Commands:**
-
-```bash
-# Check container status
-docker-compose ps
-
-# View detailed logs
-docker-compose logs --tail=50
-
-# Access container shell
-docker-compose exec server bash
-docker-compose exec client bash
-
-# Reset everything
-docker-compose down --volumes --rmi all
-docker system prune -f
+```env
+GEMINI_API_KEY=your-gemini-api-key
+NEXT_PUBLIC_MARKETPLACE_ADDRESS=0x...
 ```
-
-## 📄 License
-
-This project is licensed under the ISC License.
-
-## 📧 Contact
-
-For questions or support, please contact the development team or create an issue in the repository.
 
 ---
 
-**Last Updated:** August 21, 2025
+## 🧪 Testing
+
+```bash
+# API Tests (Postman)
+# Import: GreenCommunity-Postman-Collection-Clean.json
+
+# Smart Contract Tests
+cd blockchain && npx hardhat test
+
+# VS Code REST Client
+# Open: Server/requests.http
+```
+
+---
+
+## ✅ What's Already Built
+
+These features are **fully functional** right now:
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| User Registration/Login | ✅ Complete | JWT + Google OAuth + 2FA |
+| Carbon Footprint Calculator | ✅ Complete | IPCC-based with India-specific CEA emission factors |
+| Dashboard Analytics | ✅ Complete | Recharts visualizations, trends over time |
+| Community Challenges | ✅ Complete | Create, join, track progress, leaderboards |
+| Marketplace UI | ✅ Complete | Browse projects, filter, view details |
+| AI Coach (Gemini) | ✅ Complete | Chat interface for sustainability tips |
+| Events Management | ✅ Complete | Create events, RSVP, calendar view |
+| Community Groups | ✅ Complete | Create/join groups, discussions |
+
+---
+
+## 🔧 What We'll Build in 48 Hours (Finals)
+
+These features are **designed and partially implemented** — finals time will complete them:
+
+| Feature | Current State | 48-Hour Goal |
+|---------|---------------|---------------|
+| **Blockchain Contracts** | Solidity written, tested on Hardhat local | Deploy to Sepolia testnet, verify on Etherscan |
+| **Wallet Integration** | MetaMask detection works | Full connect → sign → confirm flow |
+| **On-Chain Purchases** | Backend API ready | Frontend purchase flow with transaction receipts |
+| **NFT Certificates** | Contract mints correctly | Auto-mint on credit retirement, display in UI |
+| **IPFS Document Storage** | Local dev node works | Project docs & certificate metadata on IPFS |
+| **Fiat Payments** | Razorpay integration planned | Pay with UPI/card → credits minted to wallet |
+| **Admin Panel** | Basic UI scaffolded | User management, project approval, moderation tools |
+| **Admin Analytics** | Endpoints exist | Dashboard with platform-wide stats, charts |
+
+---
+
+## 🗺️ 48-Hour Finals Sprint Plan
+
+**Focus Areas:** Blockchain Integration + Admin Panel
+
+### Day 1 (Hours 0-24): Blockchain + Payments
+
+| Hour | Task | Owner | Done When |
+|------|------|-------|----------|
+| 0-4 | Deploy contracts to Sepolia | Nemin | Contracts live, verified on Etherscan |
+| 4-8 | MetaMask wallet connect flow | Jay | User can connect wallet, see address |
+| 8-12 | Purchase flow (frontend → contract) | Jay | Click "Buy" → MetaMask popup → TX confirmed |
+| 12-16 | NFT certificate auto-minting | Bhavaya | On purchase, certificate minted to buyer |
+| 16-18 | IPFS integration for certificates | Bhavaya | Certificate metadata stored on IPFS |
+| 18-22 | Fiat payment with Razorpay | Jay | UPI/card payment → credits minted to user wallet |
+| 22-24 | Test end-to-end (crypto + fiat) | All | 3 test purchases each method completed |
+
+### Day 2 (Hours 24-48): Admin + Polish
+
+| Hour | Task | Owner | Done When |
+|------|------|-------|-----------|
+| 24-28 | Admin user management | Nemin | View users, ban/unban, role assignment |
+| 28-32 | Admin project approval flow | Nemin | Approve/reject marketplace projects |
+| 32-36 | Admin analytics dashboard | Bhavaya | Platform stats: users, credits sold, challenges |
+| 36-40 | Beta testing with 5 users | All | Collect feedback, fix critical bugs |
+| 40-44 | Bug fixes from testing | All | Top 5 issues resolved |
+| 44-48 | Demo video + final polish | All | 90-second video recorded |
+
+**Out of scope for finals:** Mobile app, multi-chain support
+
+---
+
+## 📈 Success Metrics
+
+How we'd measure if GreenCommunity is actually helping:
+
+| Metric | Baseline | Target (3 months) |
+|--------|----------|-------------------|
+| Users tracking footprint weekly | 0 | 500 active users |
+| Avg emissions logged per user | 0 | 10+ activities/month |
+| Carbon credits purchased | 0 | 100 credits retired on-chain |
+| Challenge participation rate | 0 | 30% of users join 1+ challenge |
+| User-reported behavior change | N/A | 50% report trying 1 suggestion |
+
+**Current status:** We've tested with 8 users during development. 5 logged activities for a full week. 2 said they changed commute habits after seeing their transport emissions.
+
+---
+
+## 🤖 AI Usage Declaration
+
+We used the following AI tools during development:
+
+| Tool | Usage |
+|------|-------|
+| **GitHub Copilot** | Autocomplete, boilerplate code, utility functions |
+| **ChatGPT/Claude** | Debugging WebSocket issues, architecture discussions, documentation drafts |
+| **Gemini Pro** | Integrated into the product as the sustainability coach feature |
+
+**What WE brought:** All architecture decisions, database schema design, IPCC emission factor research, blockchain contract logic, and UI/UX design were done by the team. AI suggestions were reviewed, tested, and often modified.
+
+---
+
+## 📄 License
+
+ISC License
+
+---
+
+## 📧 Contact
+
+For questions or support, create an issue in this repository.
+
+---
+
+**Built with 💚 for climate action**
+
+*Last Updated: January 16, 2026*
