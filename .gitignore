@@ -1,3 +1,355 @@
-# macOS system file
+# ==============================================================================
+# INDUSTRY-GRADE .GITIGNORE FOR FULL-STACK SUSTAINABILITY PLATFORM
+# ==============================================================================
+
+# ==============================================================================
+# NODE.JS & NPM
+# ==============================================================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.npm
+.eslintcache
+*.tsbuildinfo
+.nyc_output
+
+# ==============================================================================
+# ENVIRONMENT & CONFIG FILES (SECURITY CRITICAL)
+# ==============================================================================
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.staging
+.env.*.local
+config/local.json
+config/production.json
+config/staging.json
+secrets/
+*.key
+*.pem
+*.p12
+*.pfx
+
+# ==============================================================================
+# NEXT.JS FRONTEND
+# ==============================================================================
+# Next.js build outputs
+.next/
+out/
+.vercel/
+
+# Next.js cache
+.next
+.swc/
+
+# Next.js standalone
+server/
+static/
+
+# ==============================================================================
+# REACT & FRONTEND BUILDS
+# ==============================================================================
+build/
+dist/
+coverage/
+.cache/
+
+# Storybook build outputs
+storybook-static
+
+# ==============================================================================
+# BLOCKCHAIN & CRYPTOCURRENCY
+# ==============================================================================
+# Hardhat
+cache/
+artifacts/
+deployments/
+typechain/
+typechain-types/
+.openzeppelin/
+
+# Truffle
+build/
+
+# Private keys & mnemonics (CRITICAL - NEVER COMMIT)
+*.seed
+*.private
+mnemonic.txt
+private-key.txt
+wallet.json
+keystore/
+
+# Blockchain node data
+geth/
+parity/
+.ethereum/
+
+# ==============================================================================
+# DATABASE & STORAGE
+# ==============================================================================
+# MongoDB
+*.db
+*.sqlite
+*.sqlite3
+data/
+mongodb_data/
+dumps/
+
+# Redis
+dump.rdb
+*.rdb
+
+# Logs
+logs/
+*.log
+logs
+*.log.*
+
+# ==============================================================================
+# CLOUD SERVICES & DEPLOYMENT
+# ==============================================================================
+# Docker
+.dockerignore
+docker-compose.override.yml
+.docker/
+
+# AWS
+.aws/
+.serverless/
+sam-build/
+.aws-sam/
+
+# Google Cloud
+.gcloud/
+service-account.json
+gcp-key.json
+
+# Azure
+.azure/
+publish-settings
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+terraform.tfvars
+*.auto.tfvars
+
+# ==============================================================================
+# SECURITY & CERTIFICATES
+# ==============================================================================
+# SSL Certificates
+ssl/
+certificates/
+*.crt
+*.cer
+*.p7b
+*.p7r
+*.spc
+*.ca-bundle
+
+# SSH Keys
+id_rsa
+id_rsa.pub
+id_ed25519
+id_ed25519.pub
+known_hosts
+authorized_keys
+
+# ==============================================================================
+# MEDIA & UPLOADS
+# ==============================================================================
+uploads/
+temp/
+tmp/
+media/
+static/uploads/
+public/uploads/
+assets/uploads/
+
+# Image files (if not part of codebase)
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.webp
+*.svg
+*.ico
+# Uncomment if you want to ignore all images
+# !public/images/
+# !src/assets/images/
+
+# ==============================================================================
+# TESTING & QUALITY ASSURANCE
+# ==============================================================================
+# Test coverage
+coverage/
+.coverage
+htmlcov/
+.tox/
+.coverage.*
+.pytest_cache/
+.vitest/
+
+# Jest
+jest.config.local.js
+__tests__/coverage/
+
+# Cypress
+cypress/videos/
+cypress/screenshots/
+cypress/downloads/
+
+# ==============================================================================
+# DEVELOPMENT TOOLS
+# ==============================================================================
+# IDE & Editor files
+.vscode/settings.json
+.vscode/launch.json
+.vscode/.ropeproject
+.idea/
+*.swp
+*.swo
+*~
+.project
+.settings/
+.classpath
+
+# Mac system files
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Windows system files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux system files
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+
+# ==============================================================================
+# PACKAGE MANAGERS
+# ==============================================================================
+# Yarn
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+# PNPM
+.pnpm-debug.log*
+.pnpm-store/
+
+# Rush
+common/deploy/
+common/temp/
+common/autoinstallers/*/.npmrc
+**/.rush/temp/
+
+# ==============================================================================
+# MONITORING & ANALYTICS
+# ==============================================================================
+# Application Performance Monitoring
+.newrelic/
+newrelic.js
+.nyc_output
+
+# Error tracking
+.sentryrc
+sentry.properties
+
+# ==============================================================================
+# BACKUP & TEMPORARY FILES
+# ==============================================================================
+*.backup
+*.bak
+*.temp
+*.tmp
+*.old
+*.orig
+*.rej
+*~
+.#*
+.*.swp
+.*.swo
+
+# Archives
+*.zip
+*.tar.gz
+*.tgz
+*.rar
+*.7z
 .client.zip
+
+# ==============================================================================
+# AI & MACHINE LEARNING
+# ==============================================================================
+# Model files
+*.model
+*.pkl
+*.joblib
+models/
+checkpoints/
+
+# Jupyter Notebooks
+.ipynb_checkpoints
+
+# ==============================================================================
+# API DOCUMENTATION
+# ==============================================================================
+# OpenAPI/Swagger generated files
+docs/build/
+api-docs/
+
+# ==============================================================================
+# CUSTOM PROJECT EXCLUSIONS
+# ==============================================================================
+# Deployment packages
+deployment-package.json
+package-lock.json.bak
+
+# Local development
+.local/
+local/
+dev/
+debug/
+
+# Performance & Profiling
+*.prof
+*.heap
+*.cpuprofile
+flamegraph.svg
+
+# ==============================================================================
+# SECURITY SCANNING RESULTS
+# ==============================================================================
+# Vulnerability scan results
+.snyk
+security-audit.json
+vulnerability-report.*
+
+# ==============================================================================
+# LICENSE & LEGAL
+# ==============================================================================
+# Temporary license files
+LICENSE.temp
+COPYING.temp
+
+# ==============================================================================
+# END OF .GITIGNORE
+# ==============================================================================
