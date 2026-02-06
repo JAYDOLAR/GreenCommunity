@@ -746,9 +746,9 @@ const Dashboard = () => {
         </div>
 
         {/* Right Column with Enhanced Styling */}
-        <div className="space-y-4 sm:space-y-6 md:space-y-8">
+        <div className="space-y-4 sm:space-y-6 md:space-y-8 min-w-0">
           {/* Calendar Streak Component */}
-          <div className="animate-slide-up flex justify-center items-center w-full" style={{ animationDelay: "0.7s" }}>
+          <div className="animate-slide-up flex justify-center items-center w-full overflow-hidden" style={{ animationDelay: "0.7s" }}>
             <StreakCalendar 
               streakDays={streakDays}
               date={date}
