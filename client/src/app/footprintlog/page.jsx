@@ -972,16 +972,6 @@ const FootprintLog = () => {
                           onWheel={(e) => {
                             // Prevent page scroll when dropdown is scrolling
                             e.stopPropagation();
-                            const target = e.currentTarget;
-                            const { scrollTop, scrollHeight, clientHeight } = target;
-                            
-                            // Only prevent default if we're not at the boundaries
-                            if (
-                              (e.deltaY < 0 && scrollTop > 0) || // Scrolling up and not at top
-                              (e.deltaY > 0 && scrollTop < scrollHeight - clientHeight) // Scrolling down and not at bottom
-                            ) {
-                              e.preventDefault();
-                            }
                           }}
                         >
                           {filtered.length === 0 && (

@@ -1,22 +1,33 @@
 // API Fallback Utility
 // This utility provides automatic fallback from custom domain to Azure URL
 
+// Detect the correct API base URL based on the current browser domain
+function detectBaseUrl() {
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return 'http://localhost:5000';
+    }
+    // Stay on whichever domain the user is currently browsing
+    return window.location.origin;
+  }
+  // Server-side rendering fallback
+  return process.env.NEXT_PUBLIC_API_URL || 'https://greencommunity-app.azurewebsites.net';
+}
+
 export class APIFallbackManager {
   constructor() {
     this.customDomain = 'https://www.green-community.app';
     this.azureDomain = 'https://greencommunity-app.azurewebsites.net';
-    // Default to Azure domain since custom domain is currently disabled (403)
-    this.currentDomain = this.azureDomain;
     this.failedDomains = new Set();
     this.retryCount = 0;
     this.maxRetries = 1;
   }
 
   getCurrentBaseUrl() {
-    // Check if we're in development
-    if (typeof window !== 'undefined' && 
-        (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
-      return 'http://localhost:5000';
+    // Check explicit environment variable first
+    if (process.env.NEXT_PUBLIC_API_URL) {
+      return process.env.NEXT_PUBLIC_API_URL;
     }
 
     // Check environment flag for forced fallback
@@ -24,13 +35,8 @@ export class APIFallbackManager {
       return this.azureDomain;
     }
 
-    // Check explicit environment variable
-    if (process.env.NEXT_PUBLIC_API_URL) {
-      return process.env.NEXT_PUBLIC_API_URL;
-    }
-
-    // Default to Azure domain for now (custom domain disabled)
-    return this.azureDomain;
+    // Detect from current browser domain
+    return detectBaseUrl();
   }
 
   async makeRequestWithFallback(endpoint, options = {}) {

@@ -9,10 +9,19 @@ const getApiUrl = () => {
   
   // Check for fallback flag
   if (process.env.NEXT_PUBLIC_USE_AZURE_FALLBACK === 'true') {
-    return 'https://green-community.azurewebsites.net';
+    return 'https://greencommunity-app.azurewebsites.net';
   }
   
-  // Default to custom domain
+  // In browser, use the current domain to stay on the same origin
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return 'http://localhost:5000';
+    }
+    return window.location.origin;
+  }
+  
+  // Default for SSR
   return 'https://www.green-community.app';
 };
 
@@ -23,10 +32,15 @@ const getClientUrl = () => {
   
   // Check for fallback flag
   if (process.env.NEXT_PUBLIC_USE_AZURE_FALLBACK === 'true') {
-    return 'https://green-community.azurewebsites.net';
+    return 'https://greencommunity-app.azurewebsites.net';
   }
   
-  // Default to custom domain
+  // In browser, use the current origin
+  if (typeof window !== 'undefined') {
+    return window.location.origin;
+  }
+  
+  // Default for SSR
   return 'https://www.green-community.app';
 };
 

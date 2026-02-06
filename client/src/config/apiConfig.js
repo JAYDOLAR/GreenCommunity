@@ -10,10 +10,19 @@ const getBaseUrl = () => {
   
   // Check for fallback flag
   if (process.env.NEXT_PUBLIC_USE_AZURE_FALLBACK === 'true') {
-    return 'https://green-community.azurewebsites.net';
+    return 'https://greencommunity-app.azurewebsites.net';
   }
   
-  // Default to custom domain
+  // In browser, use the current domain
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return 'http://localhost:5000';
+    }
+    return window.location.origin;
+  }
+  
+  // Default for SSR
   return 'https://www.green-community.app';
 };
 

@@ -261,7 +261,8 @@ export const authAPI = {
   },
 
   googleLogin: () => {
-    window.location.href = `${API_BASE_URL}/api/auth/google`;
+    const origin = encodeURIComponent(window.location.origin);
+    window.location.href = `${API_BASE_URL}/api/auth/google?origin=${origin}`;
   },
 
   uploadAvatar: async (file) => {

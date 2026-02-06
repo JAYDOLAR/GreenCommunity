@@ -126,16 +126,41 @@ router.delete('/trusted-devices/:deviceId', authenticate, removeTrustedDevice);
 router.delete('/trusted-devices', authenticate, clearAllTrustedDevices);
 
 // Google OAuth - Start login flow
-router.get('/google', passport.authenticate('google', {
-  scope: ['profile', 'email']
-}));
+router.get('/google', (req, res, next) => {
+  // Preserve the origin domain so we can redirect back to it after OAuth
+  const origin = req.query.origin || req.headers.referer || req.headers.origin || '';
+  const state = Buffer.from(JSON.stringify({ origin })).toString('base64');
+  passport.authenticate('google', {
+    scope: ['profile', 'email'],
+    state
+  })(req, res, next);
+});
 
 // Google OAuth - Callback after login
 router.get('/google/callback',
   passport.authenticate('google', { session: false, failureRedirect: '/api/auth/failure' }),
   (req, res) => {
     try {
-      const redirectUrl = process.env.CLIENT_URL || 'http://localhost:3000';
+      // Determine redirect URL from OAuth state (preserves user's origin domain)
+      const allowedOrigins = [
+        'https://www.green-community.app',
+        'https://green-community.app',
+        'https://greencommunity-app.azurewebsites.net',
+        'http://localhost:3000',
+      ];
+      let redirectUrl = process.env.CLIENT_URL || 'http://localhost:3000';
+      try {
+        const state = req.query.state ? JSON.parse(Buffer.from(req.query.state, 'base64').toString()) : {};
+        if (state.origin) {
+          // Extract just the origin (protocol + host) from the saved value
+          const parsedOrigin = new URL(state.origin).origin;
+          if (allowedOrigins.includes(parsedOrigin)) {
+            redirectUrl = parsedOrigin;
+          }
+        }
+      } catch (e) {
+        // If state parsing fails, fall back to CLIENT_URL
+      }
       
       // Get accurate IP address (handle proxies/load balancers)
       const getClientIP = (req) => {
@@ -207,7 +232,19 @@ router.get('/google/callback',
       res.redirect(`${redirectUrl}/dashboard?auth=success&token=${token}`);
     } catch (error) {
       console.error('Google OAuth callback error:', error);
-      res.redirect(`${process.env.CLIENT_URL || 'http://localhost:3000'}/login?error=oauth_failed`);
+      const errorRedirect = process.env.CLIENT_URL || 'http://localhost:3000';
+      // Try to use the origin from state for error redirect too
+      try {
+        const state = req.query.state ? JSON.parse(Buffer.from(req.query.state, 'base64').toString()) : {};
+        if (state.origin) {
+          const parsedOrigin = new URL(state.origin).origin;
+          const allowed = ['https://www.green-community.app', 'https://green-community.app', 'https://greencommunity-app.azurewebsites.net', 'http://localhost:3000'];
+          if (allowed.includes(parsedOrigin)) {
+            return res.redirect(`${parsedOrigin}/login?error=oauth_failed`);
+          }
+        }
+      } catch (e) { /* fall through */ }
+      res.redirect(`${errorRedirect}/login?error=oauth_failed`);
     }
   }
 );

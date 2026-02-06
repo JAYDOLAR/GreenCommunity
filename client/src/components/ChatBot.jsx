@@ -95,12 +95,15 @@ const ChatBot = () => {
             return process.env.NEXT_PUBLIC_API_URL;
           }
           
-          // Check for fallback flag
-          if (process.env.NEXT_PUBLIC_USE_AZURE_FALLBACK === 'true') {
-            return 'https://green-community.azurewebsites.net';
+          // Use the current domain to stay on the same origin
+          if (typeof window !== 'undefined') {
+            const hostname = window.location.hostname;
+            if (hostname === 'localhost' || hostname === '127.0.0.1') {
+              return 'http://localhost:5000';
+            }
+            return window.location.origin;
           }
           
-          // Default to custom domain
           return 'https://www.green-community.app';
         };
         
@@ -229,12 +232,11 @@ const ChatBot = () => {
 
       {/* Chat Window */}
       {isOpen && (
-        <Card ref={panelRef} onWheelCapture={(e) => {
+        <Card ref={panelRef} onWheel={(e) => {
           const list = messagesRef.current;
           if (!list) return;
-          e.preventDefault();
           e.stopPropagation();
-          list.scrollBy({ top: e.deltaY, behavior: 'auto' });
+          list.scrollTop += e.deltaY;
         }} className="fixed bottom-24 right-4 sm:bottom-28 sm:right-6
           w-[min(95vw,420px)] h-[min(80vh,560px)]
           shadow-xl border border-primary/10 overflow-hidden z-[10000] animate-slide-up

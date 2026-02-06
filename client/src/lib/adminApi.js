@@ -5,11 +5,8 @@ export const getAdminApiUrl = () => {
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
       return 'http://localhost:5000';
     } else {
-      // Production: Use custom domain with Azure fallback
-      const customDomain = 'https://www.green-community.app';
-      const azureFallback = 'https://green-community.azurewebsites.net';
-      
-      return process.env.NEXT_PUBLIC_USE_AZURE_FALLBACK === 'true' ? azureFallback : customDomain;
+      // Production: Stay on the current domain
+      return window.location.origin;
     }
   }
   
