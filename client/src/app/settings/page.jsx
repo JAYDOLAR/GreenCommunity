@@ -1282,6 +1282,7 @@ const Settings = () => {
                       id="current"
                       name="current"
                       type="password"
+                      autoComplete="current-password"
                       value={passwordForm.current}
                       onChange={handlePasswordChange}
                       required
@@ -1293,6 +1294,7 @@ const Settings = () => {
                       id="new"
                       name="new"
                       type="password"
+                      autoComplete="new-password"
                       value={passwordForm.new}
                       onChange={handlePasswordChange}
                       required
@@ -1304,6 +1306,7 @@ const Settings = () => {
                       id="confirm"
                       name="confirm"
                       type="password"
+                      autoComplete="new-password"
                       value={passwordForm.confirm}
                       onChange={handlePasswordChange}
                       required
