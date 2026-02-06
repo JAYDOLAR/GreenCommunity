@@ -216,8 +216,12 @@ const ChatBot = () => {
         setIsAnimating(false);
       }, 300); // Match animation duration
     } else {
-      // Open immediately
+      // Start opening animation
+      setIsAnimating(true);
       setIsOpen(true);
+      setTimeout(() => {
+        setIsAnimating(false);
+      }, 300); // Match animation duration
     }
   };
 
@@ -255,8 +259,10 @@ const ChatBot = () => {
         }} className={`fixed bottom-24 right-4 sm:bottom-28 sm:right-6
           w-[min(95vw,420px)] h-[min(80vh,560px)]
           shadow-xl border border-primary/10 overflow-hidden z-[10000]
-          bg-white rounded-2xl pointer-events-auto transition-all duration-300 ease-in-out
-          ${isOpen ? 'animate-slide-up opacity-100 scale-100' : 'opacity-0 scale-95 translate-y-4'}`}>
+          bg-white rounded-2xl pointer-events-auto
+          transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]
+          origin-bottom-right
+          ${isOpen ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-75 translate-y-6'}`}>
           <div className="h-full flex flex-col">
             {/* Header */}
             <div className="p-3 border-b border-primary/10">

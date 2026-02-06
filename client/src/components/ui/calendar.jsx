@@ -59,7 +59,7 @@ function Calendar({
       showOutsideDays={showOutsideDays}
       modifiers={streakModifiers}
       className={cn(
-        "bg-background group/calendar px-4 pt-6 pb-6 [--cell-size:--spacing(10)] [[data-slot=card-content]_&]:bg-transparent [[data-slot=popover-content]_&]:bg-transparent rounded-xl shadow-sm",
+        "bg-background group/calendar px-4 pt-6 pb-6 [--cell-size:--spacing(12)] [[data-slot=card-content]_&]:bg-transparent [[data-slot=popover-content]_&]:bg-transparent rounded-xl shadow-sm",
         String.raw`rtl:**:[.rdp-button\_next>svg]:rotate-180`,
         String.raw`rtl:**:[.rdp-button\_previous>svg]:rotate-180`,
         className
@@ -102,12 +102,12 @@ function Calendar({
         ),
         dropdown: cn("absolute bg-popover inset-0 opacity-0", defaultClassNames.dropdown),
         caption_label: cn("select-none font-semibold", captionLayout === "label"
-          ? "text-base text-green-800"
-          : "rounded-md pl-2 pr-1 flex items-center gap-1 text-base h-8 [&>svg]:text-muted-foreground [&>svg]:size-3.5", defaultClassNames.caption_label),
+          ? "text-lg text-green-800"
+          : "rounded-md pl-2 pr-1 flex items-center gap-1 text-lg h-9 [&>svg]:text-muted-foreground [&>svg]:size-3.5", defaultClassNames.caption_label),
         table: "w-full border-collapse mt-1 mb-4 overflow-visible",
         weekdays: cn("flex overflow-hidden", defaultClassNames.weekdays),
         weekday: cn(
-          "text-green-700 rounded-md flex-1 font-semibold text-sm tracking-wide select-none size-(--cell-size) flex items-center justify-center",
+          "text-green-700 rounded-md flex-1 font-semibold text-base tracking-wide select-none size-(--cell-size) flex items-center justify-center",
           defaultClassNames.weekday
         ),
         week: cn("flex w-full mt-2 overflow-hidden", defaultClassNames.week),
@@ -201,7 +201,7 @@ function CalendarDayButton({
       data-range-end={modifiers.range_end}
       data-range-middle={modifiers.range_middle}
       className={cn(
-        "relative flex items-center justify-center aspect-square w-full min-w-(--cell-size) min-h-(--cell-size) font-medium text-base transition-all duration-200 overflow-hidden hover:scale-105 m-0 p-0",
+        "relative flex items-center justify-center aspect-square w-full min-w-(--cell-size) min-h-(--cell-size) font-medium text-lg transition-all duration-200 overflow-hidden hover:scale-105 m-0 p-0",
         // Add ring-inset to all buttons to maintain consistent sizing
         "ring-inset",
 
@@ -228,8 +228,8 @@ function CalendarDayButton({
     >
       {isStreak ? (
         <div className="relative flex flex-col items-center justify-center">
-          <Flame className="h-3 w-3 sm:h-4 sm:w-4 text-orange-500 mb-0.5" />
-          <span className="text-xs font-bold text-gray-700">{day.date.getDate()}</span>
+          <Flame className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5 text-orange-500 mb-0.5" />
+          <span className="text-sm sm:text-base font-bold text-gray-700">{day.date.getDate()}</span>
         </div>
       ) : (
         <span className="z-10">{day.date.getDate()}</span>
