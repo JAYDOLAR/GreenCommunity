@@ -448,10 +448,26 @@ userSchema.methods.clearEmailVerificationCode = function () {
   this.emailVerificationCodeExpires = undefined;
 };
 
+// Helper to normalize IP addresses (handles IPv4-mapped IPv6, localhost variants)
+function normalizeIP(ip) {
+  if (!ip) return '';
+  let normalized = ip.trim();
+  // Strip IPv4-mapped IPv6 prefix (::ffff:127.0.0.1 → 127.0.0.1)
+  if (normalized.startsWith('::ffff:')) {
+    normalized = normalized.slice(7);
+  }
+  // Treat all localhost variants the same
+  if (normalized === '::1' || normalized === '127.0.0.1' || normalized === 'localhost') {
+    normalized = '127.0.0.1';
+  }
+  return normalized;
+}
+
 // Method to add trusted device
 userSchema.methods.addTrustedDevice = function (deviceInfo, days = 30) {
+  const normalizedIP = normalizeIP(deviceInfo.ipAddress);
   const deviceId = crypto.createHash('sha256')
-    .update(`${deviceInfo.userAgent}-${deviceInfo.ipAddress}-${Date.now()}`)
+    .update(`${deviceInfo.userAgent}-${normalizedIP}-${Date.now()}`)
     .digest('hex');
 
   // Use client timestamp if provided, otherwise server time
@@ -462,12 +478,15 @@ userSchema.methods.addTrustedDevice = function (deviceInfo, days = 30) {
   // Remove any existing trusted devices that have expired
   this.trustedDevices = this.trustedDevices.filter(device => device.expiresAt > new Date());
 
+  // Remove any existing entry with the same userAgent to avoid duplicates
+  this.trustedDevices = this.trustedDevices.filter(device => device.userAgent !== deviceInfo.userAgent);
+
   // Add new trusted device
   this.trustedDevices.push({
     deviceId,
     deviceName: deviceInfo.deviceName || this.extractDeviceName(deviceInfo.userAgent),
     userAgent: deviceInfo.userAgent,
-    ipAddress: deviceInfo.ipAddress,
+    ipAddress: normalizedIP,
     expiresAt,
     createdAt
   });
@@ -487,11 +506,23 @@ userSchema.methods.isDeviceTrusted = function (userAgent, ipAddress) {
   // Clean up expired devices first
   this.trustedDevices = this.trustedDevices.filter(device => device.expiresAt > new Date());
 
-  return this.trustedDevices.some(device =>
-    device.userAgent === userAgent &&
-    device.ipAddress === ipAddress &&
-    device.expiresAt > new Date()
-  );
+  const normalizedIP = normalizeIP(ipAddress);
+
+  // Primary match: same userAgent (browser+device fingerprint) is the strongest signal.
+  // IP may change (dynamic IPs, VPN, ISP rotation) so match on userAgent alone
+  // as long as the device entry hasn't expired.
+  return this.trustedDevices.some(device => {
+    if (device.expiresAt <= new Date()) return false;
+
+    // Exact userAgent match is the primary identifier
+    const uaMatch = device.userAgent === userAgent;
+
+    // IP match (normalized) as secondary confirmation
+    const ipMatch = normalizeIP(device.ipAddress) === normalizedIP;
+
+    // Trust if userAgent matches — IP is optional since it changes frequently
+    return uaMatch;
+  });
 };
 
 // Method to remove trusted device
