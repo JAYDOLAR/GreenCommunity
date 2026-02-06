@@ -748,13 +748,13 @@ const Dashboard = () => {
         {/* Right Column with Enhanced Styling */}
         <div className="space-y-4 sm:space-y-6 md:space-y-8">
           {/* Calendar Streak Component */}
-          <StreakCalendar 
-            streakData={streakData}
-            todayStatus={todayStatus}
-            streakDays={streakDays}
-            date={date}
-            onDateSelect={setDate}
-          />
+          <div className="animate-slide-up flex justify-center items-center w-full" style={{ animationDelay: "0.7s" }}>
+            <StreakCalendar 
+              streakDays={streakDays}
+              date={date}
+              onDateSelect={setDate}
+            />
+          </div>
           {/* Enhanced Quick Actions */}
           <div className="animate-slide-up" style={{ animationDelay: "0.75s" }}>
             <Card className="card-premium hover-glow">
