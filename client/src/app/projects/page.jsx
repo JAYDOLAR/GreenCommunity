@@ -692,7 +692,7 @@ const Projects = () => {
     }
 
     return (
-      <div className="relative h-[700px] sm:h-[800px] lg:h-[900px] rounded-lg border-2 border-primary/20 overflow-hidden">
+      <div className="relative h-[700px] sm:h-[800px] lg:h-[900px] rounded-lg border-2 border-primary/20 overflow-hidden [&_.leaflet-top.leaflet-left]{top:auto!important;bottom:10px!important;left:10px!important} [&_.leaflet-control-zoom]{margin:0!important}">
         <MapContainer
           center={[20, 0]}
           zoom={2}

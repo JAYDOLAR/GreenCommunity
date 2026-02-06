@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { projectsApi } from '@/lib/projectsApi';
+import useCurrency from '@/hooks/useCurrency';
 import {
   Card,
   CardContent,
@@ -38,6 +39,8 @@ import {
 const AddProjectPage = () => {
   const router = useRouter();
   const fileInputRef = useRef(null);
+  const { formatPrice } = useCurrency();
+  const formatINR = (amount) => formatPrice(amount, 'INR');
   const [isLoading, setIsLoading] = useState(false);
   const [uploadedImage, setUploadedImage] = useState(null); // { file, preview }
   const [project, setProject] = useState({
@@ -608,7 +611,7 @@ const AddProjectPage = () => {
               <div className="text-sm">
                 <span className="font-medium">Funding:</span>{" "}
                 {project.totalFunding
-                  ? `₹${parseInt(project.totalFunding).toLocaleString()}`
+                  ? formatINR(parseInt(project.totalFunding))
                   : "Not set"}
               </div>
               {project.registerOnBlockchain && (

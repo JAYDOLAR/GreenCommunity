@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { projectsApi } from "@/lib/projectsApi";
 import { blockchainApi } from "@/lib/blockchainApi";
+import useCurrency from '@/hooks/useCurrency';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -62,6 +63,8 @@ import {
 
 const ProjectsPage = () => {
   const router = useRouter();
+  const { formatPrice, getSymbol } = useCurrency();
+  const formatINR = (amount) => formatPrice(amount, 'INR');
   const editImageInputRef = useRef(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -742,7 +745,7 @@ const ProjectsPage = () => {
                     <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <DollarSign className="h-3 w-3" />
-                        ₹{(project.currentFunding/10000000).toFixed(1)}Cr raised
+                        {formatINR(project.currentFunding)} raised
                       </span>
                       <span className="flex items-center gap-1">
                         <Users className="h-3 w-3" />

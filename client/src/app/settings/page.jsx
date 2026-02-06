@@ -1122,8 +1122,7 @@ const Settings = () => {
               : "hidden"
           }`}
         >
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="card-gradient border-destructive/20">
+          <Card className="card-gradient border-destructive/20">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base md:text-lg text-destructive">
                   <Trash2 className="h-4 w-4 md:h-5 md:w-5" />
@@ -1140,7 +1139,7 @@ const Settings = () => {
                 <Button
                   onClick={deleteAccount}
                   variant="destructive"
-                  className="w-full text-white"
+                  className="w-full sm:w-auto text-white"
                   disabled={isDeleting}
                 >
                   {isDeleting ? (
@@ -1157,7 +1156,6 @@ const Settings = () => {
                 </Button>
               </CardContent>
             </Card>
-          </div>
           <Card className="card-gradient">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base md:text-lg">

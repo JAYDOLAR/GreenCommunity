@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import getAdminApiUrl from '@/lib/adminApi';
+import useCurrency from '@/hooks/useCurrency';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -28,6 +29,7 @@ const ReportsPage = () => {
   const [selectedReport, setSelectedReport] = useState('user-activity');
   const [timeRange, setTimeRange] = useState('30d');
   const [reportFormat, setReportFormat] = useState('pdf');
+  const { getSymbol } = useCurrency();
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedReports, setGeneratedReports] = useState([]);
   const [showDownloadMenu, setShowDownloadMenu] = useState({});
@@ -215,12 +217,12 @@ const ReportsPage = () => {
         [''],
         ['Metric', 'Value', 'Status', 'Growth'],
         ['Total Users', '1,247', 'Active', '+12.5%'],
-        ['Total Revenue', '₹1.25M', 'Growing', '+8.3%'],
+        ['Total Revenue', `${getSymbol()}1.25M`, 'Growing', '+8.3%'],
         ['Active Projects', '45', 'Active', '+15.2%'],
         ['Carbon Offset', '125,000 kg', 'On Track', '+18.7%'],
-        ['Marketplace Sales', '₹450K', 'Growing', '+22.1%'],
+        ['Marketplace Sales', `${getSymbol()}450K`, 'Growing', '+22.1%'],
         ['User Engagement', '78%', 'High', '+5.2%'],
-        ['Project Funding', '₹2.1M', 'On Track', '+14.3%'],
+        ['Project Funding', `${getSymbol()}2.1M`, 'On Track', '+14.3%'],
         ['Environmental Impact', '85,000 trees', 'Excellent', '+25.8%']
       ];
 
@@ -370,14 +372,14 @@ const ReportsPage = () => {
               </div>
               <div class="summary-card">
                 <h3>Financial Metrics</h3>
-                <p><strong>Total Revenue:</strong> ₹1.25M</p>
+                <p><strong>Total Revenue:</strong> ${getSymbol()}1.25M</p>
                 <p><strong>Revenue Growth:</strong> +8.3%</p>
-                <p><strong>Marketplace Sales:</strong> ₹450K</p>
+                <p><strong>Marketplace Sales:</strong> ${getSymbol()}450K</p>
               </div>
               <div class="summary-card">
                 <h3>Project Metrics</h3>
                 <p><strong>Active Projects:</strong> 45</p>
-                <p><strong>Project Funding:</strong> ₹2.1M</p>
+                <p><strong>Project Funding:</strong> ${getSymbol()}2.1M</p>
                 <p><strong>Funding Rate:</strong> +14.3%</p>
               </div>
               <div class="summary-card">
@@ -407,7 +409,7 @@ const ReportsPage = () => {
                 </tr>
                 <tr>
                   <td>Total Revenue</td>
-                  <td>₹1.25M</td>
+                  <td>${getSymbol()}1.25M</td>
                   <td><span class="status-badge status-growing">Growing</span></td>
                   <td>+8.3%</td>
                 </tr>
@@ -425,7 +427,7 @@ const ReportsPage = () => {
                 </tr>
                 <tr>
                   <td>Marketplace Sales</td>
-                  <td>₹450K</td>
+                  <td>${getSymbol()}450K</td>
                   <td><span class="status-badge status-growing">Growing</span></td>
                   <td>+22.1%</td>
                 </tr>
@@ -437,7 +439,7 @@ const ReportsPage = () => {
                 </tr>
                 <tr>
                   <td>Project Funding</td>
-                  <td>₹2.1M</td>
+                  <td>${getSymbol()}2.1M</td>
                   <td><span class="status-badge status-active">On Track</span></td>
                   <td>+14.3%</td>
                 </tr>

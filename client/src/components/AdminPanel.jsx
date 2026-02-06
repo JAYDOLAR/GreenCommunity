@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import useCurrency from '@/hooks/useCurrency';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -23,12 +24,13 @@ import {
 
 const AdminPanel = () => {
   const [activeTab, setActiveTab] = useState('overview');
+  const { formatPrice } = useCurrency();
 
   const adminStats = [
     { title: 'Total Users', value: '1,234', change: '+12%', icon: Users, color: 'text-blue-500' },
     { title: 'Active Projects', value: '45', change: '+5%', icon: TreePine, color: 'text-green-500' },
     { title: 'Marketplace Items', value: '89', change: '+8%', icon: ShoppingCart, color: 'text-purple-500' },
-    { title: 'Revenue', value: '$12,450', change: '+15%', icon: TrendingUp, color: 'text-orange-500' },
+    { title: 'Revenue', value: formatPrice(12450, 'USD'), change: '+15%', icon: TrendingUp, color: 'text-orange-500' },
   ];
 
   const recentActions = [

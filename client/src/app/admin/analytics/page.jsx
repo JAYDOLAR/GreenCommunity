@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import getAdminApiUrl from '@/lib/adminApi';
+import useCurrency from '@/hooks/useCurrency';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -45,6 +46,8 @@ import {
 } from 'recharts';
 
 const AnalyticsPage = () => {
+  const { formatPrice, getSymbol } = useCurrency();
+  const formatINR = (amount) => formatPrice(amount, 'INR');
   const [timeRange, setTimeRange] = useState('30d');
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -247,7 +250,7 @@ const AnalyticsPage = () => {
     const csvData = [
       ['Metric', 'Value', 'Growth', 'Trend'],
       ['Total Users', metrics.users.total.toLocaleString(), `${metrics.users.growth}%`, metrics.users.trend],
-      ['Total Revenue', `₹${(metrics.revenue.total/1000000).toFixed(1)}M`, `${metrics.revenue.growth}%`, metrics.revenue.trend],
+      ['Total Revenue', `${getSymbol()}${(metrics.revenue.total/1000000).toFixed(1)}M`, `${metrics.revenue.growth}%`, metrics.revenue.trend],
       ['Active Projects', metrics.projects.total, `${metrics.projects.growth}%`, metrics.projects.trend],
       ['Carbon Offset', `${metrics.carbonOffset.total.toLocaleString()} kg`, `${metrics.carbonOffset.growth}%`, metrics.carbonOffset.trend],
       [''],
@@ -307,7 +310,7 @@ const AnalyticsPage = () => {
           </div>
           <div class="metric">
             <h3>Total Revenue</h3>
-            <p><strong>Value:</strong> ₹${(metrics.revenue.total/1000000).toFixed(1)}M</p>
+            <p><strong>Value:</strong> ${getSymbol()}${(metrics.revenue.total/1000000).toFixed(1)}M</p>
             <p class="${metrics.revenue.trend === 'up' ? 'growth' : 'decline'}"><strong>Growth:</strong> +${metrics.revenue.growth}%</p>
           </div>
           <div class="metric">
@@ -583,8 +586,8 @@ const AnalyticsPage = () => {
            <LineChart {...commonProps}>
              <CartesianGrid strokeDasharray="3 3" />
              <XAxis dataKey={revenueChartMonth === -1 ? "month" : "day"} interval="preserveStartEnd" tickCount={isMobile ? 3 : 6} tick={{ fontSize: isMobile ? 10 : 12 }} tickLine={false} axisLine={false} />
-             <YAxis tick={{ fontSize: isMobile ? 10 : 12 }} tickLine={false} axisLine={false} domain={[0, 'auto']} allowDecimals={false} tickFormatter={(value) => `₹${value}k`} />
-             <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: 'hsl(var(--muted-foreground))' }} formatter={(value) => [`₹${value}k`, 'Revenue']} />
+             <YAxis tick={{ fontSize: isMobile ? 10 : 12 }} tickLine={false} axisLine={false} domain={[0, 'auto']} allowDecimals={false} tickFormatter={(value) => `${getSymbol()}${value}k`} />
+             <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: 'hsl(var(--muted-foreground))' }} formatter={(value) => [`${getSymbol()}${value}k`, 'Revenue']} />
              <Line 
                type="monotone" 
                dataKey="revenue" 
@@ -601,8 +604,8 @@ const AnalyticsPage = () => {
            <AreaChart {...commonProps}>
              <CartesianGrid strokeDasharray="3 3" />
              <XAxis dataKey={revenueChartMonth === -1 ? "month" : "day"} interval="preserveStartEnd" tickCount={isMobile ? 3 : 6} tick={{ fontSize: isMobile ? 10 : 12 }} tickLine={false} axisLine={false} />
-             <YAxis tick={{ fontSize: isMobile ? 10 : 12 }} tickLine={false} axisLine={false} domain={[0, 'auto']} allowDecimals={false} tickFormatter={(value) => `₹${value}k`} />
-             <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: 'hsl(var(--muted-foreground))' }} formatter={(value) => [`₹${value}k`, 'Revenue']} />
+             <YAxis tick={{ fontSize: isMobile ? 10 : 12 }} tickLine={false} axisLine={false} domain={[0, 'auto']} allowDecimals={false} tickFormatter={(value) => `${getSymbol()}${value}k`} />
+             <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: 'hsl(var(--muted-foreground))' }} formatter={(value) => [`${getSymbol()}${value}k`, 'Revenue']} />
              <Area 
                type="monotone" 
                dataKey="revenue" 
@@ -619,8 +622,8 @@ const AnalyticsPage = () => {
            <BarChart {...commonProps}>
              <CartesianGrid strokeDasharray="3 3" />
              <XAxis dataKey={revenueChartMonth === -1 ? "month" : "day"} interval="preserveStartEnd" tickCount={isMobile ? 3 : 6} tick={{ fontSize: isMobile ? 10 : 12 }} tickLine={false} axisLine={false} />
-             <YAxis tick={{ fontSize: isMobile ? 10 : 12 }} tickLine={false} axisLine={false} domain={[0, 'auto']} allowDecimals={false} tickFormatter={(value) => `₹${value}k`} />
-             <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: 'hsl(var(--muted-foreground))' }} formatter={(value) => [`₹${value}k`, 'Revenue']} />
+             <YAxis tick={{ fontSize: isMobile ? 10 : 12 }} tickLine={false} axisLine={false} domain={[0, 'auto']} allowDecimals={false} tickFormatter={(value) => `${getSymbol()}${value}k`} />
+             <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: 'hsl(var(--muted-foreground))' }} formatter={(value) => [`${getSymbol()}${value}k`, 'Revenue']} />
              <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
            </BarChart>
          );
@@ -630,8 +633,8 @@ const AnalyticsPage = () => {
            <ComposedChart {...commonProps}>
              <CartesianGrid strokeDasharray="3 3" />
              <XAxis dataKey={revenueChartMonth === -1 ? "month" : "day"} interval="preserveStartEnd" tickCount={isMobile ? 3 : 6} tick={{ fontSize: isMobile ? 10 : 12 }} tickLine={false} axisLine={false} />
-             <YAxis tick={{ fontSize: isMobile ? 10 : 12 }} tickLine={false} axisLine={false} domain={[0, 'auto']} allowDecimals={false} tickFormatter={(value) => `₹${value}k`} />
-             <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: 'hsl(var(--muted-foreground))' }} formatter={(value) => [`₹${value}k`, 'Revenue']} />
+             <YAxis tick={{ fontSize: isMobile ? 10 : 12 }} tickLine={false} axisLine={false} domain={[0, 'auto']} allowDecimals={false} tickFormatter={(value) => `${getSymbol()}${value}k`} />
+             <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: 'hsl(var(--muted-foreground))' }} formatter={(value) => [`${getSymbol()}${value}k`, 'Revenue']} />
              <Area 
                type="monotone" 
                dataKey="revenue" 
@@ -648,8 +651,8 @@ const AnalyticsPage = () => {
            <LineChart {...commonProps}>
              <CartesianGrid strokeDasharray="3 3" />
              <XAxis dataKey={revenueChartMonth === -1 ? "month" : "day"} tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
-             <YAxis tick={{ fontSize: 12 }} tickLine={false} axisLine={false} tickFormatter={(value) => `₹${value}k`} />
-             <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: 'hsl(var(--muted-foreground))' }} formatter={(value) => [`₹${value}k`, 'Revenue']} />
+             <YAxis tick={{ fontSize: 12 }} tickLine={false} axisLine={false} tickFormatter={(value) => `${getSymbol()}${value}k`} />
+             <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: 'hsl(var(--muted-foreground))' }} formatter={(value) => [`${getSymbol()}${value}k`, 'Revenue']} />
              <Line 
                type="monotone" 
                dataKey="revenue" 
@@ -860,7 +863,7 @@ const AnalyticsPage = () => {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₹{(metrics.revenue.total/1000000).toFixed(1)}M</div>
+            <div className="text-2xl font-bold">{getSymbol()}{(metrics.revenue.total/1000000).toFixed(1)}M</div>
             <div className="flex items-center text-xs text-muted-foreground">
               {getTrendIcon(metrics.revenue.trend)}
               <span className={`ml-1 ${getTrendColor(metrics.revenue.trend)}`}>

@@ -59,7 +59,7 @@ function Calendar({
       showOutsideDays={showOutsideDays}
       modifiers={streakModifiers}
       className={cn(
-        "bg-background group/calendar px-4 pt-6 pb-6 [--cell-size:--spacing(12)] [[data-slot=card-content]_&]:bg-transparent [[data-slot=popover-content]_&]:bg-transparent rounded-xl shadow-sm",
+        "bg-background group/calendar px-2 sm:px-4 pt-4 sm:pt-6 pb-4 sm:pb-6 [--cell-size:--spacing(10)] sm:[--cell-size:--spacing(12)] [[data-slot=card-content]_&]:bg-transparent [[data-slot=popover-content]_&]:bg-transparent rounded-xl shadow-sm",
         String.raw`rtl:**:[.rdp-button\_next>svg]:rotate-180`,
         String.raw`rtl:**:[.rdp-button\_previous>svg]:rotate-180`,
         className
@@ -107,7 +107,7 @@ function Calendar({
         table: "w-full border-collapse mt-1 mb-4 overflow-visible",
         weekdays: cn("flex overflow-hidden", defaultClassNames.weekdays),
         weekday: cn(
-          "text-green-700 rounded-md flex-1 font-semibold text-base tracking-wide select-none size-(--cell-size) flex items-center justify-center",
+          "text-green-700 rounded-md flex-1 font-semibold text-sm sm:text-base tracking-wide select-none size-(--cell-size) flex items-center justify-center",
           defaultClassNames.weekday
         ),
         week: cn("flex w-full mt-2 overflow-hidden", defaultClassNames.week),
@@ -201,7 +201,7 @@ function CalendarDayButton({
       data-range-end={modifiers.range_end}
       data-range-middle={modifiers.range_middle}
       className={cn(
-        "relative flex items-center justify-center aspect-square w-full min-w-(--cell-size) min-h-(--cell-size) font-medium text-lg transition-all duration-200 overflow-hidden hover:scale-105 m-0 p-0",
+        "relative flex items-center justify-center aspect-square w-full min-w-(--cell-size) min-h-(--cell-size) font-medium text-base sm:text-lg transition-all duration-200 overflow-hidden hover:scale-105 m-0 p-0",
         // Add ring-inset to all buttons to maintain consistent sizing
         "ring-inset",
 

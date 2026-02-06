@@ -64,7 +64,7 @@ export async function POST(request) {
       verified: true,
       payment_id: razorpay_payment_id,
       order_id: razorpay_order_id,
-      message: `Payment of ₹${amount} for ${projectName} completed successfully`
+      message: `Payment of INR ${amount} for ${projectName} completed successfully`
     });
 
   } catch (error) {

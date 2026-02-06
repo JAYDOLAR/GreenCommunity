@@ -417,9 +417,10 @@ export default function Layout({ children }) {
             <>
               {/* Sidebar Drawer */}
               <div>
-                {sidebarOpen && (
-                  <div className="fixed inset-0 z-[9998] bg-black/40" onClick={() => setSidebarOpen(false)}></div>
-                )}
+                <div
+                  className={`fixed inset-0 z-[9998] bg-black/40 transition-opacity duration-300 ${sidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+                  onClick={() => setSidebarOpen(false)}
+                />
                 <div className={`fixed top-0 left-0 z-[9999] h-full w-64 md:w-80 bg-[#ffffff] opacity-100 bg-opacity-100 backdrop-blur-0 mix-blend-normal border-r border-border shadow-2xl transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 flex flex-col isolate`}>
                   <div className="flex items-center justify-between p-4 md:p-6 border-b border-border">
                     <img

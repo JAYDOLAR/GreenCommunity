@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import getAdminApiUrl from '@/lib/adminApi';
+import useCurrency from '@/hooks/useCurrency';
 import { 
   Users, 
   TreePine, 
@@ -29,6 +30,8 @@ import {
 
 const AdminDashboard = () => {
   const router = useRouter();
+  const { formatPrice, getSymbol } = useCurrency();
+  const formatINR = (amount) => formatPrice(amount, 'INR');
   const [mounted, setMounted] = useState(false);
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(false);
@@ -163,7 +166,7 @@ const AdminDashboard = () => {
         ['Metric', 'Value'],
         ['Total Users', (dashboardStats.totalUsers || 0).toLocaleString('en-US')],
         ['Total Projects', (dashboardStats.totalProjects || 0).toLocaleString('en-US')],
-        ['Total Revenue', `₹${(dashboardStats.totalRevenue || 0).toLocaleString('en-US')}`],
+        ['Total Revenue', formatINR(dashboardStats.totalRevenue || 0)],
         ['Carbon Offset', `${(dashboardStats.carbonOffset || 0).toLocaleString('en-US')} kg`],
         ['Active Projects', (dashboardStats.activeProjects || 0).toLocaleString('en-US')],
         ['Pending Projects', (dashboardStats.pendingProjects || 0).toLocaleString('en-US')],
@@ -219,7 +222,7 @@ const AdminDashboard = () => {
                 <div class="stat-label">Total Projects</div>
               </div>
               <div class="stat-item">
-                <div class="stat-value">₹${(dashboardStats.totalRevenue || 0).toLocaleString('en-US')}</div>
+                <div class="stat-value">${formatINR(dashboardStats.totalRevenue || 0)}</div>
                 <div class="stat-label">Total Revenue</div>
               </div>
               <div class="stat-item">
@@ -448,7 +451,7 @@ const AdminDashboard = () => {
               <div className="text-2xl font-bold text-muted-foreground">Loading...</div>
             ) : (
               <>
-                <div className="text-2xl font-bold">₹{(dashboardStats.totalRevenue || 0).toLocaleString('en-US')}</div>
+                <div className="text-2xl font-bold">{formatINR(dashboardStats.totalRevenue || 0)}</div>
                 <p className="text-xs text-muted-foreground">
                   {dashboardStats.monthlyGrowth !== undefined && dashboardStats.monthlyGrowth >= 0 ? '+' : ''}
                   {dashboardStats.monthlyGrowth || 0}% from last month
