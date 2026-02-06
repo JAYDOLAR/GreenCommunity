@@ -372,51 +372,6 @@ const Settings = () => {
     }
   };
 
-  const exportData = async () => {
-    try {
-      const results = await Promise.allSettled([
-        authAPI.getUserSettings(),
-        footprintLogAPI.getUserLogs(),
-        challengesAPI.me(),
-        authAPI.getTrustedDevices(),
-        challengesAPI.groups(),
-        challengesAPI.events(),
-      ]);
-
-      const [settingsRes, logsRes, challengesRes, devicesRes, groupsRes, eventsRes] = results;
-
-      const exportPayload = {
-        generatedAt: new Date().toISOString(),
-        profile: settingsRes.status === 'fulfilled' ? settingsRes.value?.user || settingsRes.value : null,
-        settings: settingsRes.status === 'fulfilled' ? {
-          notifications: settingsRes.value?.user?.userInfo?.notifications || settingsRes.value?.user?.profile?.notificationPreferences || null,
-          preferences: settingsRes.value?.user?.userInfo?.preferences || settingsRes.value?.user?.profile?.appPreferences || null,
-        } : null,
-        carbonFootprint: logsRes.status === 'fulfilled' ? logsRes.value : [],
-        challenges: challengesRes.status === 'fulfilled' ? challengesRes.value : null,
-        trustedDevices: devicesRes.status === 'fulfilled' ? devicesRes.value : [],
-        community: {
-          groups: groupsRes.status === 'fulfilled' ? groupsRes.value : [],
-          events: eventsRes.status === 'fulfilled' ? eventsRes.value : [],
-        },
-        purchases: [],
-        payments: [],
-      };
-
-      const blob = new Blob([JSON.stringify(exportPayload, null, 2)], { type: 'application/json' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'my-data.json';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(a.href);
-      toast.success('Downloaded JSON data');
-    } catch (error) {
-      toast.error(error?.message || 'Failed to export data. Please try again.');
-    }
-  };
-
   const handle2FASetup = async () => {
     try {
       const { qrCodeUrl } = await authAPI.generate2FASecret();
@@ -1169,30 +1124,6 @@ const Settings = () => {
           }`}
         >
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="card-gradient">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base md:text-lg">
-                  <Download className="h-4 w-4 md:h-5 md:w-5" />
-                  {t("Data Export")}
-                </CardTitle>
-                <CardDescription className="text-xs md:text-sm">{t("Download all Data")}</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-xs md:text-sm text-muted-foreground">
-                  {t("Export Includes Profile Info")}
-                </p>
-                <div>
-                  <Button
-                    onClick={() => exportData('json')}
-                    variant="outline"
-                    className="w-full"
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Download My Data
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
             <Card className="card-gradient border-destructive/20">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base md:text-lg text-destructive">

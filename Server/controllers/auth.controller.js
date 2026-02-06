@@ -1444,12 +1444,18 @@ export const deleteUserAccount = asyncHandler(async (req, res) => {
     // Initialize and get UserInfo model
     const UserInfo = await initializeUserInfoModel();
     
-    // Import all required models dynamically
-    const { FootprintLog } = await import('../models/FootprintLog.model.js');
-    const { Order } = await import('../models/Order.model.js');
-    const { UserChallenge } = await import('../models/UserChallenge.model.js');
-    const { UserPoints } = await import('../models/UserPoints.model.js');
-    const { ChatSession } = await import('../models/ChatSession.model.js');
+    // Import all required models dynamically using their getter functions
+    const { getFootprintLogModel } = await import('../models/FootprintLog.model.js');
+    const { getOrderModel } = await import('../models/Order.model.js');
+    const { getUserChallengeModel } = await import('../models/UserChallenge.model.js');
+    const { getUserPointsModel } = await import('../models/UserPoints.model.js');
+    const { getChatSessionModel } = await import('../models/ChatSession.model.js');
+
+    const FootprintLog = await getFootprintLogModel();
+    const Order = await getOrderModel();
+    const UserChallenge = await getUserChallengeModel();
+    const UserPoints = await getUserPointsModel();
+    const ChatSession = await getChatSessionModel();
 
     // Delete all user data from different collections
     await Promise.all([

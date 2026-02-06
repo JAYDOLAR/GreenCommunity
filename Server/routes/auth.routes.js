@@ -34,7 +34,6 @@ import {
   clearAllTrustedDevices,
   generateToken,
   getUserStreak,
-  exportUserData,
   deleteUserAccount
 } from '../controllers/auth.controller.js';
 import { 
@@ -110,7 +109,6 @@ router.delete('/goals/:goalId', authenticate, deleteCustomGoal);
 router.put('/goals/:goalId/progress', authenticate, updateCustomGoalProgress);
 
 // Data Management Routes
-router.post('/export-data', authenticate, exportUserData);
 router.delete('/delete-account', authenticate, deleteUserAccount);
 
 // Two-Factor Authentication Routes
