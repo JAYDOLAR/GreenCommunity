@@ -45,8 +45,8 @@ const pricingSchema = new mongoose.Schema({
   },
   currency: {
     type: String,
-    enum: ['USD', 'EUR', 'GBP', 'CAD', 'AUD', 'INR'],
-    default: 'USD'
+    enum: ['INR'],
+    default: 'INR'
   },
   discount_price: {
     type: Number,

@@ -7,7 +7,7 @@ import I18nProvider from '@/components/I18nProvider';
 const defaultPreferences = {
   theme: "light",
   language: "en",
-  currency: "usd",
+  currency: "inr",
   carbonUnits: "kg", // preferred carbon emission display unit
   privacy: "public",
   dataSharing: false,

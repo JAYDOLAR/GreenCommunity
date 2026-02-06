@@ -30,7 +30,7 @@ const AdminPanel = () => {
     { title: 'Total Users', value: '1,234', change: '+12%', icon: Users, color: 'text-blue-500' },
     { title: 'Active Projects', value: '45', change: '+5%', icon: TreePine, color: 'text-green-500' },
     { title: 'Marketplace Items', value: '89', change: '+8%', icon: ShoppingCart, color: 'text-purple-500' },
-    { title: 'Revenue', value: formatPrice(12450, 'USD'), change: '+15%', icon: TrendingUp, color: 'text-orange-500' },
+    { title: 'Revenue', value: formatPrice(12450, 'INR'), change: '+15%', icon: TrendingUp, color: 'text-orange-500' },
   ];
 
   const recentActions = [

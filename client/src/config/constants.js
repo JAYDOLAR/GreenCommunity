@@ -8,16 +8,10 @@ export const APP_DESCRIPTION = 'Your carbon footprint tracking and eco-friendly 
 
 // Currency Configuration
 export const CURRENCY_SYMBOLS = {
-    USD: '$',
-    EUR: '€',
-    GBP: '£',
-    INR: '₹',
-    JPY: '¥',
-    CAD: 'C$',
-    AUD: 'A$'
+    INR: '₹'
 };
 
-export const DEFAULT_CURRENCY = 'USD';
+export const DEFAULT_CURRENCY = 'INR';
 
 // Unit Configuration
 export const UNIT_LABELS = {

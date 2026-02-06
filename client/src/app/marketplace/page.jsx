@@ -15,7 +15,7 @@ import { useRouter } from 'next/navigation';
 import ChatBot from '@/components/ChatBot';
 import AuthGuard from '@/components/AuthGuard';
 import Layout from '@/components/Layout';
-import { MARKETPLACE_CATEGORIES, USD_TO_INR } from '@/config/marketplaceConfig';
+import { MARKETPLACE_CATEGORIES } from '@/config/marketplaceConfig';
 import { marketplaceApi } from '@/lib/marketplaceApi';
 import { useTranslation } from '@/context/PreferencesContext';
 import useCurrency from '@/hooks/useCurrency';

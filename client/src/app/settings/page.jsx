@@ -1011,36 +1011,14 @@ const Settings = () => {
                 <div>
                   <Label>{t("preferences:currency")}</Label>
                   <Select
-                    value={preferences.currency}
-                    onValueChange={(value) =>
-                      handlePreferenceChange("currency", value)
-                    }
+                    value="inr"
+                    disabled
                   >
                     <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="Select currency" />
+                      <SelectValue placeholder="INR (₹) - Indian Rupee" />
                     </SelectTrigger>
                     <SelectContent>
-                      {currencyLoading ? (
-                        <SelectItem value={preferences.currency || "usd"} disabled>
-                          {t("settings:loading_currencies")}
-                        </SelectItem>
-                      ) : currencyRates.length > 0 ? (
-                        currencyRates.map((curr) => (
-                          <SelectItem 
-                            key={curr.currency} 
-                            value={curr.currency.toLowerCase()}
-                          >
-                            {curr.currency} ({curr.symbol}) - {curr.name}
-                          </SelectItem>
-                        ))
-                      ) : (
-                        <>
-                          <SelectItem value="usd">USD ($) - US Dollar</SelectItem>
-                          <SelectItem value="eur">EUR (€) - Euro</SelectItem>
-                          <SelectItem value="inr">INR (₹) - Indian Rupee</SelectItem>
-                          <SelectItem value="gbp">GBP (£) - British Pound</SelectItem>
-                        </>
-                      )}
+                      <SelectItem value="inr">INR (₹) - Indian Rupee</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

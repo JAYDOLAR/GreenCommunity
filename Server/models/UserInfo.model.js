@@ -96,8 +96,8 @@ const userInfoSchema = new mongoose.Schema({
     },
     currency: {
       type: String,
-      enum: ['usd', 'eur', 'inr'],
-      default: 'usd'
+      enum: ['inr'],
+      default: 'inr'
     },
     theme: {
       type: String,

@@ -96,19 +96,16 @@ const Projects = () => {
   const displayCO2Value = (tonsValue) => carbonUnit === 'kg' ? (tonsValue * 1000).toLocaleString() : tonsValue.toLocaleString();
   const formatImpact = (tonsValue) => carbonUnit === 'kg' ? `${(tonsValue * 1000).toFixed(2)} kg CO₂` : `${tonsValue.toFixed(2)} tons CO₂`;
   
-  // Format project funding amounts in user's preferred currency
+  // Format project funding amounts in INR
   const formatProjectPrice = (amountInINR) => formatPrice(amountInINR, 'INR');
   const formatProjectPriceCr = (amountInINR) => {
-    const converted = convert(amountInINR, 'INR', userCurrency);
-    const symbol = getSymbol(userCurrency);
-    // Format large amounts appropriately based on currency
-    if (userCurrency === 'INR') {
-      return `${symbol}${(converted / 10000000).toFixed(1)}Cr`;
+    // Always display in INR with Crores notation for large amounts
+    if (amountInINR >= 10000000) {
+      return `₹${(amountInINR / 10000000).toFixed(1)}Cr`;
+    } else if (amountInINR >= 100000) {
+      return `₹${(amountInINR / 100000).toFixed(1)}L`;
     } else {
-      // For other currencies, use millions (M) notation
-      return converted >= 1000000 
-        ? `${symbol}${(converted / 1000000).toFixed(1)}M`
-        : `${symbol}${converted.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+      return `₹${amountInINR.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
     }
   };
   

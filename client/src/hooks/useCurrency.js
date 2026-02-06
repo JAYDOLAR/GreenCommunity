@@ -15,10 +15,10 @@ export function useCurrency() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // User's preferred currency (uppercase)
+  // User's preferred currency (uppercase) - always INR
   const userCurrency = useMemo(() => {
-    return (preferences?.currency || "usd").toUpperCase();
-  }, [preferences?.currency]);
+    return "INR";
+  }, []);
 
   // Fetch all currency rates on mount
   useEffect(() => {
@@ -34,21 +34,18 @@ export function useCurrency() {
           response.data.forEach((rate) => {
             map[rate.currency] = rate;
           });
-          // Ensure USD is always in the map
-          if (!map["USD"]) {
-            map["USD"] = { currency: "USD", rate: 1, symbol: "$", name: "US Dollar" };
+          // Ensure INR is always in the map
+          if (!map["INR"]) {
+            map["INR"] = { currency: "INR", rate: 83.5, symbol: "₹", name: "Indian Rupee", decimalPlaces: 0 };
           }
           setRatesMap(map);
         }
       } catch (err) {
         console.error("Error fetching currency rates:", err);
         setError(err.message);
-        // Set default rates on error
+        // Set default rate on error - INR only
         setRatesMap({
-          USD: { currency: "USD", rate: 1, symbol: "$", name: "US Dollar" },
-          EUR: { currency: "EUR", rate: 0.92, symbol: "€", name: "Euro" },
-          INR: { currency: "INR", rate: 83.5, symbol: "₹", name: "Indian Rupee" },
-          GBP: { currency: "GBP", rate: 0.79, symbol: "£", name: "British Pound" },
+          INR: { currency: "INR", rate: 83.5, symbol: "₹", name: "Indian Rupee", decimalPlaces: 0 },
         });
       } finally {
         setLoading(false);
@@ -69,8 +66,8 @@ export function useCurrency() {
     (amount, fromCurrency, toCurrency = userCurrency) => {
       if (!amount || isNaN(amount)) return 0;
       
-      const from = fromCurrency?.toUpperCase() || "USD";
-      const to = toCurrency?.toUpperCase() || userCurrency;
+      const from = fromCurrency?.toUpperCase() || "INR";
+      const to = toCurrency?.toUpperCase() || "INR";
       
       if (from === to) return amount;
       
@@ -92,7 +89,7 @@ export function useCurrency() {
    * @returns {string} Formatted currency string
    */
   const formatPrice = useCallback(
-    (amount, fromCurrency = "USD", options = {}) => {
+    (amount, fromCurrency = "INR", options = {}) => {
       const { showSymbol = true, convertToUserCurrency = true } = options;
       
       const targetCurrency = convertToUserCurrency ? userCurrency : fromCurrency.toUpperCase();
@@ -100,8 +97,8 @@ export function useCurrency() {
         ? convert(amount, fromCurrency, targetCurrency)
         : amount;
       
-      const rateInfo = ratesMap[targetCurrency] || ratesMap["USD"] || { symbol: "$", decimalPlaces: 2 };
-      const symbol = rateInfo.symbol || "$";
+      const rateInfo = ratesMap[targetCurrency] || ratesMap["INR"] || { symbol: "₹", decimalPlaces: 0 };
+      const symbol = rateInfo.symbol || "₹";
       const decimals = rateInfo.decimalPlaces ?? 2;
       const symbolPosition = rateInfo.symbolPosition || "before";
       
@@ -126,8 +123,8 @@ export function useCurrency() {
    */
   const getSymbol = useCallback(
     (currency = userCurrency) => {
-      const curr = currency?.toUpperCase() || userCurrency;
-      return ratesMap[curr]?.symbol || "$";
+      const curr = currency?.toUpperCase() || "INR";
+      return ratesMap[curr]?.symbol || "₹";
     },
     [ratesMap, userCurrency]
   );
@@ -136,7 +133,7 @@ export function useCurrency() {
    * Get current user's currency info
    */
   const currentCurrency = useMemo(() => {
-    return ratesMap[userCurrency] || { currency: userCurrency, symbol: "$", rate: 1 };
+    return ratesMap[userCurrency] || { currency: "INR", symbol: "₹", rate: 83.5, decimalPlaces: 0 };
   }, [ratesMap, userCurrency]);
 
   return {
