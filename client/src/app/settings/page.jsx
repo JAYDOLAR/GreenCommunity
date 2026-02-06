@@ -299,6 +299,8 @@ const Settings = () => {
       setIsSaving(true);
       await authAPI.updateNotificationPreferences(notifications);
       toast.success(t("settings:notification_updated"));
+      // Refresh user data so changes persist on reload
+      await refreshUser();
     } catch (error) {
       console.error("Error updating notifications:", error);
       toast.error("Failed to update notification preferences");
@@ -311,7 +313,13 @@ const Settings = () => {
     try {
       setIsSaving(true);
       await authAPI.updateAppPreferences(preferences);
+      // Save preferences to localStorage immediately
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('preferences', JSON.stringify(preferences));
+      }
       toast.success(t("settings:preferences_updated"));
+      // Refresh user data so changes persist on reload
+      await refreshUser();
     } catch (error) {
       console.error("Error updating preferences:", error);
       toast.error("Failed to update app preferences");
