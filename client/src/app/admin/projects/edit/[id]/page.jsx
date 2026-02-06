@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { projectsApi } from "@/lib/projectsApi";
+import useCurrency from '@/hooks/useCurrency';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +29,8 @@ const EditProjectPage = () => {
   const params = useParams();
   const { id } = params || {};
   const fileInputRef = useRef(null);
+  const { formatPrice } = useCurrency();
+  const formatINR = (amount) => formatPrice(amount, 'INR');
 
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
@@ -423,7 +426,7 @@ const EditProjectPage = () => {
                 <div className="text-sm"><span className="font-medium">Name:</span> {project.name || "Not set"}</div>
                 <div className="text-sm"><span className="font-medium">Location:</span> {project.location || "Not set"}</div>
                 <div className="text-sm"><span className="font-medium">Type:</span> {project.type || "Not set"}</div>
-                <div className="text-sm"><span className="font-medium">Funding:</span> {project.totalFunding ? `₹${parseInt(project.totalFunding).toLocaleString()}` : "Not set"}</div>
+                <div className="text-sm"><span className="font-medium">Funding:</span> {project.totalFunding ? formatINR(parseInt(project.totalFunding)) : "Not set"}</div>
                 <div className="text-sm"><span className="font-medium">Status:</span>
                   <Badge className={`ml-2 ${project.status === 'active' ? 'bg-green-100 text-green-800' : project.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : project.status === 'rejected' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'}`}>
                     {project.status || 'draft'}

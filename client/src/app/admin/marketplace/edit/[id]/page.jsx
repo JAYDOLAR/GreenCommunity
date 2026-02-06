@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { marketplaceApi } from "@/lib/marketplaceApi";
+import useCurrency from '@/hooks/useCurrency';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +26,8 @@ const EditProductPage = () => {
   const params = useParams();
   const { id } = params || {};
   const fileInputRef = useRef(null);
+  const { formatPrice } = useCurrency();
+  const formatINR = (amount) => formatPrice(amount, 'INR');
 
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
@@ -475,7 +478,7 @@ const EditProductPage = () => {
                   <span className="font-medium">Category:</span> {product.category || "Not set"}
                 </div>
                 <div className="text-sm">
-                  <span className="font-medium">Price:</span> {product.price ? `₹${parseInt(product.price).toLocaleString()}` : "Not set"}
+                  <span className="font-medium">Price:</span> {product.price ? formatINR(parseInt(product.price)) : "Not set"}
                 </div>
                 <div className="text-sm">
                   <span className="font-medium">Stock:</span> {product.stock || "Not set"}

@@ -29,11 +29,16 @@ import {
 } from 'lucide-react';
 import AuthGuard from '@/components/AuthGuard';
 import Layout from '@/components/Layout';
+import useCurrency from '@/hooks/useCurrency';
 
 const Payment = () => {
   const { user } = useUser();
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { formatPrice, userCurrency, getSymbol } = useCurrency();
+  
+  // Format INR amounts in user's preferred currency for display
+  const formatINR = (amountInINR) => formatPrice(amountInINR, 'INR');
 
   // Get project details from URL params
   const projectId = searchParams.get('project');
@@ -155,7 +160,7 @@ const Payment = () => {
 
       // Razorpay minimum amount is ₹1 (100 paise)
       if (amountInPaise < 100) {
-        toast.error('Minimum payment amount is ₹1. Please increase your contribution.');
+        toast.error('Minimum payment amount is ₹1 (100 paise). Please increase your contribution.');
         setIsProcessing(false);
         return;
       }
@@ -216,7 +221,7 @@ const Payment = () => {
           toast.success(
             <div className="flex items-center gap-2">
               <Leaf className="h-4 w-4" />
-              Payment Successful! Thank you for contributing ₹{amountInINR.toLocaleString()} to {projectName}. You've helped offset {calculateImpact(amountInINR)} of CO₂!
+              Payment Successful! Thank you for contributing {formatINR(amountInINR)} to {projectName}. You've helped offset {calculateImpact(amountInINR)} of CO₂!
             </div>
           );
           
@@ -573,16 +578,16 @@ const Payment = () => {
                   <h4 className="font-semibold text-base sm:text-lg mb-2 sm:mb-3">Payment Summary</h4>
                   <div className="flex justify-between text-sm sm:text-lg">
                     <span>Contribution</span>
-                    <span className="font-semibold">₹{contributionAmount[0] * USD_TO_INR}</span>
+                    <span className="font-semibold">{formatINR(contributionAmount[0])}</span>
                   </div>
                   <div className="flex justify-between text-xs sm:text-sm text-muted-foreground">
                     <span>Processing Fee</span>
-                    <span>₹{Math.round(processingFee * USD_TO_INR)}</span>
+                    <span>{formatINR(processingFee)}</span>
                   </div>
                   <Separator className="my-3" />
                   <div className="flex justify-between font-bold text-lg sm:text-xl">
                     <span>Total</span>
-                    <span className="text-green-600">₹{totalAmountINR}</span>
+                    <span className="text-green-600">{formatINR(totalAmountINR)}</span>
                   </div>
                 </div>
 
@@ -627,7 +632,7 @@ const Payment = () => {
                   ) : (
                     <div className="flex items-center gap-1 sm:gap-2">
                       <Lock className="h-4 w-4 sm:h-5 sm:w-5" />
-                      Complete Payment ₹{totalAmountINR}
+                      Complete Payment {formatINR(totalAmountINR)}
                     </div>
                   )}
                 </Button>

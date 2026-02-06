@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { marketplaceApi } from '@/lib/marketplaceApi';
+import useCurrency from '@/hooks/useCurrency';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,6 +31,8 @@ const AddProductPage = () => {
 
   const router = useRouter();
   const fileInputRef = useRef(null);
+  const { formatPrice } = useCurrency();
+  const formatINR = (amount) => formatPrice(amount, 'INR');
   const [isLoading, setIsLoading] = useState(false);
   const [uploadedImages, setUploadedImages] = useState([]);
 
@@ -501,7 +504,7 @@ const AddProductPage = () => {
                 <span className="font-medium">Category:</span> {product.category || 'Not set'}
               </div>
               <div className="text-sm">
-                <span className="font-medium">Price:</span> {product.price ? `₹${parseInt(product.price).toLocaleString()}` : 'Not set'}
+                <span className="font-medium">Price:</span> {product.price ? formatINR(parseInt(product.price)) : 'Not set'}
               </div>
               <div className="text-sm">
                 <span className="font-medium">Stock:</span> {product.stock || 'Not set'}

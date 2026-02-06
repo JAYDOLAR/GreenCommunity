@@ -41,7 +41,7 @@ import Layout from "@/components/Layout";
 const ProjectDetailContent = ({ params }) => {
   const router = useRouter();
   const urlParams = useParams();
-  const [contributionAmount, setContributionAmount] = useState([50]);
+  const [contributionAmount, setContributionAmount] = useState([4150]); // in INR (~$50)
   const [isLoading, setIsLoading] = useState(false);
   const [loadingProject, setLoadingProject] = useState(true);
   const [project, setProject] = useState(null);
@@ -527,16 +527,20 @@ const ProjectDetailContent = ({ params }) => {
               <div className="space-y-4">
                 <div>
                   <Label className="text-sm">
-                    Contribution Amount: {formatProjectPrice(contributionAmount[0] * 83)}
+                    Contribution Amount: {formatProjectPrice(contributionAmount[0])}
                   </Label>
                   <Slider
                     value={contributionAmount}
                     onValueChange={setContributionAmount}
-                    max={50000}
+                    max={100000}
                     min={1000}
-                    step={1000}
+                    step={500}
                     className="mt-2"
                   />
+                  <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                    <span>{formatProjectPrice(1000)}</span>
+                    <span>{formatProjectPrice(100000)}</span>
+                  </div>
                 </div>
                 <div className="p-4 bg-primary/10 rounded-lg">
                   <div className="text-center">
@@ -561,7 +565,7 @@ const ProjectDetailContent = ({ params }) => {
                   <Button
                     className="flex-1 btn-hero"
                     onClick={() => {
-                      setContributionAmount([50]);
+                      setContributionAmount([4150]); // Reset to default ₹4150 (~$50)
                       setIsLoading(false);
                     }}
                   >
@@ -582,16 +586,20 @@ const ProjectDetailContent = ({ params }) => {
                   <div className="space-y-4 py-4">
                     <div>
                       <Label className="text-sm">
-                        Contribution Amount: {formatProjectPrice(contributionAmount[0] * 83)}
+                        Contribution Amount: {formatProjectPrice(contributionAmount[0])}
                       </Label>
                       <Slider
                         value={contributionAmount}
                         onValueChange={setContributionAmount}
-                        max={50000}
+                        max={100000}
                         min={1000}
-                        step={1000}
+                        step={500}
                         className="mt-2"
                       />
+                      <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                        <span>{formatProjectPrice(1000)}</span>
+                        <span>{formatProjectPrice(100000)}</span>
+                      </div>
                     </div>
                     <div className="p-4 bg-primary/10 rounded-lg">
                       <div className="text-center">

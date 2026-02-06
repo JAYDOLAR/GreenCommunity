@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { marketplaceApi } from '@/lib/marketplaceApi';
+import useCurrency from '@/hooks/useCurrency';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -39,6 +40,8 @@ import {
 const MarketplacePage = () => {
   const STATUS_OVERRIDES_KEY = 'admin_marketplace_status_overrides';
   const router = useRouter();
+  const { formatPrice, getSymbol } = useCurrency();
+  const formatINR = (amount) => formatPrice(amount, 'INR');
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -451,7 +454,7 @@ const MarketplacePage = () => {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₹{orders.reduce((sum, order) => sum + order.total, 0).toLocaleString()}</div>
+            <div className="text-2xl font-bold">{formatINR(orders.reduce((sum, order) => sum + order.total, 0))}</div>
             <p className="text-xs text-muted-foreground">+8% from last month</p>
           </CardContent>
         </Card>
@@ -607,11 +610,11 @@ const MarketplacePage = () => {
                       {/* Pricing Section */}
                       <div className="flex items-center gap-2 mb-3">
                         <span className="text-2xl font-bold text-green-600">
-                          ₹{product.price}
+                          {formatINR(product.price)}
                         </span>
                         {product._original?.pricing?.discount_price && (
                           <span className="text-lg line-through text-muted-foreground">
-                            ₹{product._original.pricing.base_price}
+                            {formatINR(product._original.pricing.base_price)}
                           </span>
                         )}
                       </div>
@@ -692,7 +695,7 @@ const MarketplacePage = () => {
                 </div>
 
                 <div className="text-right">
-                  <div className="text-lg font-bold">₹{order.total}</div>
+                  <div className="text-lg font-bold">{formatINR(order.total)}</div>
                   <p className="text-sm text-muted-foreground">Order #{order.id}</p>
                 </div>
 
