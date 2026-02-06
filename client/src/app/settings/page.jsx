@@ -64,6 +64,7 @@ const Settings = () => {
   const [activeTab, setActiveTab] = useState("profile");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [tabDirection, setTabDirection] = useState("right");
 
   // Tab navigation
@@ -465,14 +466,30 @@ const Settings = () => {
       )
     ) {
       try {
+        setIsDeleting(true);
+        console.log('Attempting to delete account...');
+        
         const response = await authAPI.deleteUserAccount();
+        console.log('Delete account response:', response);
+        
         toast.success("Your account has been permanently deleted.");
+        
+        // Clear local storage and user data
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          localStorage.clear();
+        }
+        
         // Redirect to home page after successful deletion
         setTimeout(() => {
           window.location.href = "/";
         }, 2000);
       } catch (error) {
-        toast.error("Failed to delete account. Please try again.");
+        console.error('Delete account error:', error);
+        const errorMessage = error?.message || error?.originalData?.message || "Failed to delete account. Please try again.";
+        toast.error(errorMessage);
+        setIsDeleting(false);
       }
     }
   };
@@ -1194,9 +1211,19 @@ const Settings = () => {
                   onClick={deleteAccount}
                   variant="destructive"
                   className="w-full text-white"
+                  disabled={isDeleting}
                 >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  {t("Delete Account")}
+                  {isDeleting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      {t("Deleting...")}
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      {t("Delete Account")}
+                    </>
+                  )}
                 </Button>
               </CardContent>
             </Card>

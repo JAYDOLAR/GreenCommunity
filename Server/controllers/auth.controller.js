@@ -1441,8 +1441,8 @@ export const deleteUserAccount = asyncHandler(async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Initialize models
-    await initializeUserInfoModel();
+    // Initialize and get UserInfo model
+    const UserInfo = await initializeUserInfoModel();
     
     // Import all required models dynamically
     const { FootprintLog } = await import('../models/FootprintLog.model.js');

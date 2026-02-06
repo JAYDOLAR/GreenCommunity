@@ -32,9 +32,11 @@ import {
 } from "lucide-react";
 import AuthGuard from "@/components/AuthGuard";
 import { marketplaceApi } from "@/lib/marketplaceApi";
+import useCurrency from "@/hooks/useCurrency";
 
 const ProductDetail = ({ params }) => {
   const router = useRouter();
+  const { formatPrice } = useCurrency();
   const urlParams = useParams();
   const [product, setProduct] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -98,7 +100,7 @@ const ProductDetail = ({ params }) => {
             shipping: response.data._original?.shipping || {
               Standard: "3-5 business days",
               Express: "1-2 business days",
-              "Free Shipping": "Orders over ₹2000",
+              "Free Shipping": `Orders over ${formatPrice(2000, 'INR')}`,
             },
           };
           setProduct(apiProduct);
@@ -288,11 +290,11 @@ const ProductDetail = ({ params }) => {
               <div className="flex items-center gap-4 mb-4">
                 <div className="flex items-center gap-2">
                   <span className="text-2xl font-bold text-foreground">
-                    ₹{product.price}
+                    {formatPrice(product.price, product.currency || 'INR')}
                   </span>
                   {product.originalPrice && (
                     <span className="text-lg text-muted-foreground line-through">
-                      ₹{product.originalPrice}
+                      {formatPrice(product.originalPrice, product.currency || 'INR')}
                     </span>
                   )}
                 </div>
@@ -508,7 +510,7 @@ const ProductDetail = ({ params }) => {
                               <span className="text-xs text-muted-foreground">No reviews</span>
                             )}
                             <span className="font-bold text-foreground text-sm">
-                              ₹{relatedProduct.price}
+                              {formatPrice(relatedProduct.price, relatedProduct.currency || 'INR')}
                             </span>
                           </div>
                           <div className="flex items-center justify-center">
