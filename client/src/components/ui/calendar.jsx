@@ -59,7 +59,7 @@ function Calendar({
       showOutsideDays={showOutsideDays}
       modifiers={streakModifiers}
       className={cn(
-        "bg-background group/calendar px-4 pt-6 pb-12 [--cell-size:--spacing(10)] [[data-slot=card-content]_&]:bg-transparent [[data-slot=popover-content]_&]:bg-transparent rounded-xl shadow-sm",
+        "bg-background group/calendar px-4 pt-6 pb-6 [--cell-size:--spacing(10)] [[data-slot=card-content]_&]:bg-transparent [[data-slot=popover-content]_&]:bg-transparent rounded-xl shadow-sm",
         String.raw`rtl:**:[.rdp-button\_next>svg]:rotate-180`,
         String.raw`rtl:**:[.rdp-button\_previous>svg]:rotate-180`,
         className
@@ -104,7 +104,7 @@ function Calendar({
         caption_label: cn("select-none font-semibold", captionLayout === "label"
           ? "text-base text-green-800"
           : "rounded-md pl-2 pr-1 flex items-center gap-1 text-base h-8 [&>svg]:text-muted-foreground [&>svg]:size-3.5", defaultClassNames.caption_label),
-        table: "w-full border-collapse mt-1 mb-8 overflow-visible",
+        table: "w-full border-collapse mt-1 mb-4 overflow-visible",
         weekdays: cn("flex overflow-hidden", defaultClassNames.weekdays),
         weekday: cn(
           "text-green-700 rounded-md flex-1 font-semibold text-sm tracking-wide select-none size-(--cell-size) flex items-center justify-center",

@@ -20,6 +20,7 @@ import {
 
 const ChatBot = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
   const [messages, setMessages] = useState([INITIAL_CHATBOT_MESSAGE]);
   const [input, setInput] = useState('');
   const [mounted, setMounted] = useState(false);
@@ -63,11 +64,11 @@ const ChatBot = () => {
       const panel = panelRef.current;
       if (btn && btn.contains(event.target)) return;
       if (panel && panel.contains(event.target)) return;
-      setIsOpen(false);
+      handleToggle();
     };
 
     const handleKeyDown = (event) => {
-      if (event.key === 'Escape') setIsOpen(false);
+      if (event.key === 'Escape') handleToggle();
     };
 
     document.addEventListener('mousedown', handleClickOutside, true);
@@ -206,6 +207,20 @@ const ChatBot = () => {
     })();
   };
 
+  const handleToggle = () => {
+    if (isOpen) {
+      // Start closing animation
+      setIsAnimating(true);
+      setTimeout(() => {
+        setIsOpen(false);
+        setIsAnimating(false);
+      }, 300); // Match animation duration
+    } else {
+      // Open immediately
+      setIsOpen(true);
+    }
+  };
+
   const content = (
     <div className="relative">
       {/* Chat Button */}
@@ -217,7 +232,7 @@ const ChatBot = () => {
           )}
           <button
             ref={buttonRef}
-            onClick={() => setIsOpen(prev => !prev)}
+            onClick={handleToggle}
             aria-label={isOpen ? 'Close chat' : 'Open chat'}
             className="relative rounded-full w-14 h-14 sm:w-16 sm:h-16 md:w-18 md:h-18 shadow-lg focus:outline-none focus:ring-2 focus:ring-green-400/60 bg-gradient-to-br from-green-600 to-emerald-500 text-white flex items-center justify-center hover:scale-105 transition-transform"
           >
@@ -231,16 +246,17 @@ const ChatBot = () => {
       </div>
 
       {/* Chat Window */}
-      {isOpen && (
+      {(isOpen || isAnimating) && (
         <Card ref={panelRef} onWheel={(e) => {
           const list = messagesRef.current;
           if (!list) return;
           e.stopPropagation();
           list.scrollTop += e.deltaY;
-        }} className="fixed bottom-24 right-4 sm:bottom-28 sm:right-6
+        }} className={`fixed bottom-24 right-4 sm:bottom-28 sm:right-6
           w-[min(95vw,420px)] h-[min(80vh,560px)]
-          shadow-xl border border-primary/10 overflow-hidden z-[10000] animate-slide-up
-          bg-white rounded-2xl pointer-events-auto">
+          shadow-xl border border-primary/10 overflow-hidden z-[10000]
+          bg-white rounded-2xl pointer-events-auto transition-all duration-300 ease-in-out
+          ${isOpen ? 'animate-slide-up opacity-100 scale-100' : 'opacity-0 scale-95 translate-y-4'}`}>
           <div className="h-full flex flex-col">
             {/* Header */}
             <div className="p-3 border-b border-primary/10">
