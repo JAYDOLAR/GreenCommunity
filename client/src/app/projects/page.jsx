@@ -42,7 +42,7 @@ import dynamic from 'next/dynamic';
 import ChatBot from '@/components/ChatBot';
 import AuthGuard from '@/components/AuthGuard';
 import Layout from '@/components/Layout';
-import { usePreferences } from '@/context/PreferencesContext';
+import { usePreferences, useTranslation } from '@/context/PreferencesContext';
 import useCurrency from '@/hooks/useCurrency';
 
 // Dynamically import Leaflet components to avoid SSR issues
@@ -88,6 +88,7 @@ const useLeafletSetup = () => {
 const Projects = () => {
   // Load Leaflet setup
   useLeafletSetup();
+  const { t } = useTranslation(['projects', 'common']);
   const { preferences } = usePreferences();
   const { formatPrice, convert, getSymbol, userCurrency } = useCurrency();
   const carbonUnit = preferences?.carbonUnits || 'kg';
@@ -1041,8 +1042,8 @@ const Projects = () => {
       <div className="p-2 sm:p-4 space-y-2 sm:space-y-4 bg-gradient-to-b from-background to-accent/5 min-h-screen">
         {/* Header */}
         <div className="space-y-1">
-          <h1 className="text-lg sm:text-2xl font-bold text-gradient">Carbon Offset Projects</h1>
-          <p className="text-xs sm:text-sm text-muted-foreground">Support verified projects that remove CO₂ from the atmosphere</p>
+          <h1 className="text-lg sm:text-2xl font-bold text-gradient">{t('projects:environmental_projects')}</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground">{t('projects:carbon_offset')}</p>
         </div>
 
         {/* Search and Filters */}
@@ -1050,7 +1051,7 @@ const Projects = () => {
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search projects..."
+              placeholder={t('projects:search_projects')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10 text-sm"
@@ -1234,7 +1235,7 @@ const Projects = () => {
                               }}
                             >
                               <Heart className="h-4 w-4 mr-2" />
-                              Contribute
+                              {t('projects:contribute_now')}
                             </Button>
                             <Button
                               variant="outline"
@@ -1244,7 +1245,7 @@ const Projects = () => {
                                 handleProjectClick(project.id || project._id);
                               }}
                             >
-                              Learn More
+                              {t('projects:view_details')}
                               <ArrowRight className="h-4 w-4 ml-2" />
                             </Button>
                           </div>
@@ -1260,8 +1261,8 @@ const Projects = () => {
 
         {filteredProjects.length === 0 && (
           <div className="text-center py-8 sm:py-12">
-            <div className="text-muted-foreground text-sm sm:text-lg">No projects found</div>
-            <p className="text-muted-foreground text-xs sm:text-base">Try adjusting your search or filters</p>
+            <div className="text-muted-foreground text-sm sm:text-lg">{t('common:no_data_available')}</div>
+            <p className="text-muted-foreground text-xs sm:text-base">{t('common:try_again')}</p>
           </div>
         )}
 
@@ -1281,7 +1282,7 @@ const Projects = () => {
             <DialogHeader>
               <DialogTitle className="text-lg sm:text-xl">Support {selectedProject?.name}</DialogTitle>
               <DialogDescription className="text-sm">
-                Choose your contribution amount to help offset carbon emissions
+                {t('projects:contribution_amount')}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
@@ -1317,11 +1318,11 @@ const Projects = () => {
               </div>
               <div className="p-3 sm:p-4 bg-primary/10 rounded-lg">
                 <div className="text-center">
-                  <div className="text-xs sm:text-sm text-muted-foreground">Your Impact</div>
+                  <div className="text-xs sm:text-sm text-muted-foreground">{t('projects:carbon_offset')}</div>
                   <div className="text-xl sm:text-2xl font-bold text-primary">
                     {formatImpact(contributionAmount[0] * 0.00036)}
                   </div>
-                  <div className="text-xs sm:text-sm text-muted-foreground">will be offset</div>
+                  <div className="text-xs sm:text-sm text-muted-foreground">{t('projects:carbon_offset')}</div>
                 </div>
               </div>
             </div>

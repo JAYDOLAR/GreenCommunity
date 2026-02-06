@@ -17,7 +17,7 @@ import AuthGuard from '@/components/AuthGuard';
 import Layout from '@/components/Layout';
 import { MARKETPLACE_CATEGORIES, USD_TO_INR } from '@/config/marketplaceConfig';
 import { marketplaceApi } from '@/lib/marketplaceApi';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from '@/context/PreferencesContext';
 import useCurrency from '@/hooks/useCurrency';
 import { ProductCardSkeleton } from '@/components/MarketplaceSkeleton';
 
@@ -25,7 +25,7 @@ import { ProductCardSkeleton } from '@/components/MarketplaceSkeleton';
 const categories = MARKETPLACE_CATEGORIES;
 
 function MobileMarketplaceView() {
-  const { t } = useTranslation();
+  const { t } = useTranslation(['marketplace', 'common']);
   const { formatPrice } = useCurrency();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -76,7 +76,7 @@ function MobileMarketplaceView() {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search..."
+            placeholder={t('marketplace:search_placeholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10 h-10 sm:h-9 text-sm"
@@ -84,7 +84,7 @@ function MobileMarketplaceView() {
         </div>
         <Select value={selectedCategory} onValueChange={setSelectedCategory}>
           <SelectTrigger className="w-full h-10 sm:h-9 text-sm">
-            <SelectValue placeholder="Category" />
+            <SelectValue placeholder={t('marketplace:category')} />
           </SelectTrigger>
           <SelectContent className="w-[var(--radix-select-trigger-width)]">
             {categories.map(category => (
@@ -107,7 +107,7 @@ function MobileMarketplaceView() {
               onClick={() => handleProductClick(product.id)}
             >
               {product.featured && (
-                <Badge className="absolute top-2 left-2 z-10 bg-success text-white text-xs pointer-events-none">Featured</Badge>
+                <Badge className="absolute top-2 left-2 z-10 bg-success text-white text-xs pointer-events-none">{t('marketplace:featured')}</Badge>
               )}
               <img src={product.image || '/tree1.jpg'} alt={product.name} className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded" onError={(e) => { e.currentTarget.src = '/tree1.jpg'; }} />
               <div className="flex-1 space-y-2">
@@ -120,12 +120,12 @@ function MobileMarketplaceView() {
                   <div className="flex items-center gap-1">
                     <Star className="h-3 w-3 sm:h-4 sm:w-4 fill-yellow-400 text-yellow-400" />
                     <span className="text-xs sm:text-sm font-medium">{product.rating}</span>
-                    <span className="text-xs sm:text-sm text-muted-foreground">({product.reviews} reviews)</span>
+                    <span className="text-xs sm:text-sm text-muted-foreground">({product.reviews} {t('marketplace:reviews')})</span>
                   </div>
                 ) : (
                   <div className="flex items-center gap-1">
                     <Star className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
-                    <span className="text-xs sm:text-sm text-muted-foreground">No reviews yet</span>
+                    <span className="text-xs sm:text-sm text-muted-foreground">{t('marketplace:no_reviews_yet')}</span>
                   </div>
                 )}
                 <div className="flex gap-1 flex-wrap">
@@ -141,8 +141,8 @@ function MobileMarketplaceView() {
           ))
         ) : (
           <div className="text-center py-6 sm:py-8">
-            <div className="text-muted-foreground text-sm sm:text-base">No products found</div>
-            <p className="text-muted-foreground text-xs sm:text-sm">Try adjusting your search or filters</p>
+            <div className="text-muted-foreground text-sm sm:text-base">{t('marketplace:no_products_found')}</div>
+            <p className="text-muted-foreground text-xs sm:text-sm">{t('marketplace:try_adjusting')}</p>
           </div>
         )}
       </div>
@@ -151,7 +151,7 @@ function MobileMarketplaceView() {
 }
 
 function TabletMarketplaceView() {
-  const { t } = useTranslation();
+  const { t } = useTranslation(['marketplace', 'common']);
   const { formatPrice } = useCurrency();
   const [viewMode, setViewMode] = useState('grid');
   const [searchQuery, setSearchQuery] = useState('');
@@ -202,7 +202,7 @@ function TabletMarketplaceView() {
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search eco-friendly products..."
+            placeholder={t('marketplace:search_eco_products')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10 h-10 sm:h-9 text-sm"
@@ -210,7 +210,7 @@ function TabletMarketplaceView() {
         </div>
         <Select value={selectedCategory} onValueChange={setSelectedCategory}>
           <SelectTrigger className="w-full sm:w-48 h-10 sm:h-9 text-sm">
-            <SelectValue placeholder="Category" />
+            <SelectValue placeholder={t('marketplace:category')} />
           </SelectTrigger>
           <SelectContent className="w-[var(--radix-select-trigger-width)]">
             {categories.map(category => (
@@ -245,7 +245,7 @@ function TabletMarketplaceView() {
                   />
                   {!product.inStock && (
                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                      <Badge variant="secondary">Out of Stock</Badge>
+                      <Badge variant="secondary">{t('marketplace:out_of_stock')}</Badge>
                     </div>
                   )}
                 </div>
@@ -268,10 +268,10 @@ function TabletMarketplaceView() {
                           <Star className="h-3 w-3 sm:h-4 sm:w-4 fill-yellow-400 text-yellow-400" />
                           <span className="text-xs sm:text-sm font-medium">{product.rating}</span>
                         </div>
-                        <span className="text-xs sm:text-sm text-muted-foreground">({product.reviews} reviews)</span>
+                        <span className="text-xs sm:text-sm text-muted-foreground">({product.reviews} {t('marketplace:reviews')})</span>
                       </>
                     ) : (
-                      <span className="text-xs sm:text-sm text-muted-foreground">No reviews yet</span>
+                      <span className="text-xs sm:text-sm text-muted-foreground">{t('marketplace:no_reviews_yet')}</span>
                     )}
                     <Badge variant="outline" className="ml-auto text-xs">
                       {product.vendorType}
@@ -292,7 +292,7 @@ function TabletMarketplaceView() {
                   <div className="flex items-center justify-between gap-2 mt-2">
                     <div className="flex items-center gap-1 text-success">
                       <Leaf className="h-3 w-3 sm:h-4 sm:w-4" />
-                      <span className="text-xs sm:text-sm font-medium">-{product.co2Saved}kg CO₂</span>
+                      <span className="text-xs sm:text-sm font-medium">-{product.co2Saved}{t('marketplace:co2_saved')}</span>
                     </div>
                   </div>
                 </div>
@@ -301,8 +301,8 @@ function TabletMarketplaceView() {
           ))
         ) : (
           <div className="text-center py-6 sm:py-8 md:py-10">
-            <div className="text-muted-foreground text-sm sm:text-base md:text-lg">No products found</div>
-            <p className="text-muted-foreground text-xs sm:text-sm">Try adjusting your search or filters</p>
+            <div className="text-muted-foreground text-sm sm:text-base md:text-lg">{t('marketplace:no_products_found')}</div>
+            <p className="text-muted-foreground text-xs sm:text-sm">{t('marketplace:try_adjusting')}</p>
           </div>
         )}
       </div>
@@ -311,7 +311,7 @@ function TabletMarketplaceView() {
 }
 
 function DesktopMarketplaceView() {
-  const { t } = useTranslation();
+  const { t } = useTranslation(['marketplace', 'common']);
   const { formatPrice } = useCurrency();
   const [viewMode, setViewMode] = useState('grid');
   const [searchQuery, setSearchQuery] = useState('');
@@ -362,7 +362,7 @@ function DesktopMarketplaceView() {
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search eco-friendly products..."
+            placeholder={t('marketplace:search_eco_products')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10 h-10 sm:h-9"
@@ -370,7 +370,7 @@ function DesktopMarketplaceView() {
         </div>
         <Select value={selectedCategory} onValueChange={setSelectedCategory}>
           <SelectTrigger className="w-full md:w-48 h-10 sm:h-9">
-            <SelectValue placeholder="Category" />
+            <SelectValue placeholder={t('marketplace:category')} />
           </SelectTrigger>
           <SelectContent className="w-[var(--radix-select-trigger-width)]">
             {categories.map(category => (
@@ -395,7 +395,7 @@ function DesktopMarketplaceView() {
               onClick={() => handleProductClick(product.id)}
             >
               {product.featured && (
-                <Badge className="absolute top-3 left-3 z-10 bg-success text-white pointer-events-none">Featured</Badge>
+                <Badge className="absolute top-3 left-3 z-10 bg-success text-white pointer-events-none">{t('marketplace:featured')}</Badge>
               )}
               <div className={viewMode === 'list' ? 'w-48 shrink-0' : ''}>
                 <div className="relative aspect-square overflow-hidden rounded-t-lg">
@@ -406,7 +406,7 @@ function DesktopMarketplaceView() {
                   />
                   {!product.inStock && (
                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                      <Badge variant="secondary">Out of Stock</Badge>
+                      <Badge variant="secondary">{t('marketplace:out_of_stock')}</Badge>
                     </div>
                   )}
                 </div>
@@ -429,10 +429,10 @@ function DesktopMarketplaceView() {
                           <Star className="h-3 w-3 sm:h-4 sm:w-4 fill-yellow-400 text-yellow-400" />
                           <span className="text-xs sm:text-sm font-medium">{product.rating}</span>
                         </div>
-                        <span className="text-xs sm:text-sm text-muted-foreground">({product.reviews} reviews)</span>
+                        <span className="text-xs sm:text-sm text-muted-foreground">({product.reviews} {t('marketplace:reviews')})</span>
                       </>
                     ) : (
-                      <span className="text-xs sm:text-sm text-muted-foreground">No reviews yet</span>
+                      <span className="text-xs sm:text-sm text-muted-foreground">{t('marketplace:no_reviews_yet')}</span>
                     )}
                     <Badge variant="outline" className="ml-auto text-xs">
                       {product.vendorType}
@@ -453,7 +453,7 @@ function DesktopMarketplaceView() {
                   <div className="flex items-center justify-between gap-2 mt-2">
                     <div className="flex items-center gap-1 text-success">
                       <Leaf className="h-3 w-3 sm:h-4 sm:w-4" />
-                      <span className="text-xs sm:text-sm font-medium">-{product.co2Saved}kg CO₂</span>
+                      <span className="text-xs sm:text-sm font-medium">-{product.co2Saved}{t('marketplace:co2_saved')}</span>
                     </div>
                   </div>
                 </div>
@@ -462,8 +462,8 @@ function DesktopMarketplaceView() {
           ))
         ) : (
           <div className="text-center py-8 sm:py-10 lg:py-12">
-            <div className="text-muted-foreground text-base sm:text-lg lg:text-xl">No products found</div>
-            <p className="text-muted-foreground text-sm sm:text-base">Try adjusting your search or filters</p>
+            <div className="text-muted-foreground text-base sm:text-lg lg:text-xl">{t('marketplace:no_products_found')}</div>
+            <p className="text-muted-foreground text-sm sm:text-base">{t('marketplace:try_adjusting')}</p>
           </div>
         )}
       </div>

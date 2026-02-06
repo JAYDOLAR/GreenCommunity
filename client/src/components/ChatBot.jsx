@@ -8,6 +8,7 @@ import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { X, Send, MessageCircle, Sparkles, Bot, Home, HelpCircle, Search, ArrowRight, ChevronRight, PhoneCall, ChevronDown, Hand } from 'lucide-react';
+import { useTranslation } from '@/context/PreferencesContext';
 import { 
   INITIAL_CHATBOT_MESSAGE, 
   QUICK_REPLIES, 
@@ -19,6 +20,7 @@ import {
 } from '@/config/chatbotConfig';
 
 const ChatBot = () => {
+  const { t } = useTranslation(['chatbot', 'common']);
   const [isOpen, setIsOpen] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   const [messages, setMessages] = useState([INITIAL_CHATBOT_MESSAGE]);
@@ -201,7 +203,7 @@ const ChatBot = () => {
           }
         }
       } catch (err) {
-        setMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, I had trouble responding. Please try again.' }]);
+        setMessages(prev => [...prev, { role: 'assistant', content: t('chatbot:error_message') }]);
         console.error('Chat error:', err);
       }
     })();
@@ -271,8 +273,8 @@ const ChatBot = () => {
                   <Bot className="h-5 w-5" />
                 </div>
                 <div className="min-w-0">
-                  <h3 className="font-semibold text-foreground leading-tight">Eco Assistant</h3>
-                  <p className="text-xs text-muted-foreground leading-tight">Typically replies in a few minutes</p>
+                  <h3 className="font-semibold text-foreground leading-tight">{t('chatbot:eco_assistant')}</h3>
+                  <p className="text-xs text-muted-foreground leading-tight">{t('chatbot:typically_replies')}</p>
                 </div>
                 <div className="ml-auto text-green-600 flex items-center gap-1">
                   <Sparkles className="h-4 w-4" />
@@ -288,22 +290,22 @@ const ChatBot = () => {
                   {/* Gradient hero */}
                   <div className="rounded-xl p-4 text-white" style={{ background: 'linear-gradient(180deg,#0f5132 0%, #0d3f27 70%)' }}>
                     <div className="text-2xl font-bold leading-snug flex items-center gap-2">
-                      Hi there <Hand className="h-6 w-6" /><br />How can we help you today?
+                      {t('chatbot:hi_there')} <Hand className="h-6 w-6" /><br />{t('chatbot:how_can_we_help')}
                     </div>
                   </div>
                   {/* Contact card */}
                   <button className="w-full text-left rounded-xl border bg-white p-3 flex items-center justify-between shadow-sm">
-                    <span className="font-medium text-foreground">Contact us</span>
+                    <span className="font-medium text-foreground">{t('chatbot:contact_us')}</span>
                     <ArrowRight className="h-4 w-4 text-green-600" />
                   </button>
                   {/* CTA card */}
                   <div className="rounded-xl border bg-white p-3 shadow-sm">
                     <div className="font-semibold text-foreground mb-1 flex items-center gap-2">
-                      Meet our team <Sparkles className="h-4 w-4" />
+                      {t('chatbot:meet_our_team')} <Sparkles className="h-4 w-4" />
                     </div>
-                    <p className="text-sm text-muted-foreground mb-3">Talk to one of our experts & start your low‑carbon strategy tomorrow!</p>
+                    <p className="text-sm text-muted-foreground mb-3">{t('chatbot:team_description')}</p>
                     <button onClick={() => setActiveTab('messages')} className="w-full rounded-lg bg-green-600 text-white py-2 font-semibold flex items-center justify-center gap-2 hover:bg-green-700">
-                      <MessageCircle className="h-4 w-4" /> Start a chat
+                      <MessageCircle className="h-4 w-4" /> {t('chatbot:start_a_chat')}
                     </button>
                   </div>
                 </div>
@@ -311,16 +313,16 @@ const ChatBot = () => {
 
               {activeTab === 'messages' && (
                 <div className="p-3 space-y-3">
-                  <div className="text-sm font-semibold text-foreground px-1">Messages</div>
+                  <div className="text-sm font-semibold text-foreground px-1">{t('chatbot:messages')}</div>
                   <div className="rounded-xl border bg-white p-3 flex items-center gap-3 shadow-sm">
                     <div className="size-8 rounded-full bg-green-100 text-green-700 flex items-center justify-center">
                       <MessageCircle className="h-4 w-4" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-medium truncate flex items-center gap-1">
-                        Hello <Hand className="h-3 w-3" />, welcome to our sustainability platform…
+                        {t('chatbot:welcome_message')}
                       </div>
-                      <div className="text-xs text-muted-foreground">Just now</div>
+                      <div className="text-xs text-muted-foreground">{t('chatbot:just_now')}</div>
                     </div>
                     <span className="size-2 rounded-full bg-red-500" />
                   </div>
@@ -349,9 +351,9 @@ const ChatBot = () => {
                 <div className="p-3 space-y-3">
                   <div className="relative">
                     <Search className="h-4 w-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
-                    <Input value={helpQuery} onChange={(e) => setHelpQuery(e.target.value)} placeholder="Search for help" className="pl-9" />
+                    <Input value={helpQuery} onChange={(e) => setHelpQuery(e.target.value)} placeholder={t('chatbot:search_for_help')} className="pl-9" />
                   </div>
-                  <div className="text-sm font-semibold text-foreground px-1">Collections</div>
+                  <div className="text-sm font-semibold text-foreground px-1">{t('chatbot:collections')}</div>
                   {(helpCategories.length > 0 ? helpCategories : [
                     { title: 'Creating Your Carbon Report', count: '63 articles' },
                     { title: 'Engage in Sustainable Procurement', count: '15 articles' },
@@ -377,7 +379,7 @@ const ChatBot = () => {
                     <Input
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
-                      placeholder="Write a message…"
+                      placeholder={t('chatbot:write_a_message')}
                       className="flex-1 bg-white border-primary/20 focus:ring-0 focus:border-primary/40"
                     />
                     <Button type="submit" size="icon" className="bg-green-600 text-white hover:bg-green-700">
@@ -390,15 +392,15 @@ const ChatBot = () => {
                 <div className="grid grid-cols-3 gap-1">
                   <button className={`flex flex-col items-center justify-center py-2 rounded-lg ${activeTab === 'home' ? 'text-green-700 bg-green-50' : 'text-muted-foreground hover:bg-accent'}`} onClick={() => setActiveTab('home')}>
                     <Home className="h-4 w-4" />
-                    <span className="text-xs">Home</span>
+                    <span className="text-xs">{t('chatbot:home')}</span>
                   </button>
                   <button className={`flex flex-col items-center justify-center py-2 rounded-lg ${activeTab === 'messages' ? 'text-green-700 bg-green-50' : 'text-muted-foreground hover:bg-accent'}`} onClick={() => setActiveTab('messages')}>
                     <MessageCircle className="h-4 w-4" />
-                    <span className="text-xs">Messages</span>
+                    <span className="text-xs">{t('chatbot:messages')}</span>
                   </button>
                   <button className={`flex flex-col items-center justify-center py-2 rounded-lg ${activeTab === 'help' ? 'text-green-700 bg-green-50' : 'text-muted-foreground hover:bg-accent'}`} onClick={() => setActiveTab('help')}>
                     <HelpCircle className="h-4 w-4" />
-                    <span className="text-xs">Help</span>
+                    <span className="text-xs">{t('chatbot:help')}</span>
                   </button>
                 </div>
               </nav>

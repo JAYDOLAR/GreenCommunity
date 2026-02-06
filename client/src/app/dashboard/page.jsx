@@ -384,7 +384,7 @@ const Dashboard = () => {
                             ? t("dashboard:above_target")
                             : t("dashboard:below_target")
                         }`
-                      : "No target set"}
+                      : t("dashboard:no_target_set")}
                   </span>
                 </div>
                 {equivalents && (
@@ -484,7 +484,7 @@ const Dashboard = () => {
                 </div>
                 <div className="text-xs sm:text-xs md:text-sm lg:text-sm text-muted-foreground min-h-[1.5rem]">
                   {t("dashboard:target")}: {targetFootprint}{" "}
-                  {preferences.carbonUnits === "tons" ? t("dashboard:tons_month") : "kg/month"}
+                  {preferences.carbonUnits === "tons" ? t("dashboard:tons_month") : t("dashboard:kg_month")}
                 </div>
                 <div className="text-xs sm:text-xs md:text-sm lg:text-sm text-muted-foreground min-h-[1.5rem]">
                   {t("dashboard:current")}: {formatEmissions(monthlyEmissions)}{" "}
@@ -528,7 +528,7 @@ const Dashboard = () => {
                       variant="secondary"
                       className="bg-primary/15 text-primary border-primary/30 font-semibold cursor-pointer hover:bg-primary/25 transition-colors text-xs sm:text-xs md:text-sm"
                     >
-                      Start Offsetting →
+                      {t("dashboard:start_offsetting")}
                     </Badge>
                   </Link>
                 </div>
@@ -626,19 +626,19 @@ const Dashboard = () => {
                   <div className="text-center py-8">
                     <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-2"></div>
                     <p className="text-muted-foreground">
-                      Loading activities...
+                      {t("dashboard:loading_activities")}
                     </p>
                   </div>
                 ) : logs.length === 0 ? (
                   <div className="text-center py-8">
                     <Calendar className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                     <p className="text-muted-foreground mb-2">
-                      No activities logged yet
+                      {t("dashboard:no_activities_logged")}
                     </p>
                     <Link href="/footprintlog">
                       <Button variant="outline" size="sm">
                         <Plus className="h-4 w-4 mr-2" />
-                        Start Logging
+                        {t("dashboard:start_logging")}
                       </Button>
                     </Link>
                   </div>
@@ -815,7 +815,7 @@ const Dashboard = () => {
                   </div>
                 ) : (
                   <p className="text-base md:text-lg text-muted-foreground leading-relaxed">
-                    Getting your personalized tips...
+                    {t("dashboard:getting_tips")}
                   </p>
                 )}
               </CardContent>

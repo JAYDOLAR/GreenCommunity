@@ -54,12 +54,14 @@ export const getConnection = async (dbName) => {
   try {
     const connection = await mongoose.createConnection(process.env.MONGO_URI, {
       dbName: dbFullName,
-      maxPoolSize: 5, // Reduced from 10 to prevent pool exhaustion
-      minPoolSize: 1, // Maintain minimum connections
-      maxIdleTimeMS: 30000, // Close connections after 30 seconds of inactivity
-      serverSelectionTimeoutMS: 5000,
+      maxPoolSize: 5,
+      minPoolSize: 1,
+      maxIdleTimeMS: 30000,
+      serverSelectionTimeoutMS: 10000,
       socketTimeoutMS: 45000,
-      // bufferMaxEntries option removed as it's deprecated in newer Mongoose versions
+      family: 4, // Force IPv4 — avoids DNS SRV resolution issues on macOS
+      retryWrites: true,
+      retryReads: true,
     });
 
     connections[dbFullName] = connection;
@@ -94,11 +96,14 @@ export const connectAllDatabases = async () => {
     // First, connect mongoose default connection to auth database
     await mongoose.connect(process.env.MONGO_URI, {
       dbName: DB_CONFIG.AUTH_DB,
-      maxPoolSize: 5, // Consistent with other connections
+      maxPoolSize: 5,
       minPoolSize: 1,
       maxIdleTimeMS: 30000,
-      serverSelectionTimeoutMS: 5000,
+      serverSelectionTimeoutMS: 10000,
       socketTimeoutMS: 45000,
+      family: 4, // Force IPv4 — avoids DNS SRV resolution issues on macOS
+      retryWrites: true,
+      retryReads: true,
     });
     console.log(`✅ Default connection established to ${DB_CONFIG.AUTH_DB}`);
 

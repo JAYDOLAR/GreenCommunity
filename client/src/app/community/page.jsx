@@ -51,8 +51,10 @@ const getIconComponent = (iconName, className = 'h-6 w-6') => {
 import ChatBot from '@/components/ChatBot';
 import AuthGuard from '@/components/AuthGuard';
 import Layout from '@/components/Layout';
+import { useTranslation } from '@/context/PreferencesContext';
 
 const Community = () => {
+  const { t } = useTranslation(['community', 'common']);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('challenges');
   const [serverChallenges, setServerChallenges] = useState([]);
@@ -151,22 +153,22 @@ const Community = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4">
         <div>
-          <h1 className="text-xl sm:text-3xl font-bold text-gradient">Community Hub</h1>
-          <p className="text-sm sm:text-base text-muted-foreground">Connect, compete, and create positive environmental impact together</p>
+          <h1 className="text-xl sm:text-3xl font-bold text-gradient">{t('community:community_hub')}</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">{t('community:community_description')}</p>
         </div>
         {/* Community Stats Summary */}
         <div className="flex gap-2 sm:gap-4 flex-wrap">
           <div className="flex items-center gap-2 px-3 py-2 bg-primary/10 rounded-lg">
             <Target className="h-4 w-4 text-primary" />
-            <span className="text-sm font-medium">{serverChallenges.length} Challenges</span>
+            <span className="text-sm font-medium">{serverChallenges.length} {t('community:challenges')}</span>
           </div>
           <div className="flex items-center gap-2 px-3 py-2 bg-success/10 rounded-lg">
             <Users className="h-4 w-4 text-success" />
-            <span className="text-sm font-medium">{serverGroups.length} Groups</span>
+            <span className="text-sm font-medium">{serverGroups.length} {t('community:groups')}</span>
           </div>
           <div className="flex items-center gap-2 px-3 py-2 bg-warning/10 rounded-lg">
             <Calendar className="h-4 w-4 text-warning" />
-            <span className="text-sm font-medium">{serverEvents.length} Events</span>
+            <span className="text-sm font-medium">{serverEvents.length} {t('community:events')}</span>
           </div>
         </div>
       </div>
@@ -175,7 +177,7 @@ const Community = () => {
       <div className="relative w-full max-w-md">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="Search challenges, groups, events..."
+          placeholder={t('community:search_placeholder')}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="pl-10 text-sm"
@@ -185,10 +187,10 @@ const Community = () => {
       {/* Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-3 sm:space-y-6">
         <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="challenges">Challenges</TabsTrigger>
-          <TabsTrigger value="groups">Groups</TabsTrigger>
-          <TabsTrigger value="events">Events</TabsTrigger>
-          <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
+          <TabsTrigger value="challenges">{t('community:challenges')}</TabsTrigger>
+          <TabsTrigger value="groups">{t('community:groups')}</TabsTrigger>
+          <TabsTrigger value="events">{t('community:events')}</TabsTrigger>
+          <TabsTrigger value="leaderboard">{t('community:leaderboard')}</TabsTrigger>
         </TabsList>
 
         {/* Challenges Tab */}
@@ -196,15 +198,15 @@ const Community = () => {
           {loading.challenges && (
             <div className="flex justify-center items-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-              <span className="ml-3 text-muted-foreground">Loading challenges...</span>
+              <span className="ml-3 text-muted-foreground">{t('community:loading_challenges')}</span>
             </div>
           )}
           {!loading.challenges && serverChallenges.length === 0 && (
             <div className="bg-muted/50 border border-dashed rounded-lg p-8 text-center">
               <Target className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="font-medium text-lg mb-2">No Challenges Available</h3>
+              <h3 className="font-medium text-lg mb-2">{t('community:no_challenges')}</h3>
               <p className="text-sm text-muted-foreground">
-                There are no active challenges at the moment. Check back soon for new sustainability challenges!
+                {t('community:no_challenges_desc')}
               </p>
             </div>
           )}
@@ -234,16 +236,16 @@ const Community = () => {
                   <div className="grid grid-cols-2 gap-2 sm:gap-3 text-xs sm:text-sm">
                     <div className="flex items-center gap-1 sm:gap-2">
                       <Users className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
-                      <span>{challenge.participants || 0} joined</span>
+                      <span>{challenge.participants || 0} {t('community:joined')}</span>
                     </div>
                     <div className="flex items-center gap-1 sm:gap-2">
                       <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
-                      <span>{challenge.timeRemaining || 'Ongoing'}</span>
+                      <span>{challenge.timeRemaining || t('community:ongoing')}</span>
                     </div>
                   </div>
                   <div className="space-y-1 sm:space-y-2">
                     <div className="flex justify-between text-xs sm:text-sm">
-                      <span className="text-muted-foreground">Progress</span>
+                      <span className="text-muted-foreground">{t('community:progress')}</span>
                       <span className="font-medium">{challenge.progress || 0}%</span>
                     </div>
                     <Progress value={challenge.progress} className="h-1.5 sm:h-2 progress-eco" />
@@ -331,10 +333,10 @@ const Community = () => {
                       {isChallengeCompleted(challenge) ? (
                         <>
                           <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 mr-1 text-white" />
-                          <span className="text-white font-medium">Completed</span>
+                          <span className="text-white font-medium">{t('community:completed')}</span>
                         </>
                       ) : (
-                        <span className="text-white">Join Challenge</span>
+                        <span className="text-white">{t('community:join_challenge')}</span>
                       )}
                     </Button>
                   </div>
@@ -350,15 +352,15 @@ const Community = () => {
           {loading.groups && (
             <div className="flex justify-center items-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-              <span className="ml-3 text-muted-foreground">Loading groups...</span>
+              <span className="ml-3 text-muted-foreground">{t('community:loading_groups')}</span>
             </div>
           )}
           {!loading.groups && serverGroups.length === 0 && (
             <div className="bg-muted/50 border border-dashed rounded-lg p-8 text-center">
               <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="font-medium text-lg mb-2">No Groups Yet</h3>
+              <h3 className="font-medium text-lg mb-2">{t('community:no_groups')}</h3>
               <p className="text-sm text-muted-foreground">
-                Be the first to create a sustainability group and connect with like-minded individuals!
+                {t('community:no_groups_desc')}
               </p>
             </div>
           )}
@@ -381,7 +383,7 @@ const Community = () => {
                         <CardTitle className="text-base sm:text-lg">{group.name}</CardTitle>
                         {group.active && (
                           <Badge variant="secondary" className="bg-success/10 text-success text-xs">
-                            Active
+                            {t('community:active')}
                           </Badge>
                         )}
                       </div>
@@ -396,17 +398,17 @@ const Community = () => {
                       <div className="text-base sm:text-lg font-bold text-foreground">
                         {group.members.toLocaleString()}
                       </div>
-                      <div className="text-[10px] sm:text-xs text-muted-foreground">Members</div>
+                      <div className="text-[10px] sm:text-xs text-muted-foreground">{t('community:members')}</div>
                     </div>
                     <div>
                       <div className="text-base sm:text-lg font-bold text-foreground">{group.posts}</div>
-                      <div className="text-[10px] sm:text-xs text-muted-foreground">Posts</div>
+                      <div className="text-[10px] sm:text-xs text-muted-foreground">{t('community:posts')}</div>
                     </div>
                     <div>
                       <div className="text-base sm:text-lg font-bold text-foreground flex items-center justify-center gap-1">
                         {group.rating || group.averageRating || '-'}<Star className="h-4 w-4 text-yellow-500 fill-current" />
                       </div>
-                      <div className="text-[10px] sm:text-xs text-muted-foreground">Rating</div>
+                      <div className="text-[10px] sm:text-xs text-muted-foreground">{t('community:rating')}</div>
                     </div>
                   </div>
                   <div className="flex items-center justify-between pt-2 border-t border-border/50">
@@ -441,7 +443,7 @@ const Community = () => {
                         }
                       }}
                     >
-                      {group.joined ? 'Leave Group' : 'Join Group'}
+                      {group.joined ? t('community:leave_group') : t('community:join_group')}
                     </Button>
                   </div>
                 </CardContent>
@@ -456,15 +458,15 @@ const Community = () => {
           {loading.events && (
             <div className="flex justify-center items-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-              <span className="ml-3 text-muted-foreground">Loading events...</span>
+              <span className="ml-3 text-muted-foreground">{t('community:loading_events')}</span>
             </div>
           )}
           {!loading.events && serverEvents.length === 0 && (
             <div className="bg-muted/50 border border-dashed rounded-lg p-8 text-center">
               <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="font-medium text-lg mb-2">No Upcoming Events</h3>
+              <h3 className="font-medium text-lg mb-2">{t('community:no_events')}</h3>
               <p className="text-sm text-muted-foreground">
-                There are no upcoming community events at the moment. Check back soon!
+                {t('community:no_events_desc')}
               </p>
             </div>
           )}
@@ -502,7 +504,7 @@ const Community = () => {
                           </div>
                           <div className="flex items-center gap-1 sm:gap-2">
                             <Users className="h-3 w-3 sm:h-4 sm:w-4" />
-                            <span>{event.attendees}/{event.maxAttendees} attending</span>
+                            <span>{event.attendees}/{event.maxAttendees} {t('community:attending')}</span>
                           </div>
                         </div>
                       </div>
@@ -510,7 +512,7 @@ const Community = () => {
                     <div className="flex flex-col justify-center gap-2 sm:gap-3">
                       <div className="text-center">
                         <div className="text-lg sm:text-2xl font-bold text-foreground">{event.attendees}</div>
-                        <div className="text-xs sm:text-sm text-muted-foreground">people attending</div>
+                        <div className="text-xs sm:text-sm text-muted-foreground">{t('community:people_attending')}</div>
                       </div>
                       <Button 
                         className={`w-full ${event.joined ? 'btn-destructive' : 'btn-hero'} text-xs sm:text-base px-3 sm:px-5 py-2 sm:py-3`}
@@ -539,7 +541,7 @@ const Community = () => {
                           }
                         }}
                       >
-                        {event.joined ? 'Leave Event' : 'Join Event'}
+                        {event.joined ? t('community:leave_event') : t('community:join_event')}
                       </Button>
                     </div>
                   </div>
@@ -558,9 +560,9 @@ const Community = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Trophy className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-500" />
-                  <span className="text-base sm:text-lg">Monthly Leaderboard</span>
+                  <span className="text-base sm:text-lg">{t('community:monthly_leaderboard')}</span>
                 </CardTitle>
-                <CardDescription className="text-xs sm:text-sm">Top contributors this month</CardDescription>
+                <CardDescription className="text-xs sm:text-sm">{t('community:top_contributors')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {displayLeaderboard && displayLeaderboard.length > 0 ? displayLeaderboard.map(user => (
@@ -577,18 +579,18 @@ const Community = () => {
                     <div className="flex-1">
                       <div className="font-medium text-xs sm:text-base text-foreground">{user.name || `User ${user.rank}`}</div>
                       <div className="text-[10px] sm:text-sm text-muted-foreground">
-                        {user.currentStreak || 0} day streak • {user.badges || 0} badges
+                        {user.currentStreak || 0} {t('community:day_streak')} • {user.badges || 0} {t('community:badges')}
                       </div>
                     </div>
 
                     <div className="text-right">
                       <div className="font-bold text-xs sm:text-base text-foreground">{(user.points || 0).toLocaleString()}</div>
-                      <div className="text-[10px] sm:text-xs text-muted-foreground">eco-points</div>
+                      <div className="text-[10px] sm:text-xs text-muted-foreground">{t('community:eco_points')}</div>
                     </div>
                   </div>
                 )) : (
                   <div className="text-center p-4 text-muted-foreground">
-                    {loading.leaderboard ? 'Loading leaderboard data...' : 'No leaderboard data yet. Complete challenges to appear on the leaderboard!'}
+                    {loading.leaderboard ? t('community:loading_leaderboard') : t('community:no_leaderboard')}
                   </div>
                 )}
               </CardContent>
@@ -599,40 +601,40 @@ const Community = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Star className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
-                  <span className="text-base sm:text-lg">Your Impact</span>
+                  <span className="text-base sm:text-lg">{t('community:your_impact')}</span>
                 </CardTitle>
-                <CardDescription className="text-xs sm:text-sm">Your community contributions</CardDescription>
+                <CardDescription className="text-xs sm:text-sm">{t('community:your_contributions')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3 sm:space-y-6">
                 <div className="grid grid-cols-2 gap-2 sm:gap-4">
                   <div className="text-center p-2 sm:p-3 bg-background/50 rounded-lg">
                     <div className="text-lg sm:text-2xl font-bold text-foreground">{impact.totalPoints || 0}</div>
-                    <div className="text-xs sm:text-sm text-muted-foreground">Eco-Points</div>
+                    <div className="text-xs sm:text-sm text-muted-foreground">{t('community:eco_points_label')}</div>
                   </div>
                   <div className="text-center p-2 sm:p-3 bg-background/50 rounded-lg">
                     <div className="text-lg sm:text-2xl font-bold text-foreground">{impact.rank || '-'}</div>
-                    <div className="text-xs sm:text-sm text-muted-foreground">Rank</div>
+                    <div className="text-xs sm:text-sm text-muted-foreground">{t('community:rank')}</div>
                   </div>
                   <div className="text-center p-2 sm:p-3 bg-background/50 rounded-lg">
                     <div className="text-lg sm:text-2xl font-bold text-foreground">{impact.badges || 0}</div>
-                    <div className="text-xs sm:text-sm text-muted-foreground">Badges</div>
+                    <div className="text-xs sm:text-sm text-muted-foreground">{t('community:badges_label')}</div>
                   </div>
                   <div className="text-center p-2 sm:p-3 bg-background/50 rounded-lg">
                     <div className="text-lg sm:text-2xl font-bold text-foreground">{impact.currentStreak || 0}</div>
-                    <div className="text-xs sm:text-sm text-muted-foreground">Day Streak</div>
+                    <div className="text-xs sm:text-sm text-muted-foreground">{t('community:day_streak_label')}</div>
                   </div>
                 </div>
                 <div className="space-y-2 sm:space-y-3">
-                  <h4 className="font-medium text-xs sm:text-base text-foreground">Recent Achievements</h4>
+                  <h4 className="font-medium text-xs sm:text-base text-foreground">{t('community:recent_achievements')}</h4>
                   {/* History from backend (still basic; badges TBD) */}
                   <div className="space-y-1 sm:space-y-2">
                     {impact.history && impact.history.length > 0 ? impact.history.slice(0, 4).map((h, idx) => (
                       <div key={idx} className="flex items-center gap-2 sm:gap-3 p-2 bg-success/10 rounded-lg">
                         <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-success" />
-                        <span className="text-xs sm:text-sm">Completed {h.title || 'a challenge'}</span>
+                        <span className="text-xs sm:text-sm">{t('community:completed_challenge')} {h.title || ''}</span>
                       </div>
                     )) : (
-                      <div className="text-xs sm:text-sm text-muted-foreground">No recent achievements yet</div>
+                      <div className="text-xs sm:text-sm text-muted-foreground">{t('community:no_achievements')}</div>
                     )}
                   </div>
                 </div>

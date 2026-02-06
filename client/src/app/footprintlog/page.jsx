@@ -182,11 +182,11 @@ const FootprintLog = () => {
     const numQuantity = parseFloat(quantity);
     
     if (isNaN(numQuantity)) {
-      return { valid: false, message: "Please enter a valid number" };
+      return { valid: false, message: t("footprint:enter_valid_number") };
     }
     
     if (numQuantity < constraints.min) {
-      return { valid: false, message: `Minimum value is ${constraints.min} ${constraints.unit}` };
+      return { valid: false, message: `${t("footprint:enter_valid_number")}` };
     }
     
     if (numQuantity > constraints.max) {
@@ -202,7 +202,7 @@ const FootprintLog = () => {
     const newNumQuantity = parseFloat(newQuantity);
     
     if (isNaN(newNumQuantity)) {
-      return { valid: false, message: "Please enter a valid number" };
+      return { valid: false, message: t("footprint:enter_valid_number") };
     }
 
     // Get the base activity type (e.g., "transport-car" -> "transport-car")
@@ -249,52 +249,52 @@ const FootprintLog = () => {
 
   // Helper function to get dynamic field label based on activity type
   const getQuantityLabel = () => {
-    if (!activityType) return "Quantity";
+    if (!activityType) return t("footprint:amount");
 
     const selectedActivity = activityTypes.find(
       (type) => type.value === activityType
     );
-    if (!selectedActivity) return "Quantity";
+    if (!selectedActivity) return t("footprint:amount");
 
     const unit = selectedActivity.unit;
 
     // Create contextual labels based on activity category and unit
     switch (selectedActivity.category) {
       case "Transportation":
-        if (unit === "km") return "Distance (km)";
-        if (unit === "kg") return "Weight";
-        if (unit === "liters") return "Volume";
-        return "Quantity";
+        if (unit === "km") return t("footprint:distance_km");
+        if (unit === "kg") return t("footprint:weight");
+        if (unit === "liters") return t("footprint:volume");
+        return t("footprint:amount");
 
       case "Energy":
-        if (unit === "kWh") return "Energy Usage";
-        if (unit === "therms") return "Gas Usage";
-        if (unit === "gallons") return "Fuel Amount";
-        if (unit === "lbs") return "Weight";
-        if (unit === "cords") return "Wood Amount";
-        return "Quantity";
+        if (unit === "kWh") return t("footprint:energy_usage");
+        if (unit === "therms") return t("footprint:gas_usage");
+        if (unit === "gallons") return t("footprint:volume");
+        if (unit === "lbs") return t("footprint:weight");
+        if (unit === "cords") return t("footprint:amount");
+        return t("footprint:amount");
 
       case "Food":
-        if (unit === "lbs") return "Weight";
-        if (unit === "dozen") return "Number of Dozens";
-        return "Amount";
+        if (unit === "lbs") return t("footprint:weight");
+        if (unit === "dozen") return t("footprint:number_of_dozens");
+        return t("footprint:amount");
 
       case "Waste":
-        if (unit === "lbs") return "Weight";
-        return "Amount";
+        if (unit === "lbs") return t("footprint:weight");
+        return t("footprint:amount");
 
       case "Water":
-        if (unit === "gallons") return "Water Volume";
-        if (unit === "minutes") return "Duration";
-        if (unit === "loads") return "Number of Loads";
-        return "Amount";
+        if (unit === "gallons") return t("footprint:water_volume");
+        if (unit === "minutes") return t("footprint:duration");
+        if (unit === "loads") return t("footprint:number_of_loads");
+        return t("footprint:amount");
 
       case "Shopping":
-        if (unit === "items") return "Number of Items";
-        return "Quantity";
+        if (unit === "items") return t("footprint:number_of_items");
+        return t("footprint:amount");
 
       default:
-        return "Quantity";
+        return t("footprint:amount");
     }
   };
 
@@ -311,33 +311,33 @@ const FootprintLog = () => {
 
     switch (selectedActivity.category) {
       case "Transportation":
-        if (unit === "km") return "Enter distance (km)";
-        if (unit === "kg") return "Enter weight";
-        if (unit === "liters") return "Enter volume";
-        return "Enter quantity";
+        if (unit === "km") return t("footprint:enter_distance");
+        if (unit === "kg") return t("footprint:enter_weight");
+        if (unit === "liters") return t("footprint:enter_volume");
+        return t("footprint:enter_number");
 
       case "Energy":
-        if (unit === "kWh") return "Enter kWh used";
-        if (unit === "therms") return "Enter therms used";
-        if (unit === "gallons") return "Enter gallons used";
-        return "Enter amount";
+        if (unit === "kWh") return t("footprint:enter_kwh");
+        if (unit === "therms") return t("footprint:enter_therms");
+        if (unit === "gallons") return t("footprint:enter_gallons");
+        return t("footprint:enter_number");
 
       case "Food":
-        return unit === "dozen" ? "Enter dozens" : "Enter weight in lbs";
+        return unit === "dozen" ? t("footprint:enter_dozens") : t("footprint:enter_weight_lbs");
 
       case "Waste":
-        return "Enter weight in lbs";
+        return t("footprint:enter_weight_lbs");
 
       case "Water":
-        if (unit === "minutes") return "Enter minutes";
-        if (unit === "loads") return "Enter number";
-        return "Enter gallons";
+        if (unit === "minutes") return t("footprint:enter_minutes");
+        if (unit === "loads") return t("footprint:enter_number");
+        return t("footprint:enter_gallons");
 
       case "Shopping":
-        return "Enter number of items";
+        return t("footprint:enter_number_items");
 
       default:
-        return "Enter amount";
+        return t("footprint:enter_number");
     }
   };
 
@@ -390,7 +390,7 @@ const FootprintLog = () => {
           <div className="flex items-center gap-2">
             <AlertTriangle className="h-4 w-4" />
             <div>
-              <div className="font-semibold">Daily Limit Exceeded</div>
+              <div className="font-semibold">{t("footprint:daily_limit_exceeded")}</div>
               <div className="text-sm">{dailyValidation.message}</div>
             </div>
           </div>
@@ -478,7 +478,7 @@ const FootprintLog = () => {
       toast.error(
         <div className="flex items-center gap-2">
           <AlertTriangle className="h-4 w-4" />
-          Please fill in all required fields to calculate impact
+          {t("footprint:fill_required_fields")}
         </div>
       );
       return;
@@ -503,7 +503,7 @@ const FootprintLog = () => {
         <div className="flex items-center gap-2">
           <AlertTriangle className="h-4 w-4" />
           <div>
-            <div className="font-semibold">Daily Limit Exceeded</div>
+            <div className="font-semibold">{t("footprint:daily_limit_exceeded")}</div>
             <div className="text-sm">{dailyValidation.message}</div>
           </div>
         </div>
@@ -532,12 +532,12 @@ const FootprintLog = () => {
           const sourceLabel = energySources.find(
             (e) => e.value === energySource
           )?.label;
-          activityDescription = `${sourceLabel} Usage`;
+          activityDescription = `${sourceLabel} ${t("footprint:usage")}`;
         }
       } else if (activityType.startsWith("food-")) {
         if (foodType) {
           const foodLabel = foodTypes.find((f) => f.value === foodType)?.label;
-          activityDescription = `${foodLabel} Consumption`;
+          activityDescription = `${foodLabel} ${t("footprint:consumption")}`;
         }
       } else if (activityType.startsWith("waste-")) {
         if (wasteType) {
@@ -551,17 +551,17 @@ const FootprintLog = () => {
           const clothingLabel = clothingTypes.find(
             (c) => c.value === clothingType
           )?.label;
-          activityDescription = `${clothingLabel} Purchase`;
+          activityDescription = `${clothingLabel} ${t("footprint:purchase")}`;
         } else if (electronicsType) {
           const electronicsLabel = electronicsTypes.find(
             (e) => e.value === electronicsType
           )?.label;
-          activityDescription = `${electronicsLabel} Purchase`;
+          activityDescription = `${electronicsLabel} ${t("footprint:purchase")}`;
         } else if (furnitureType) {
           const furnitureLabel = furnitureTypes.find(
             (f) => f.value === furnitureType
           )?.label;
-          activityDescription = `${furnitureLabel} Purchase`;
+          activityDescription = `${furnitureLabel} ${t("footprint:purchase")}`;
         }
       }
 
@@ -764,7 +764,7 @@ const FootprintLog = () => {
           <p>Error loading footprint logs: {error}</p>
           <Button onClick={refresh} className="mt-2">
             <RefreshCw className="h-4 w-4 mr-2" />
-            Retry
+            {t("footprint:retry")}
           </Button>
         </div>
       )}
@@ -822,13 +822,13 @@ const FootprintLog = () => {
             <div className="text-lg sm:text-xl md:text-2xl font-bold text-foreground">
               {weeklyTotal.toFixed(1)}{" "}
               <span className="text-xs sm:text-sm font-normal text-muted-foreground">
-                kg CO₂
+                {t("footprint:kg_co2")}
               </span>
             </div>
             <div className="flex items-center gap-2 mt-2">
               <TrendingDown className="h-3 w-3 sm:h-4 sm:w-4 text-success" />
               <span className="text-xs sm:text-sm text-success">
-                8% lower than last week
+                {t("footprint:lower_than_last_week")}
               </span>
             </div>
           </CardContent>
@@ -860,7 +860,7 @@ const FootprintLog = () => {
             <div className="text-lg sm:text-xl md:text-2xl font-bold text-foreground">
               {averageDaily.toFixed(1)}{" "}
               <span className="text-xs sm:text-sm font-normal text-muted-foreground">
-                kg CO₂
+                {t("footprint:kg_co2")}
               </span>
             </div>
             <div className="text-xs sm:text-sm text-muted-foreground mt-2">
@@ -879,11 +879,11 @@ const FootprintLog = () => {
             <div className="text-lg sm:text-xl md:text-2xl font-bold text-foreground">
               {totalEmissions.toFixed(1)}{" "}
               <span className="text-xs sm:text-sm font-normal text-muted-foreground">
-                kg CO₂
+                {t("footprint:kg_co2")}
               </span>
             </div>
             <div className="text-xs sm:text-sm text-muted-foreground mt-2">
-              All time
+              {t("footprint:all_time")}
             </div>
           </CardContent>
         </Card>
@@ -962,6 +962,14 @@ const FootprintLog = () => {
                         "Water",
                         "Shopping",
                       ];
+                      const categoryTranslations = {
+                        "Transportation": t("footprint:transportation"),
+                        "Energy": t("footprint:energy"),
+                        "Food": t("footprint:food"),
+                        "Waste": t("footprint:waste"),
+                        "Water": t("footprint:water"),
+                        "Shopping": t("footprint:shopping"),
+                      };
                       return (
                         <div
                           className="overflow-y-auto overscroll-contain scroll-py-2 flex-1"
@@ -988,7 +996,7 @@ const FootprintLog = () => {
                             return (
                               <div key={category}>
                                 <div className="px-2 pt-3 pb-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider bg-popover/80 backdrop-blur supports-[backdrop-filter]:bg-popover/60 sticky top-0">
-                                  {category}
+                                  {categoryTranslations[category] || category}
                                 </div>
                                 {categoryActivities.map((type) => {
                                   const Icon = type.icon;
@@ -1042,7 +1050,7 @@ const FootprintLog = () => {
                     {activityType && (
                       <div className="space-y-1 mt-1">
                         <p className="text-xs text-gray-500">
-                          Max: {getActivityConstraints(activityType).max} {getActivityConstraints(activityType).unit}
+                          {t("footprint:max")}: {getActivityConstraints(activityType).max} {getActivityConstraints(activityType).unit}
                         </p>
                         {(() => {
                           // Calculate daily usage for this activity type
@@ -1058,7 +1066,7 @@ const FootprintLog = () => {
                           if (dailyUsed > 0) {
                             return (
                               <p className="text-xs text-blue-600">
-                                Today's usage: {dailyUsed.toFixed(1)} {constraints.unit} 
+                                {t("footprint:todays_usage")}: {dailyUsed.toFixed(1)} {constraints.unit} 
                                 ({remaining.toFixed(1)} {constraints.unit} remaining)
                               </p>
                             );
@@ -1079,7 +1087,7 @@ const FootprintLog = () => {
                     )}
                   </div>
                   <div>
-                    <Label className="text-sm sm:text-base">Unit</Label>
+                    <Label className="text-sm sm:text-base">{t("footprint:unit")}</Label>
                     <Input
                       value={getSelectedActivityDetails()?.unit || ""}
                       disabled
@@ -1094,10 +1102,10 @@ const FootprintLog = () => {
                 activityType === "transport-motorcycle" ||
                 activityType === "transport-taxi") && (
                 <div>
-                  <Label className="text-sm sm:text-base">Fuel Type</Label>
+                  <Label className="text-sm sm:text-base">{t("footprint:fuel_type")}</Label>
                   <Select value={fuelType} onValueChange={setFuelType}>
                     <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="Select fuel type" />
+                      <SelectValue placeholder={t("footprint:select_fuel_type")} />
                     </SelectTrigger>
                     <SelectContent>
                       {fuelTypes.map((fuel) => (
@@ -1113,10 +1121,10 @@ const FootprintLog = () => {
               {/* Flight Class for Air Travel */}
               {activityType === "transport-flight" && (
                 <div>
-                  <Label className="text-sm sm:text-base">Flight Class</Label>
+                  <Label className="text-sm sm:text-base">{t("footprint:flight_class")}</Label>
                   <Select value={flightClass} onValueChange={setFlightClass}>
                     <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="Select flight class" />
+                      <SelectValue placeholder={t("footprint:select_flight_class")} />
                     </SelectTrigger>
                     <SelectContent>
                       {flightClasses.map((classType) => (
@@ -1135,10 +1143,10 @@ const FootprintLog = () => {
               {/* Energy Source for Electricity */}
               {activityType === "energy-electricity" && (
                 <div>
-                  <Label className="text-sm sm:text-base">Energy Source</Label>
+                  <Label className="text-sm sm:text-base">{t("footprint:energy_source")}</Label>
                   <Select value={energySource} onValueChange={setEnergySource}>
                     <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="Select energy source" />
+                      <SelectValue placeholder={t("footprint:select_energy_source")} />
                     </SelectTrigger>
                     <SelectContent>
                       {energySources.map((source) => (
@@ -1158,10 +1166,10 @@ const FootprintLog = () => {
                 activityType === "food-fish" ||
                 activityType === "food-dairy") && (
                 <div>
-                  <Label className="text-sm sm:text-base">Food Type</Label>
+                  <Label className="text-sm sm:text-base">{t("footprint:food_type")}</Label>
                   <Select value={foodType} onValueChange={setFoodType}>
                     <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="Select food type" />
+                      <SelectValue placeholder={t("footprint:select_food_type")} />
                     </SelectTrigger>
                     <SelectContent>
                       {foodTypes.map((food) => (
@@ -1178,10 +1186,10 @@ const FootprintLog = () => {
               {(activityType === "waste-general" ||
                 activityType === "waste-recycling") && (
                 <div>
-                  <Label className="text-sm sm:text-base">Waste Type</Label>
+                  <Label className="text-sm sm:text-base">{t("footprint:waste_type")}</Label>
                   <Select value={wasteType} onValueChange={setWasteType}>
                     <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="Select waste type" />
+                      <SelectValue placeholder={t("footprint:select_waste_type")} />
                     </SelectTrigger>
                     <SelectContent>
                       {wasteTypes.map((waste) => (
@@ -1198,11 +1206,11 @@ const FootprintLog = () => {
               {activityType === "water-laundry" && (
                 <div>
                   <Label className="text-sm sm:text-base">
-                    Water Temperature
+                    {t("footprint:water_temperature")}
                   </Label>
                   <Select value={waterTemp} onValueChange={setWaterTemp}>
                     <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="Select water temperature" />
+                      <SelectValue placeholder={t("footprint:select_water_temperature")} />
                     </SelectTrigger>
                     <SelectContent>
                       {waterTemperatures.map((temp) => (
@@ -1218,10 +1226,10 @@ const FootprintLog = () => {
               {/* Clothing Type for Clothing Purchases */}
               {activityType === "shopping-clothing" && (
                 <div>
-                  <Label className="text-sm sm:text-base">Clothing Type</Label>
+                  <Label className="text-sm sm:text-base">{t("footprint:clothing_type")}</Label>
                   <Select value={clothingType} onValueChange={setClothingType}>
                     <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="Select clothing type" />
+                      <SelectValue placeholder={t("footprint:select_clothing_type")} />
                     </SelectTrigger>
                     <SelectContent>
                       {clothingTypes.map((clothing) => (
@@ -1238,14 +1246,14 @@ const FootprintLog = () => {
               {activityType === "shopping-electronics" && (
                 <div>
                   <Label className="text-sm sm:text-base">
-                    Electronics Type
+                    {t("footprint:electronics_type")}
                   </Label>
                   <Select
                     value={electronicsType}
                     onValueChange={setElectronicsType}
                   >
                     <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="Select electronics type" />
+                      <SelectValue placeholder={t("footprint:select_electronics_type")} />
                     </SelectTrigger>
                     <SelectContent>
                       {electronicsTypes.map((electronics) => (
@@ -1264,13 +1272,13 @@ const FootprintLog = () => {
               {/* Furniture Type for Furniture Purchases */}
               {activityType === "shopping-furniture" && (
                 <div>
-                  <Label className="text-sm sm:text-base">Furniture Type</Label>
+                  <Label className="text-sm sm:text-base">{t("footprint:furniture_type")}</Label>
                   <Select
                     value={furnitureType}
                     onValueChange={setFurnitureType}
                   >
                     <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="Select furniture type" />
+                      <SelectValue placeholder={t("footprint:select_furniture_type")} />
                     </SelectTrigger>
                     <SelectContent>
                       {furnitureTypes.map((furniture) => (
@@ -1293,7 +1301,7 @@ const FootprintLog = () => {
                 ) && (
                   <div>
                     <Label className="text-sm sm:text-base">
-                      Total Passengers
+                      {t("footprint:total_passengers")}
                     </Label>
                     <Input
                       type="number"
@@ -1320,7 +1328,7 @@ const FootprintLog = () => {
 
               {/* Date */}
               <div>
-                <Label className="text-sm sm:text-base">Date</Label>
+                <Label className="text-sm sm:text-base">{t("footprint:date")}</Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
@@ -1354,7 +1362,7 @@ const FootprintLog = () => {
                   </PopoverContent>
                 </Popover>
                 <p className="text-xs text-muted-foreground mt-1">
-                  You can only log activities for today or past dates
+                  {t("footprint:past_dates_only")}
                 </p>
               </div>
 
@@ -1367,7 +1375,7 @@ const FootprintLog = () => {
                 {isCalculating ? (
                   <>
                     <div className="animate-spin h-4 w-4 mr-2 border-2 border-white border-t-transparent rounded-full"></div>
-                    Calculating...
+                    {t("footprint:calculating")}
                   </>
                 ) : (
                   <>
@@ -1382,13 +1390,13 @@ const FootprintLog = () => {
                 <div className="p-3 sm:p-4 bg-primary/10 border border-primary/20 rounded-lg">
                   <div className="text-center">
                     <div className="text-xs sm:text-sm text-muted-foreground">
-                      Environmental Impact
+                      {t("footprint:environmental_impact")}
                     </div>
                     <div className="text-xl sm:text-2xl font-bold text-primary">
-                      {calculatedEmissions.toFixed(2)} kg CO₂
+                      {calculatedEmissions.toFixed(2)} {t("footprint:kg_co2")}
                     </div>
                     <div className="text-xs text-muted-foreground mt-1">
-                      Carbon dioxide equivalent
+                      {t("footprint:carbon_dioxide_equivalent")}
                     </div>
                   </div>
                   <Button
@@ -1396,7 +1404,7 @@ const FootprintLog = () => {
                     onClick={handleAddToLog}
                   >
                     <Plus className="h-4 w-4 mr-2" />
-                    Add to My Timeline
+                    {t("footprint:add_to_timeline")}
                   </Button>
                 </div>
               )}
@@ -1418,7 +1426,7 @@ const FootprintLog = () => {
                   </CardDescription>
                   <p className="text-xs text-muted-foreground bg-blue-50 dark:bg-blue-950 p-2 rounded-md border">
                     <AlertTriangle className="h-3 w-3 inline mr-1" />
-                    Once logged, activities become permanent records and cannot be deleted
+                    {t("footprint:activities_permanent")}
                   </p>
                 </div>
                 <Button
@@ -1446,8 +1454,7 @@ const FootprintLog = () => {
                     {t("footprint:journey_starts_here")}
                   </p>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Log your first activity to begin tracking your environmental
-                    impact
+                    {t("footprint:log_first_activity")}
                   </p>
                 </div>
               ) : (
@@ -1476,10 +1483,10 @@ const FootprintLog = () => {
                         {/* CO2 value centered vertically */}
                         <div className="flex flex-col items-center justify-center ml-auto min-w-[70px]">
                           <div className="text-base sm:text-lg font-bold text-foreground">
-                            {entry.co2.toFixed(2)} kg
+                            {entry.co2.toFixed(2)} {t("footprint:kg")}
                           </div>
                           <div className="text-xs text-muted-foreground">
-                            CO₂
+                            {t("footprint:co2")}
                           </div>
                         </div>
 

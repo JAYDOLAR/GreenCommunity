@@ -58,7 +58,7 @@ import Layout from "@/components/Layout";
 import TrustedDevicesManager from "@/components/TrustedDevicesManager";
 
 const Settings = () => {
-  const { t } = useTranslation(["preferences", "common"]);
+  const { t } = useTranslation(["preferences", "common", "settings"]);
   const { user, updateUser, refreshUser, isLoading: userLoading } = useUser();
   const { currencyRates, loading: currencyLoading } = useCurrency();
   const [activeTab, setActiveTab] = useState("profile");
@@ -208,7 +208,7 @@ const Settings = () => {
       }
     } catch (error) {
       console.error("Error loading user settings:", error);
-      toast.error("Failed to load settings");
+      toast.error(t("settings:failed_load"));
     } finally {
       setIsLoading(false);
     }
@@ -272,7 +272,7 @@ const Settings = () => {
 
       // Update user context with fresh data from server
       updateUser(response.user);
-      toast.success("Profile updated successfully!");
+      toast.success(t("settings:profile_updated"));
 
       // Refresh user data to ensure we have the latest information including formatted location
       await refreshUser();
@@ -282,7 +282,7 @@ const Settings = () => {
       // Handle specific Google auth email error
       if (error.response?.data?.code === "GOOGLE_EMAIL_READONLY") {
         toast.error(
-          "Email cannot be changed for Google-authenticated accounts"
+          t("settings:email_cannot_change")
         );
       } else {
         toast.error(
@@ -298,7 +298,7 @@ const Settings = () => {
     try {
       setIsSaving(true);
       await authAPI.updateNotificationPreferences(notifications);
-      toast.success("Notification preferences updated!");
+      toast.success(t("settings:notification_updated"));
     } catch (error) {
       console.error("Error updating notifications:", error);
       toast.error("Failed to update notification preferences");
@@ -311,7 +311,7 @@ const Settings = () => {
     try {
       setIsSaving(true);
       await authAPI.updateAppPreferences(preferences);
-      toast.success("App preferences updated!");
+      toast.success(t("settings:preferences_updated"));
     } catch (error) {
       console.error("Error updating preferences:", error);
       toast.error("Failed to update app preferences");
@@ -329,7 +329,7 @@ const Settings = () => {
       return;
     }
     if (passwordForm.new !== passwordForm.confirm) {
-      setPasswordMessage("New passwords do not match.");
+      setPasswordMessage(t("settings:passwords_no_match"));
       return;
     }
 
@@ -340,16 +340,16 @@ const Settings = () => {
         newPassword: passwordForm.new,
       });
 
-      setPasswordMessage("Password changed successfully!");
+      setPasswordMessage(t("settings:password_changed"));
       setPasswordForm({ current: "", new: "", confirm: "" });
       setShowChangePassword(false);
-      toast.success("Password changed successfully!");
+      toast.success(t("settings:password_changed"));
     } catch (error) {
       console.error("Error changing password:", error);
       setPasswordMessage(
-        error.response?.data?.message || "Failed to change password"
+        error.response?.data?.message || t("settings:failed_password")
       );
-      toast.error("Failed to change password");
+      toast.error(t("settings:failed_password"));
     } finally {
       setIsChangingPassword(false);
     }
@@ -363,10 +363,10 @@ const Settings = () => {
       setIsSaving(true);
       const response = await authAPI.uploadAvatar(file);
       updateUser(response.user); // Update user context with new avatar URL
-      toast.success("Profile picture updated!");
+      toast.success(t("settings:picture_updated"));
     } catch (error) {
       console.error("Error uploading avatar:", error);
-      toast.error(error.message || "Failed to upload profile picture");
+      toast.error(error.message || t("settings:failed_picture"));
     } finally {
       setIsSaving(false);
     }
@@ -378,14 +378,14 @@ const Settings = () => {
       setQrCodeUrl(qrCodeUrl);
       setShow2FADialog(true);
     } catch (error) {
-      toast.error("Failed to generate 2FA secret");
+      toast.error(t("settings:failed_2fa_secret"));
     }
   };
 
   const handle2FAVerify = async () => {
     try {
       const response = await authAPI.verify2FAToken(twoFactorCode);
-      toast.success(response.message || "2FA enabled successfully!");
+      toast.success(response.message || t("settings:two_fa_enabled_success"));
 
       // Manually update the user context after successful verification
       if (user) {
@@ -395,14 +395,14 @@ const Settings = () => {
 
       setShow2FADialog(false);
     } catch (error) {
-      toast.error("Invalid 2FA token");
+      toast.error(t("settings:invalid_2fa_token"));
     }
   };
 
   const handle2FADisable = async () => {
     try {
       const response = await authAPI.disable2FA();
-      toast.success(response.message || "2FA disabled successfully");
+      toast.success(response.message || t("settings:two_fa_disabled"));
 
       // Manually update the user context after successful disable
       if (user) {
@@ -410,14 +410,14 @@ const Settings = () => {
         updateUser(updatedUser);
       }
     } catch (error) {
-      toast.error("Failed to disable 2FA");
+      toast.error(t("settings:failed_disable_2fa"));
     }
   };
 
   const deleteAccount = async () => {
     if (
       confirm(
-        "Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently deleted."
+        t("settings:delete_confirm")
       )
     ) {
       try {
@@ -427,7 +427,7 @@ const Settings = () => {
         const response = await authAPI.deleteUserAccount();
         console.log('Delete account response:', response);
         
-        toast.success("Your account has been permanently deleted.");
+        toast.success(t("settings:account_deleted"));
         
         // Clear local storage and user data
         if (typeof window !== 'undefined') {
@@ -442,7 +442,7 @@ const Settings = () => {
         }, 2000);
       } catch (error) {
         console.error('Delete account error:', error);
-        const errorMessage = error?.message || error?.originalData?.message || "Failed to delete account. Please try again.";
+        const errorMessage = error?.message || error?.originalData?.message || t("settings:failed_delete");
         toast.error(errorMessage);
         setIsDeleting(false);
       }
@@ -513,7 +513,7 @@ const Settings = () => {
                   >
                     <Calendar className="h-3 w-3 flex-shrink-0" />
                     <span className="whitespace-nowrap">
-                      Joined{" "}
+                      {t("settings:joined")}{" "}
                       {profileData.joinDate
                         ? new Date(profileData.joinDate).toLocaleDateString(
                             "en-US",
@@ -525,7 +525,7 @@ const Settings = () => {
                   {user?.twoFactorEnabled && (
                     <Badge className="flex items-center gap-1.5 px-2.5 py-1 bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20">
                       <Shield className="h-3 w-3 flex-shrink-0" />
-                      <span className="whitespace-nowrap">2FA Enabled</span>
+                      <span className="whitespace-nowrap">{t("settings:two_fa_enabled")}</span>
                     </Badge>
                   )}
                   {isGoogleAuth && (
@@ -551,7 +551,7 @@ const Settings = () => {
                           d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                         />
                       </svg>
-                      <span className="whitespace-nowrap">Google Account</span>
+                      <span className="whitespace-nowrap">{t("settings:google_account")}</span>
                     </Badge>
                   )}
                 </div>
@@ -565,7 +565,7 @@ const Settings = () => {
                   onClick={async () => {
                     try {
                       await authAPI.logout();
-                      toast.success("Logged out successfully");
+                      toast.success(t("settings:logged_out"));
                       window.location.href = "/login";
                     } catch (error) {
                       toast.error("Failed to logout");
@@ -586,7 +586,7 @@ const Settings = () => {
                     <polyline points="16 17 21 12 16 7"></polyline>
                     <line x1="21" y1="12" x2="9" y2="12"></line>
                   </svg>
-                  Log out
+                  {t("settings:log_out")}
                 </Button>
               </div>
             </div>
@@ -600,7 +600,7 @@ const Settings = () => {
           <CardContent className="p-4 md:p-6">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
               <div className="flex-1">
-                <p className="text-xs md:text-sm text-muted-foreground">Eco Points</p>
+                <p className="text-xs md:text-sm text-muted-foreground">{t("settings:eco_points")}</p>
                 <p className="text-xl md:text-2xl font-bold text-primary">1,850</p>
               </div>
               <Trophy className="h-8 w-8 md:h-10 md:w-10 text-yellow-500 opacity-80" />
@@ -611,7 +611,7 @@ const Settings = () => {
           <CardContent className="p-4 md:p-6">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
               <div className="flex-1">
-                <p className="text-xs md:text-sm text-muted-foreground">Challenges</p>
+                <p className="text-xs md:text-sm text-muted-foreground">{t("settings:challenges")}</p>
                 <p className="text-xl md:text-2xl font-bold text-primary">12</p>
               </div>
               <Leaf className="h-8 w-8 md:h-10 md:w-10 text-green-500 opacity-80" />
@@ -622,7 +622,7 @@ const Settings = () => {
           <CardContent className="p-4 md:p-6">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
               <div className="flex-1">
-                <p className="text-xs md:text-sm text-muted-foreground">CO₂ Offset</p>
+                <p className="text-xs md:text-sm text-muted-foreground">{t("settings:co2_offset")}</p>
                 <p className="text-xl md:text-2xl font-bold text-success">24.5t</p>
               </div>
               <Recycle className="h-8 w-8 md:h-10 md:w-10 text-blue-500 opacity-80" />
@@ -633,7 +633,7 @@ const Settings = () => {
           <CardContent className="p-4 md:p-6">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
               <div className="flex-1">
-                <p className="text-xs md:text-sm text-muted-foreground">Rank</p>
+                <p className="text-xs md:text-sm text-muted-foreground">{t("settings:rank")}</p>
                 <p className="text-xl md:text-2xl font-bold text-primary">#23</p>
               </div>
               <Shield className="h-8 w-8 md:h-10 md:w-10 text-purple-500 opacity-80" />
@@ -654,14 +654,14 @@ const Settings = () => {
               className="rounded-lg px-3 py-2.5 text-sm whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-md transition-all duration-300 ease-in-out"
             >
               <User className="h-4 w-4 mr-2 inline-block sm:hidden" />
-              Profile
+              {t("settings:profile")}
             </TabsTrigger>
             <TabsTrigger
               value="notifications"
               className="rounded-lg px-3 py-2.5 text-sm whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-md transition-all duration-300 ease-in-out"
             >
               <Bell className="h-4 w-4 mr-2 inline-block sm:hidden" />
-              Notifications
+              {t("settings:notifications")}
             </TabsTrigger>
             <TabsTrigger
               value="preferences"
@@ -730,8 +730,7 @@ const Settings = () => {
                       {isGoogleAuth && (
                         <p className="text-xs md:text-sm text-muted-foreground mt-1 flex items-center gap-1">
                           <Mail className="h-3 w-3" />
-                          Email cannot be changed for Google-authenticated
-                          accounts
+                          {t("settings:email_cannot_change")}
                         </p>
                       )}
                     </div>
@@ -757,7 +756,7 @@ const Settings = () => {
                           handleProfileUpdate("location", e.target.value)
                         }
                         className="mt-1"
-                        placeholder="City, State, Country"
+                        placeholder={t("settings:city_state_country")}
                       />
                     </div>
                   </div>
@@ -784,7 +783,7 @@ const Settings = () => {
                     ) : (
                       <Save className="h-4 w-4 mr-2" />
                     )}
-                    {isSaving ? "Saving..." : t("common:save")}
+                    {isSaving ? t("settings:saving") : t("common:save")}
                   </Button>
                 </CardContent>
               </Card>
@@ -863,7 +862,7 @@ const Settings = () => {
                       </div>
                       <div className="flex items-center justify-between sm:justify-end">
                         <span className="text-xs md:text-sm text-muted-foreground sm:hidden">
-                          {notifications[key] ? "Enabled" : "Disabled"}
+                          {notifications[key] ? t("settings:enabled") : t("settings:disabled")}
                         </span>
                         <Switch
                           checked={notifications[key]}
@@ -907,7 +906,7 @@ const Settings = () => {
                       </div>
                       <div className="flex items-center justify-between sm:justify-end">
                         <span className="text-xs md:text-sm text-muted-foreground sm:hidden">
-                          {notifications[key] ? "Enabled" : "Disabled"}
+                          {notifications[key] ? t("settings:enabled") : t("settings:disabled")}
                         </span>
                         <Switch
                           checked={notifications[key]}
@@ -928,7 +927,7 @@ const Settings = () => {
                 ) : (
                   <Save className="h-4 w-4 mr-2" />
                 )}
-                {isSaving ? "Saving..." : t("common:save")}
+                {isSaving ? t("settings:saving") : t("common:save")}
               </Button>
             </CardContent>
           </Card>
@@ -1015,7 +1014,7 @@ const Settings = () => {
                     <SelectContent>
                       {currencyLoading ? (
                         <SelectItem value={preferences.currency || "usd"} disabled>
-                          Loading currencies...
+                          {t("settings:loading_currencies")}
                         </SelectItem>
                       ) : currencyRates.length > 0 ? (
                         currencyRates.map((curr) => (
@@ -1039,7 +1038,7 @@ const Settings = () => {
                 </div>
                 {/* General units preference removed; only Carbon Emission Units remains */}
                 <div>
-                  <Label>Carbon Emission Units</Label>
+                  <Label>{t("settings:carbon_emission_units")}</Label>
                   <Select
                     value={preferences.carbonUnits || "kg"}
                     onValueChange={(value) =>
@@ -1050,8 +1049,8 @@ const Settings = () => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="kg">kg CO₂</SelectItem>
-                      <SelectItem value="tons">tons CO₂</SelectItem>
+                      <SelectItem value="kg">{t("settings:kg_co2")}</SelectItem>
+                      <SelectItem value="tons">{t("settings:tons_co2")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -1208,7 +1207,7 @@ const Settings = () => {
                   onSubmit={submitPasswordChange}
                 >
                   <div className="space-y-2">
-                    <Label htmlFor="current">Current Password</Label>
+                    <Label htmlFor="current">{t("settings:current_password")}</Label>
                     <Input
                       id="current"
                       name="current"
@@ -1220,7 +1219,7 @@ const Settings = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="new">New Password</Label>
+                    <Label htmlFor="new">{t("settings:new_password")}</Label>
                     <Input
                       id="new"
                       name="new"
@@ -1232,7 +1231,7 @@ const Settings = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="confirm">Confirm New Password</Label>
+                    <Label htmlFor="confirm">{t("settings:confirm_new_password")}</Label>
                     <Input
                       id="confirm"
                       name="confirm"
@@ -1247,10 +1246,10 @@ const Settings = () => {
                     {isChangingPassword ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Changing...
+                        {t("settings:changing")}
                       </>
                     ) : (
-                      'Submit'
+                      t("settings:submit")
                     )}
                   </Button>
                   {passwordMessage && (
@@ -1280,11 +1279,10 @@ const Settings = () => {
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-background border border-border p-6 md:p-8 rounded-lg shadow-xl max-w-sm w-full">
             <h2 className="text-lg md:text-xl font-bold mb-4 text-foreground">
-              Enable Two-Factor Authentication
+              {t("settings:enable_2fa_title")}
             </h2>
             <p className="mb-4 text-xs md:text-sm text-muted-foreground">
-              Scan the QR code with your authenticator app and enter the code
-              below to verify.
+              {t("settings:enable_2fa_desc")}
             </p>
             <img
               src={qrCodeUrl || "/vercel.svg"}
@@ -1295,14 +1293,14 @@ const Settings = () => {
               type="text"
               value={twoFactorCode}
               onChange={(e) => setTwoFactorCode(e.target.value)}
-              placeholder="Enter 2FA code"
+              placeholder={t("settings:enter_6_digit")}
               className="mb-4 text-sm md:text-base"
             />
             <div className="flex flex-col sm:flex-row justify-end gap-3 sm:gap-4">
               <Button variant="outline" onClick={() => setShow2FADialog(false)} className="text-sm md:text-base">
-                Cancel
+                {t("settings:cancel")}
               </Button>
-              <Button onClick={handle2FAVerify} className="text-sm md:text-base">Verify</Button>
+              <Button onClick={handle2FAVerify} className="text-sm md:text-base">{t("settings:verify")}</Button>
             </div>
           </div>
         </div>
