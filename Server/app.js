@@ -73,8 +73,10 @@ async function createServer() {
         directives: {
           defaultSrc: ["'self'"],
           styleSrc: ["'self'", "'unsafe-inline'"],
-          scriptSrc: ["'self'", "'unsafe-inline'"],
-          imgSrc: ["'self'", "data:", "https:"],
+          scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://checkout.razorpay.com", "https://js.razorpay.com"],
+          imgSrc: ["'self'", "data:", "https:", "blob:"],
+          connectSrc: ["'self'", "https://api.razorpay.com", "https://lumberjack.razorpay.com"],
+          frameSrc: ["'self'", "https://api.razorpay.com", "https://checkout.razorpay.com"],
         },
       },
       hsts: {

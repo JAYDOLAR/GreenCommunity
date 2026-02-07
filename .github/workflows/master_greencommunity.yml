@@ -66,6 +66,8 @@ jobs:
 
       - name: Build Next.js client
         working-directory: ./client
+        env:
+          NEXT_PUBLIC_RAZORPAY_KEY_ID: ${{ secrets.RAZORPAY_KEY_ID }}
         run: npm run build
 
       - name: Create deployment package
@@ -141,6 +143,8 @@ jobs:
             WEBSITE_RUN_FROM_PACKAGE=1 \
             WEBSITE_ENABLE_SYNC_UPDATE_SITE=true \
             WEBSITES_CONTAINER_START_TIME_LIMIT=1800 \
+            NEXT_PUBLIC_RAZORPAY_KEY_ID=${{ secrets.RAZORPAY_KEY_ID }} \
+            RAZORPAY_KEY_SECRET=${{ secrets.RAZORPAY_KEY_SECRET }} \
             --output none &
           CONFIG_PID=$!
           
