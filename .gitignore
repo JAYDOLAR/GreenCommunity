@@ -46,8 +46,8 @@ out/
 .next
 .swc/
 
-# Next.js standalone
-server/
+# Next.js standalone (inside .next output)
+.next/standalone/server/
 static/
 
 # ==============================================================================

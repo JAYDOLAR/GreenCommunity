@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-  "compile": "hardhat compile",
-  "deploy:local": "hardhat run scripts/deployMarketplace.js --network localhost",
-  "test": "echo \"No tests yet\""
+    "compile": "hardhat compile",
+    "deploy:local": "hardhat run scripts/deployMarketplace.js --network localhost",
+    "test": "echo \"No tests yet\""
   },
   "keywords": [],
   "author": "",
@@ -19,6 +19,7 @@
     "@types/mocha": "^10.0.10",
     "@types/node": "^22.18.0",
     "chai": "^5.3.3",
+    "dotenv": "^16.6.1",
     "ethers": "^6.15.0",
     "forge-std": "github:foundry-rs/forge-std#v1.9.4",
     "hardhat": "^3.0.3",

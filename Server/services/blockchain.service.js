@@ -12,9 +12,14 @@ let certificateContract;
 
 // Load artifact helper
 function loadArtifact(name) {
-  // Go up one directory from Server to find blockchain artifacts
+  // First try bundled ABIs in Server/abis/ (used in production deployment)
+  const bundledPath = path.join(process.cwd(), 'abis', `${name}.json`);
+  if (fs.existsSync(bundledPath)) {
+    return JSON.parse(fs.readFileSync(bundledPath, 'utf-8'));
+  }
+  // Fallback: load from blockchain artifacts (local development)
   const artifactPath = path.join(process.cwd(), '..', 'blockchain', 'artifacts', 'contracts', `${name}.sol`, `${name}.json`);
-  if (!fs.existsSync(artifactPath)) throw new Error(`Artifact not found: ${artifactPath}`);
+  if (!fs.existsSync(artifactPath)) throw new Error(`Artifact not found. Checked: ${bundledPath} and ${artifactPath}`);
   return JSON.parse(fs.readFileSync(artifactPath, 'utf-8'));
 }
 
