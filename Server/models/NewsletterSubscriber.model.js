@@ -41,8 +41,7 @@ const newsletterSubscriberSchema = new mongoose.Schema({
   userAgent: { type: String },
   userId: { 
     type: mongoose.Schema.Types.ObjectId, 
-    ref: 'User',
-    sparse: true 
+    ref: 'User'
   },
   tags: [{ type: String, trim: true }],
   engagementScore: { type: Number, default: 0 },
@@ -58,7 +57,7 @@ const newsletterSubscriberSchema = new mongoose.Schema({
 // Indexes
 newsletterSubscriberSchema.index({ status: 1 });
 newsletterSubscriberSchema.index({ createdAt: -1 });
-// NOTE: userId sparse index is already created by { sparse: true } on the field definition
+newsletterSubscriberSchema.index({ userId: 1 }, { sparse: true });
 
 // Static method to subscribe
 newsletterSubscriberSchema.statics.subscribe = async function(email, options = {}) {
