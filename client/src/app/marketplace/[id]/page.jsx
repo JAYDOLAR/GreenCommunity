@@ -4,6 +4,7 @@ import ProductView from "@/components/ProductView";
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useTranslation } from '@/context/PreferencesContext';
 import {
   Card,
   CardContent,
@@ -37,6 +38,7 @@ import useCurrency from "@/hooks/useCurrency";
 const ProductDetail = ({ params }) => {
   const router = useRouter();
   const { formatPrice } = useCurrency();
+  const { t } = useTranslation();
   const urlParams = useParams();
   const [product, setProduct] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -424,7 +426,7 @@ const ProductDetail = ({ params }) => {
           {/* Shipping */}
           <div>
             <h2 className="text-xl font-bold text-foreground mb-4">
-              Shipping Information
+              {t('marketplace:shipping_information')}
             </h2>
             <Card>
               <CardContent className="p-6">
@@ -436,7 +438,7 @@ const ProductDetail = ({ params }) => {
                     >
                       <div className="flex items-center gap-2">
                         <Truck className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm font-medium">{type}</span>
+                        <span className="text-sm font-medium">{t(`marketplace:${type}`)}</span>
                       </div>
                       <span className="text-sm text-muted-foreground">
                         {info}

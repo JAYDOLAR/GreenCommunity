@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import useCurrency from '@/hooks/useCurrency';
+import { useTranslation } from '@/context/PreferencesContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -20,6 +21,7 @@ const ProductView = ({ product, allProducts }) => {
   const router = useRouter();
   const [selectedImage, setSelectedImage] = useState(0);
   const { formatPrice } = useCurrency();
+  const { t } = useTranslation();
 
   if (!product) {
     return (
@@ -244,7 +246,7 @@ const ProductView = ({ product, allProducts }) => {
 
           {/* Shipping */}
           <div>
-            <h2 className="text-xl font-bold text-foreground mb-4">Shipping Information</h2>
+            <h2 className="text-xl font-bold text-foreground mb-4">{t('marketplace:shipping_information')}</h2>
             <Card>
               <CardContent className="p-6">
                 <div className="space-y-3">
@@ -252,7 +254,7 @@ const ProductView = ({ product, allProducts }) => {
                     <div key={type} className="flex items-center justify-between py-2 border-b border-border/30 last:border-b-0">
                       <div className="flex items-center gap-2">
                         <Truck className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm font-medium">{type}</span>
+                        <span className="text-sm font-medium">{t(`marketplace:${type}`)}</span>
                       </div>
                       <span className="text-sm text-muted-foreground">{info}</span>
                     </div>

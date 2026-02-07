@@ -282,7 +282,13 @@ const resources = {
             "try_adjusting": "Try adjusting your search or filters",
             "reviews": "reviews",
             "no_reviews_yet": "No reviews yet",
-            "co2_saved": "kg CO₂"
+            "co2_saved": "kg CO₂",
+            "shipping_information": "Shipping Information",
+            "free_shipping_threshold": "Free Shipping Threshold",
+            "shipping_cost": "Shipping Cost",
+            "international_shipping": "International Shipping",
+            "processing_time": "Processing Time",
+            "carbon_neutral_shipping": "Carbon Neutral Shipping"
         },
         settings: {
             "joined": "Joined",
@@ -602,7 +608,13 @@ const resources = {
             "try_adjusting": "अपनी खोज या फ़िल्टर समायोजित करें",
             "reviews": "समीक्षाएं",
             "no_reviews_yet": "अभी तक कोई समीक्षा नहीं",
-            "co2_saved": "किग्रा CO₂"
+            "co2_saved": "किग्रा CO₂",
+            "shipping_information": "शिपिंग जानकारी",
+            "free_shipping_threshold": "निःशुल्क शिपिंग सीमा",
+            "shipping_cost": "शिपिंग लागत",
+            "international_shipping": "अंतर्राष्ट्रीय शिपिंग",
+            "processing_time": "प्रसंस्करण समय",
+            "carbon_neutral_shipping": "कार्बन न्यूट्रल शिपिंग"
         },
         settings: {
             "joined": "शामिल हुए",
@@ -972,7 +984,13 @@ const resources = {
             "try_adjusting": "તમારી શોધ અથવા ફિલ્ટર્સ સમાયોજિત કરો",
             "reviews": "સમીક્ષાઓ",
             "no_reviews_yet": "હજી કોઈ સમીક્ષા નથી",
-            "co2_saved": "કિગ્રા CO₂"
+            "co2_saved": "કિગ્રા CO₂",
+            "shipping_information": "શિપિંગ માહિતી",
+            "free_shipping_threshold": "મફત શિપિંગ સીમા",
+            "shipping_cost": "શિપિંગ ખર્ચ",
+            "international_shipping": "આંતરરાષ્ટ્રીય શિપિંગ",
+            "processing_time": "પ્રસંસ્કરણ સમય",
+            "carbon_neutral_shipping": "કાર્બન ન્યુટ્રલ શિપિંગ"
         },
         settings: {
             "joined": "જોડાયા",
