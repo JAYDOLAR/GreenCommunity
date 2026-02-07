@@ -18,7 +18,7 @@ jobs:
   build-and-deploy:
     name: Build and Deploy Application
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
 
     permissions:
       id-token: write
@@ -37,6 +37,38 @@ jobs:
             client/package-lock.json
             Server/package-lock.json
 
+      - name: Verify project structure
+        run: |
+          echo "Verifying project structure..."
+          echo "Current directory: $(pwd)"
+          ls -la
+          
+          if [ ! -d "client" ]; then
+            echo "❌ ERROR: client directory missing"
+            exit 1
+          fi
+          
+          if [ ! -d "Server" ]; then
+            echo "❌ ERROR: Server directory missing"
+            exit 1
+          fi
+          
+          if [ ! -f "client/package.json" ]; then
+            echo "❌ ERROR: client/package.json missing"
+            exit 1
+          fi
+          
+          if [ ! -f "Server/package.json" ]; then
+            echo "❌ ERROR: Server/package.json missing"
+            exit 1
+          fi
+          
+          echo "✅ Project structure verified"
+          echo "Client package.json exists: $(test -f client/package.json && echo "✅" || echo "❌")"
+          echo "Server package.json exists: $(test -f Server/package.json && echo "✅" || echo "❌")"
+          echo "Client package-lock.json exists: $(test -f client/package-lock.json && echo "✅" || echo "❌")"
+          echo "Server package-lock.json exists: $(test -f Server/package-lock.json && echo "✅" || echo "❌")
+
       - name: Cache dependencies
         id: cache-deps
         uses: actions/cache@v4
@@ -50,23 +82,64 @@ jobs:
             deps-${{ runner.os }}-
 
       - name: Install dependencies
-        if: steps.cache-deps.outputs.cache-hit != 'true'
         run: |
+          set -e  # Exit on any error
+          
+          echo "Current directory: $(pwd)"
+          echo "Node version: $(node --version)"
+          echo "NPM version: $(npm --version)"
+          
           echo "Installing client dependencies..."
-          cd client && npm ci --prefer-offline --no-audit --silent &
-          CLIENT_PID=$!
+          cd client
+          echo "Installing in: $(pwd)"
+          
+          # Try npm ci first, fallback to npm install if it fails
+          if npm ci --prefer-offline --no-audit --silent 2>/dev/null; then
+            echo "✅ Client dependencies installed with npm ci"
+          else
+            echo "⚠️ npm ci failed, trying npm install..."
+            rm -rf node_modules package-lock.json
+            npm install --prefer-offline --no-audit --silent
+            echo "✅ Client dependencies installed with npm install"
+          fi
           
           echo "Installing server dependencies..."
-          cd Server && npm ci --legacy-peer-deps --prefer-offline --no-audit --silent &
-          SERVER_PID=$!
+          cd ../Server
+          echo "Installing in: $(pwd)"
           
-          wait $CLIENT_PID $SERVER_PID
-          echo "Dependencies installed"
-        working-directory: ${{ github.workspace }}
+          # Try npm ci first, fallback to npm install if it fails
+          if npm ci --legacy-peer-deps --prefer-offline --no-audit --silent 2>/dev/null; then
+            echo "✅ Server dependencies installed with npm ci"
+          else
+            echo "⚠️ npm ci failed, trying npm install..."
+            rm -rf node_modules package-lock.json
+            npm install --legacy-peer-deps --prefer-offline --no-audit --silent
+            echo "✅ Server dependencies installed with npm install"
+          fi
+          
+          echo "✅ All dependencies installed successfully"
 
       - name: Build Next.js client
         working-directory: ./client
-        run: npm run build
+        run: |
+          echo "Building Next.js client..."
+          echo "Available memory: $(free -h)"
+          echo "Disk space: $(df -h)"
+          
+          # Set environment variables for build
+          export NODE_OPTIONS="--max-old-space-size=4096"
+          export NEXT_TELEMETRY_DISABLED=1
+          
+          npm run build || {
+            echo "❌ Build failed!"
+            echo "Checking for common issues..."
+            echo "Node modules size: $(du -sh node_modules 2>/dev/null || echo 'Not found')"
+            echo "Package.json scripts:"
+            cat package.json | grep -A 10 '"scripts"'
+            exit 1
+          }
+          
+          echo "✅ Build completed successfully"
 
       - name: Create deployment package
         run: |
