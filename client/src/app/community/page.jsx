@@ -105,7 +105,9 @@ const Community = () => {
 
   // Make sure we always have at least a few entries in the leaderboard, even if server data is not available
   const displayLeaderboard = leaderboard.length > 0
-    ? leaderboard.map((u, idx) => {      
+    ? leaderboard
+        .sort((a, b) => (b.totalPoints || 0) - (a.totalPoints || 0)) // Sort by points descending
+        .map((u, idx) => {      
       return {
         rank: idx + 1,
         name: u.userId ? (
@@ -291,10 +293,14 @@ const Community = () => {
                             
                             try { 
                               const me = await challengesAPI.me(); 
+                              // Calculate rank based on sorted leaderboard
+                              const sortedUsers = lbData.sort((a, b) => (b.totalPoints || 0) - (a.totalPoints || 0));
+                              const myRank = sortedUsers.findIndex(u => (u.totalPoints || 0) <= (me.totalPoints || 0)) + 1;
+                              
                               setImpact({ 
                                 totalPoints: me.totalPoints || 0, 
                                 history: me.history || [],
-                                rank: me.rank || 0,
+                                rank: myRank || me.rank || 0,
                                 badges: me.badges || 0,
                                 badgesList: me.badgesList || [],
                                 currentStreak: me.currentStreak || 0,

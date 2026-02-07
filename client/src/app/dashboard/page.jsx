@@ -613,7 +613,7 @@ const Dashboard = () => {
                       className="w-full"
                       onClick={() => setShowAllCategories(!showAllCategories)}
                     >
-                      {showAllCategories ? t("common:show_less") : t("common:view_all")}
+                      {showAllCategories ? t("dashboard:show_less") : t("dashboard:view_all")}
                       <ArrowRight className={`h-4 w-4 ml-2 transition-transform ${
                         showAllCategories ? "rotate-90" : ""
                       }`} />
@@ -692,7 +692,7 @@ const Dashboard = () => {
                             className="w-full"
                             onClick={() => setShowAllActivities(true)}
                           >
-                            {t("common:view_all")} ({allActivities.length})
+                            {t("dashboard:view_all")} ({allActivities.length})
                             <ArrowRight className="h-4 w-4 ml-2" />
                           </Button>
                         ) : (
@@ -702,7 +702,7 @@ const Dashboard = () => {
                               className="flex-1"
                               onClick={() => setShowAllActivities(false)}
                             >
-                              {t("common:show_less")}
+                              {t("dashboard:show_less")}
                               <ArrowRight className="h-4 w-4 ml-2 rotate-90" />
                             </Button>
                             <Link href="/footprintlog" className="flex-1">

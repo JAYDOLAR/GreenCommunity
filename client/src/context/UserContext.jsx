@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { authAPI } from '@/lib/api';
 import { useOptimizedNavigation, useOAuthRedirect } from '@/lib/useOptimizedNavigation';
+import SessionDialog from '@/components/SessionDialog';
 
 const UserContext = createContext();
 
@@ -16,6 +17,9 @@ export function UserProvider({ children }) {
   const [backendStatus, setBackendStatus] = useState('unknown'); // 'unknown' | 'checking' | 'connected' | 'offline' | 'error'
   const [hasInitialized, setHasInitialized] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
+  const [sessionId, setSessionId] = useState(null);
+  const [sessionConflict, setSessionConflict] = useState({ type: null, message: '' });
+  const [showSessionDialog, setShowSessionDialog] = useState(false);
 
   // Helper function to dispatch user data update event
   const dispatchUserDataUpdate = () => {
@@ -26,14 +30,92 @@ export function UserProvider({ children }) {
 
   // Function to update user after login
   const updateUser = (userData) => {
+    if (userData && checkSessionConflict(userData)) {
+      return; // Stop if there's a session conflict
+    }
+
     setUser(userData);
     setIsLoading(false);
 
     // Persist user data to localStorage for better session management
     if (typeof window !== 'undefined' && userData) {
+      initializeSession(userData);
       localStorage.setItem('userData', JSON.stringify(userData));
       // Dispatch event to sync preferences
       dispatchUserDataUpdate();
+    }
+  };
+
+  // Session management functions
+  const generateSessionId = () => {
+    return `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  };
+
+  const checkSessionConflict = (userData) => {
+    if (!userData || typeof window === 'undefined') return false;
+
+    const currentUserId = userData.id || userData._id;
+    const existingUserId = localStorage.getItem('activeUserId');
+    const existingSessionId = localStorage.getItem('sessionId');
+    const currentSessionId = sessionId;
+
+    // Check if trying to login with different account
+    if (existingUserId && existingUserId !== currentUserId) {
+      setSessionConflict({
+        type: 'different_account',
+        message: 'Another account is already logged in on this device. Please logout first to switch accounts.'
+      });
+      setShowSessionDialog(true);
+      return true;
+    }
+
+    // Check if same account is already active in another tab/window
+    if (existingUserId === currentUserId && existingSessionId && existingSessionId !== currentSessionId) {
+      setSessionConflict({
+        type: 'multiple_tabs',
+        message: 'This account is already open in another tab or window. Please close other tabs to continue.'
+      });
+      setShowSessionDialog(true);
+      return true;
+    }
+
+    return false;
+  };
+
+  const initializeSession = (userData) => {
+    if (!userData || typeof window === 'undefined') return;
+
+    const newSessionId = generateSessionId();
+    setSessionId(newSessionId);
+    
+    localStorage.setItem('sessionId', newSessionId);
+    localStorage.setItem('activeUserId', userData.id || userData._id);
+    localStorage.setItem('sessionStart', Date.now().toString());
+  };
+
+  const clearSession = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('sessionId');
+      localStorage.removeItem('activeUserId');
+      localStorage.removeItem('sessionStart');
+    }
+    setSessionId(null);
+    setSessionConflict({ type: null, message: '' });
+    setShowSessionDialog(false);
+  };
+
+  const handleSessionConflict = (action) => {
+    if (action === 'force_login') {
+      // Force logout from other sessions
+      clearSession();
+      setShowSessionDialog(false);
+      // Allow the login to proceed
+      return true;
+    } else {
+      // Cancel login attempt
+      setShowSessionDialog(false);
+      clearUser();
+      return false;
     }
   };
 
@@ -90,6 +172,7 @@ export function UserProvider({ children }) {
   const clearUser = () => {
     setUser(null);
     setIsLoading(false);
+    clearSession();
     if (typeof window !== 'undefined') {
       localStorage.removeItem('token');
       localStorage.removeItem('userData');
@@ -240,9 +323,82 @@ export function UserProvider({ children }) {
     }
   }, [user, isClient, hasInitialized, handleOAuthSuccess]); // Use the stable function from hook
 
+  // Monitor session changes in other tabs
+  useEffect(() => {
+    if (!isClient || !user) return;
+
+    const handleStorageChange = (e) => {
+      if (e.key === 'sessionId' || e.key === 'activeUserId') {
+        const currentUserId = user.id || user._id;
+        const activeUserId = localStorage.getItem('activeUserId');
+        const activeSessionId = localStorage.getItem('sessionId');
+        
+        // If session was cleared or changed to different user
+        if (!activeUserId || (activeUserId !== currentUserId) || (activeSessionId !== sessionId)) {
+          setSessionConflict({
+            type: 'session_expired',
+            message: 'Your session has been terminated. Please login again.'
+          });
+          setShowSessionDialog(true);
+          clearUser();
+        }
+      }
+    };
+
+    const handlePageVisibility = () => {
+      if (!document.hidden && user) {
+        // Check session validity when page becomes visible
+        const activeUserId = localStorage.getItem('activeUserId');
+        const activeSessionId = localStorage.getItem('sessionId');
+        const currentUserId = user.id || user._id;
+        
+        if (!activeUserId || activeUserId !== currentUserId || activeSessionId !== sessionId) {
+          setSessionConflict({
+            type: 'session_invalid',
+            message: 'Session has been invalidated. Please login again.'
+          });
+          setShowSessionDialog(true);
+          clearUser();
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    document.addEventListener('visibilitychange', handlePageVisibility);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      document.removeEventListener('visibilitychange', handlePageVisibility);
+    };
+  }, [user, isClient, sessionId]);
+
+  // Initialize session ID on first load
+  useEffect(() => {
+    if (isClient && user && !sessionId) {
+      const existingSessionId = localStorage.getItem('sessionId');
+      if (existingSessionId) {
+        setSessionId(existingSessionId);
+      }
+    }
+  }, [isClient, user, sessionId]);
+
   return (
-    <UserContext.Provider value={{ user, updateUser, loginAndSetUser, refreshUser, clearUser, isLoading, backendStatus, isLocked }}>
+    <UserContext.Provider value={{ 
+      user, 
+      updateUser, 
+      loginAndSetUser, 
+      refreshUser, 
+      clearUser, 
+      isLoading, 
+      backendStatus, 
+      isLocked,
+      sessionConflict,
+      showSessionDialog,
+      handleSessionConflict,
+      setShowSessionDialog
+    }}>
       {children}
+      <SessionDialog />
     </UserContext.Provider>
   );
 }

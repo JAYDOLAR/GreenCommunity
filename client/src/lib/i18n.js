@@ -36,8 +36,6 @@ const resources = {
             "quick_actions": "Quick Actions",
             "latest_carbon_footprint_entries": "Your latest carbon footprint entries",
             "add_footprint_entry": "Add Footprint Entry",
-            "view_all": "View All",
-            "show_less": "Show Less",
             "kg_co2": "kg CO₂",
             "this_month": "This Month",
             "this_week": "This Week",
@@ -58,6 +56,8 @@ const resources = {
             "offset_this_month": "offset this month",
             "emissions_by_category": "Your emissions by category this month",
             "view_all_activities": "View All Activities",
+            "view_all": "View All",
+            "show_less": "Show Less",
             "eco_friendly_milestones": "Your eco-friendly milestones",
             "week_streak": "Week Streak",
             "days_of_logging": "days of logging",
@@ -378,6 +378,7 @@ const resources = {
             "funding_goal": "Funding Goal",
             "time_remaining": "Time Remaining",
             "contribute_now": "Contribute Now",
+            "fully_funded": "Fully Funded",
             "view_details": "View Details",
             "certifications": "Certifications",
             "project_benefits": "Project Benefits"
@@ -387,6 +388,16 @@ const resources = {
             "something_went_wrong": "Something went wrong",
             "try_again": "Please try again",
             "no_data_available": "No data available"
+        },
+        auth: {
+            "different_account_title": "Account Already Logged In",
+            "multiple_tabs_title": "Multiple Sessions Detected",
+            "session_expired_title": "Session Expired",
+            "session_invalid_title": "Session Invalid",
+            "session_error_title": "Session Error",
+            "switch_account": "Switch Account",
+            "close_other_tabs": "Close Other Tabs",
+            "login_again": "Login Again"
         }
     },
     hi: {
@@ -422,8 +433,6 @@ const resources = {
             "quick_actions": "त्वरित कार्य",
             "latest_carbon_footprint_entries": "आपकी नवीनतम कार्बन फुटप्रिंट प्रविष्टियां",
             "add_footprint_entry": "फुटप्रिंट प्रविष्टि जोड़ें",
-            "view_all": "सभी देखें",
-            "show_less": "कम दिखाएं",
             "kg_co2": "किग्रा CO₂",
             "this_month": "इस महीने",
             "this_week": "इस सप्ताह",
@@ -444,6 +453,8 @@ const resources = {
             "offset_this_month": "इस महीने ऑफसेट",
             "emissions_by_category": "इस महीने श्रेणी के अनुसार आपके उत्सर्जन",
             "view_all_activities": "सभी गतिविधियां देखें",
+            "view_all": "सभी देखें",
+            "show_less": "कम दिखाएं",
             "eco_friendly_milestones": "आपके पर्यावरण-अनुकूल मील के पत्थर",
             "week_streak": "सप्ताह स्ट्रीक",
             "days_of_logging": "लॉगिंग के दिन",
@@ -731,6 +742,7 @@ const resources = {
             "funding_goal": "फंडिंग लक्ष्य",
             "time_remaining": "शेष समय",
             "contribute_now": "अब योगदान करें",
+            "fully_funded": "पूरी तरह फंडेड",
             "view_details": "विवरण देखें",
             "certifications": "प्रमाणन",
             "project_benefits": "परियोजना लाभ"
@@ -763,6 +775,16 @@ const resources = {
             "something_went_wrong": "कुछ गलत हुआ",
             "try_again": "कृपया फिर से कोशिश करें",
             "no_data_available": "कोई डेटा उपलब्ध नहीं"
+        },
+        auth: {
+            "different_account_title": "खाता पहले से लॉग इन है",
+            "multiple_tabs_title": "कई सेशन मिले",
+            "session_expired_title": "सेशन समाप्त",
+            "session_invalid_title": "सेशन अमान्य",
+            "session_error_title": "सेशन त्रुटि",
+            "switch_account": "खाता बदलें",
+            "close_other_tabs": "दूसरे टैब बंद करें",
+            "login_again": "फिर से लॉग इन करें"
         }
     },
     gu: {
@@ -798,8 +820,6 @@ const resources = {
             "quick_actions": "ઝડપી ક્રિયાઓ",
             "latest_carbon_footprint_entries": "તમારી નવીનતમ કાર્બન ફૂટપ્રિન્ટ એન્ટ્રીઓ",
             "add_footprint_entry": "ફૂટપ્રિન્ટ એન્ટ્રી ઉમેરો",
-            "view_all": "બધા જુઓ",
-            "show_less": "ઓછું બતાવો",
             "kg_co2": "કિગ્રા CO₂",
             "this_month": "આ મહિને",
             "this_week": "આ અઠવાડિયે",
@@ -820,6 +840,8 @@ const resources = {
             "offset_this_month": "આ મહિને ઓફસેટ",
             "emissions_by_category": "આ મહિને તમારા ઉત્સર્જન શ્રેણી પ્રમાણે",
             "view_all_activities": "બધી પ્રવૃત્તિઓ જુઓ",
+            "view_all": "બધા જુઓ",
+            "show_less": "ઓછું બતાવો",
             "eco_friendly_milestones": "તમારા પર્યાવરણ-મિત્ર સિદ્ધિઓ",
             "week_streak": "અઠવાડિયાની સ્ટ્રીક",
             "days_of_logging": "લોગિંગના દિવસો",
@@ -1108,6 +1130,7 @@ const resources = {
             "funding_goal": "ફંડિંગ લક્ષ્ય",
             "time_remaining": "બાકી સમય",
             "contribute_now": "હવે યોગદાન આપો",
+            "fully_funded": "સંપૂર્ણ રીતે ફંડેડ",
             "view_details": "વિગતો જુઓ",
             "certifications": "પ્રમાણપત્રો",
             "project_benefits": "પ્રોજેક્ટ લાભો"
@@ -1140,6 +1163,16 @@ const resources = {
             "something_went_wrong": "કંઈક ખોટું થયું",
             "try_again": "કૃપયા ફરીથી પ્રયાસ કરો",
             "no_data_available": "કોઈ ડેટા ઉપલબ્ધ નથી"
+        },
+        auth: {
+            "different_account_title": "ખાતું પહેલાથી લોગ ઇન છે",
+            "multiple_tabs_title": "એકથી વધુ સેશન",
+            "session_expired_title": "સેશન સમાપ્ત",
+            "session_invalid_title": "સેશન અમાન્ય",
+            "session_error_title": "સેશન ભૂલ",
+            "switch_account": "ખાતું બદલો",
+            "close_other_tabs": "અન્ય ટેબ બંધ કરો",
+            "login_again": "ફરીથી લોગ ઇન કરો"
         }
     }
 };
