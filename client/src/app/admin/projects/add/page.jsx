@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { projectsApi } from '@/lib/projectsApi';
+import { blockchainApi } from '@/lib/blockchainApi';
 import useCurrency from '@/hooks/useCurrency';
 import {
   Card,
@@ -43,6 +44,11 @@ const AddProjectPage = () => {
   const formatINR = (amount) => formatPrice(amount, 'INR');
   const [isLoading, setIsLoading] = useState(false);
   const [uploadedImage, setUploadedImage] = useState(null); // { file, preview }
+  const [registerOnBlockchain, setRegisterOnBlockchain] = useState(false);
+  const [blockchainCredits, setBlockchainCredits] = useState({
+    totalCredits: '',
+    pricePerCreditWei: '10000000000000000' // 0.01 ETH in wei
+  });
   const [project, setProject] = useState({
     name: "",
     location: "",
@@ -202,7 +208,25 @@ const AddProjectPage = () => {
       );
 
       if (response.success) {
-        alert('Project created successfully!');
+        const projectId = response?.data?._id || response?.data?.id;
+        
+        // If blockchain registration is requested, register the project
+        if (registerOnBlockchain && blockchainCredits.totalCredits && projectId) {
+          try {
+            await blockchainApi.approveRegisterProject(projectId, {
+              totalCredits: parseInt(blockchainCredits.totalCredits),
+              pricePerCreditWei: blockchainCredits.pricePerCreditWei,
+              metadataURI: `https://green-community.app/api/projects/metadata/${projectId}`
+            });
+            alert("Project created and registered on blockchain successfully!");
+          } catch (blockchainError) {
+            console.error('Blockchain registration failed:', blockchainError);
+            alert(`Project created successfully, but blockchain registration failed: ${blockchainError.message}`);
+          }
+        } else {
+          alert('Project created successfully!');
+        }
+        
         router.push("/admin/projects");
       } else {
         throw new Error(response.message || 'Failed to create project');
@@ -586,6 +610,55 @@ const AddProjectPage = () => {
                   }
                   className="rounded"
                 />
+              </div>
+              
+              {/* Blockchain Registration Option */}
+              <div className="border-t pt-4 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Cpu className="h-4 w-4" />
+                    <span className="text-sm font-medium">Register on Blockchain</span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={registerOnBlockchain}
+                    onChange={(e) => setRegisterOnBlockchain(e.target.checked)}
+                    className="rounded"
+                  />
+                </div>
+                
+                {registerOnBlockchain && (
+                  <div className="space-y-3 ml-6 p-3 bg-blue-50 rounded-lg">
+                    <p className="text-xs text-blue-800">
+                      This will create carbon credit tokens on Sepolia testnet for crypto payments
+                    </p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs font-medium text-gray-700">Total Credits</label>
+                        <input
+                          type="number"
+                          placeholder="e.g. 10000"
+                          value={blockchainCredits.totalCredits}
+                          onChange={(e) => setBlockchainCredits(prev => ({...prev, totalCredits: e.target.value}))}
+                          className="w-full text-xs p-2 border rounded"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-gray-700">Price per Credit (wei)</label>
+                        <input
+                          type="text"
+                          placeholder="10000000000000000"
+                          value={blockchainCredits.pricePerCreditWei}
+                          onChange={(e) => setBlockchainCredits(prev => ({...prev, pricePerCreditWei: e.target.value}))}
+                          className="w-full text-xs p-2 border rounded font-mono"
+                        />
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-500">
+                      Default: 10000000000000000 wei = 0.01 ETH per credit
+                    </p>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>

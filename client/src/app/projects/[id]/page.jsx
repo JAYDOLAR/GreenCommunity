@@ -594,6 +594,41 @@ const ProjectDetailContent = ({ params }) => {
               </div>
             </div>
 
+            {/* Blockchain Carbon Credits */}
+            {project?.blockchain?.projectId && (
+              <Card className="border-green-200 bg-green-50">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    🌱 Blockchain Carbon Credits Available
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-600">Price per Credit:</span>
+                      <div className="font-bold">0.01 ETH</div>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Available:</span>
+                      <div className="font-bold">
+                        {((project.blockchain.totalCredits || 0) - (project.blockchain.soldCredits || 0)).toLocaleString()} credits
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    Purchase carbon credits directly with cryptocurrency for transparent, blockchain-verified carbon offsetting.
+                  </p>
+                  <BuyCreditsButton 
+                    project={project}
+                    className="w-full bg-green-600 hover:bg-green-700"
+                  />
+                  <p className="text-xs text-gray-500">
+                    Transactions verified on Sepolia testnet • MetaMask required
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-3">
               <Dialog>

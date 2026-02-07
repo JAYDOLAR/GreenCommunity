@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { projectsApi } from "@/lib/projectsApi";
+import { blockchainApi } from "@/lib/blockchainApi";
 import useCurrency from '@/hooks/useCurrency';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,6 +23,9 @@ import {
   Image as ImageIcon,
   X,
   ArrowLeft,
+  Cpu,
+  RefreshCcw,
+  Eye,
 } from "lucide-react";
 
 const EditProjectPage = () => {
@@ -36,6 +40,8 @@ const EditProjectPage = () => {
   const [isFetching, setIsFetching] = useState(true);
   const [uploadedImage, setUploadedImage] = useState(null); // { file, preview }
   const [existingImage, setExistingImage] = useState("");
+  const [syncingBlockchain, setSyncingBlockchain] = useState(false);
+  const [fullProject, setFullProject] = useState(null);
   const [project, setProject] = useState({
     name: "",
     location: "",
@@ -59,6 +65,7 @@ const EditProjectPage = () => {
         const p = res?.data;
         const b = p?._original || {};
 
+        setFullProject(p); // Store full project for blockchain info
         setProject({
           name: p?.name || "",
           location: p?.location || "",
@@ -117,6 +124,51 @@ const EditProjectPage = () => {
   const handleRemoveImage = () => {
     setUploadedImage(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleSyncBlockchain = async () => {
+    if (!fullProject?._id) return;
+    try {
+      setSyncingBlockchain(true);
+      await blockchainApi.syncProject(fullProject._id);
+      // Refresh project data
+      const res = await projectsApi.getProjectById(id);
+      setFullProject(res?.data);
+      alert('Blockchain data synced successfully!');
+    } catch (error) {
+      console.error('Blockchain sync failed:', error);
+      alert('Sync failed: ' + error.message);
+    } finally {
+      setSyncingBlockchain(false);
+    }
+  };
+
+  const handleRegisterBlockchain = async () => {
+    if (!fullProject?._id) return;
+    
+    const totalCredits = prompt('Enter total carbon credits available:');
+    const priceWei = prompt('Enter price per credit in Wei (e.g. 10000000000000000 for 0.01 ETH):');
+    
+    if (!totalCredits || !priceWei) return;
+    
+    try {
+      setSyncingBlockchain(true);
+      await blockchainApi.approveRegisterProject(fullProject._id, {
+        totalCredits: parseInt(totalCredits),
+        pricePerCreditWei: priceWei,
+        metadataURI: `https://green-community.app/api/projects/metadata/${fullProject._id}`
+      });
+      
+      // Refresh project data
+      const res = await projectsApi.getProjectById(id);
+      setFullProject(res?.data);
+      alert('Project registered on blockchain successfully!');
+    } catch (error) {
+      console.error('Blockchain registration failed:', error);
+      alert('Registration failed: ' + error.message);
+    } finally {
+      setSyncingBlockchain(false);
+    }
   };
 
   const handleSave = async () => {
@@ -414,6 +466,170 @@ const EditProjectPage = () => {
                   </div>
                   <input type="checkbox" checked={project.featured} onChange={(e) => handleInputChange("featured", e.target.checked)} className="rounded" />
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Blockchain Integration */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Cpu className="h-5 w-5" />
+                  Blockchain Integration
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {fullProject?.blockchain?.projectId ? (
+                  <div className="space-y-4">
+                    <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                        <span className="font-medium text-green-800">Project Registered on Blockchain</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <span className="text-gray-600">Project ID:</span>
+                          <div className="font-mono font-bold text-lg">#{fullProject.blockchain.projectId}</div>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Available Credits:</span>
+                          <div className="font-bold text-lg">
+                            {((fullProject.blockchain.totalCredits || 0) - (fullProject.blockchain.soldCredits || 0)).toLocaleString()}
+                          </div>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Price per Credit:</span>
+                          <div className="font-mono text-sm">{fullProject.blockchain.pricePerCreditWei} wei</div>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Total Credits:</span>
+                          <div className="font-bold">{(fullProject.blockchain.totalCredits || 0).toLocaleString()}</div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex gap-3">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleSyncBlockchain}
+                        disabled={syncingBlockchain}
+                        className="flex items-center gap-2"
+                      >
+                        <RefreshCcw className={`h-4 w-4 ${syncingBlockchain ? 'animate-spin' : ''}`} />
+                        {syncingBlockchain ? 'Syncing...' : 'Sync Blockchain'}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => window.open(`https://sepolia.etherscan.io/address/0x462EA24B63bf09f522652c1B6550c8B65AfF99E4`, '_blank')}
+                        className="flex items-center gap-2"
+                      >
+                        <Eye className="h-4 w-4" />
+                        View Contract
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                      <p className="text-sm text-blue-800">
+                        This project is not yet registered on the blockchain. Register it to enable carbon credit trading with crypto payments.
+                      </p>
+                    </div>
+                    <Button
+                      onClick={handleRegisterBlockchain}
+                      disabled={syncingBlockchain}
+                      className="bg-green-600 hover:bg-green-700 flex items-center gap-2"
+                    >
+                      <Cpu className="h-4 w-4" />
+                      {syncingBlockchain ? 'Registering...' : 'Register on Blockchain'}
+                    </Button>
+                    <p className="text-xs text-gray-500">
+                      Registration will create an ERC1155 token for carbon credits on Sepolia testnet and enable MetaMask payments.
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Blockchain Integration */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Cpu className="h-5 w-5" />
+                  Blockchain Integration
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {fullProject?.blockchain?.projectId ? (
+                  <div className="space-y-4">
+                    <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                        <span className="font-medium text-green-800">Project Registered on Blockchain</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <span className="text-gray-600">Project ID:</span>
+                          <div className="font-mono font-bold text-lg">#{fullProject.blockchain.projectId}</div>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Available Credits:</span>
+                          <div className="font-bold text-lg">
+                            {((fullProject.blockchain.totalCredits || 0) - (fullProject.blockchain.soldCredits || 0)).toLocaleString()}
+                          </div>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Price per Credit:</span>
+                          <div className="font-mono text-sm">{fullProject.blockchain.pricePerCreditWei} wei</div>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Total Credits:</span>
+                          <div className="font-bold">{(fullProject.blockchain.totalCredits || 0).toLocaleString()}</div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex gap-3">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleSyncBlockchain}
+                        disabled={syncingBlockchain}
+                        className="flex items-center gap-2"
+                      >
+                        <RefreshCcw className={`h-4 w-4 ${syncingBlockchain ? 'animate-spin' : ''}`} />
+                        {syncingBlockchain ? 'Syncing...' : 'Sync Blockchain'}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => window.open(`https://sepolia.etherscan.io/address/0x462EA24B63bf09f522652c1B6550c8B65AfF99E4`, '_blank')}
+                        className="flex items-center gap-2"
+                      >
+                        <Eye className="h-4 w-4" />
+                        View Contract
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                      <p className="text-sm text-blue-800">
+                        This project is not yet registered on the blockchain. Register it to enable carbon credit trading with crypto payments.
+                      </p>
+                    </div>
+                    <Button
+                      onClick={handleRegisterBlockchain}
+                      disabled={syncingBlockchain}
+                      className="bg-green-600 hover:bg-green-700 flex items-center gap-2"
+                    >
+                      <Cpu className="h-4 w-4" />
+                      {syncingBlockchain ? 'Registering...' : 'Register on Blockchain'}
+                    </Button>
+                    <p className="text-xs text-gray-500">
+                      Registration will create an ERC1155 token for carbon credits on Sepolia testnet and enable MetaMask payments.
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
