@@ -81,11 +81,12 @@ jobs:
             --exclude='coverage/' --exclude='*.log' --exclude='*.md' \
             Server/ deployment-package/
 
-          # Copy Next.js build and essentials
-          cp -r client/.next client/public client/src deployment-package/client/
+          # Copy Next.js build and essentials (NOT src — only .next is needed at runtime)
+          cp -r client/.next client/public deployment-package/client/
           cp client/package*.json client/next.config.mjs deployment-package/client/
           [ -f "client/jsconfig.json" ] && cp client/jsconfig.json deployment-package/client/
           [ -f "client/components.json" ] && cp client/components.json deployment-package/client/
+          [ -f "client/middleware.js" ] && cp client/middleware.js deployment-package/client/
 
           # Copy Azure config
           [ -f "Server/web.config" ] && cp Server/web.config deployment-package/

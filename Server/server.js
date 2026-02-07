@@ -76,9 +76,27 @@ const server = bootstrapApp.listen(PORT, '0.0.0.0', () => {
 // Now initialise the real application (Next.js prepare + DB connections)
 createServer()
   .then((app) => {
-    // Swap bootstrap handler for the fully initialised Express app
+    // Swap bootstrap handler for a custom dispatcher that sends
+    // API / Express routes through the Express app, but lets Next.js
+    // handle everything else directly — avoiding the "Response body
+    // object should not be disturbed or locked" error caused by
+    // Express middleware (helmet, cors) conflicting with Next.js streaming.
+    const nextHandler = app.nextHandler; // may be undefined in test mode
+
     server.removeAllListeners('request');
-    server.on('request', app);
+    server.on('request', (req, res) => {
+      // API routes and /blockchain go through Express (cors, helmet, etc.)
+      if (req.url.startsWith('/api/') || req.url.startsWith('/blockchain')) {
+        return app(req, res);
+      }
+      // Everything else goes straight to Next.js — no Express middleware
+      if (nextHandler) {
+        return nextHandler(req, res);
+      }
+      // Fallback (test mode or missing handler)
+      return app(req, res);
+    });
+
     isReady = true;
     console.log(`Full application ready on port ${PORT}`);
   })

@@ -48,6 +48,11 @@ if (!isTest) {
 async function createServer() {
   const app = express();
 
+  // Trust the reverse proxy (Azure App Service, nginx, etc.)
+  // This is required for express-rate-limit to read the correct client IP
+  // from X-Forwarded-For and avoids ERR_ERL_UNEXPECTED_X_FORWARDED_FOR.
+  app.set('trust proxy', 1);
+
   // Health-check endpoint — registered first so it always responds
   app.get('/api/health', (_req, res) => {
     res.json({ status: 'ready', uptime: process.uptime() });
@@ -187,10 +192,13 @@ async function createServer() {
   });
 
   // Handle all other requests with Next.js
+  // IMPORTANT: We do NOT use app.all("*") here because Express middleware
+  // (helmet, cors, etc.) can conflict with Next.js streaming responses,
+  // causing "Response body object should not be disturbed or locked" errors.
+  // Instead, we expose nextHandler so the HTTP server can route non-API
+  // requests directly to Next.js, bypassing Express middleware entirely.
   if (!isTest) {
-    app.all("*", (req, res) => {
-      return nextHandler(req, res);
-    });
+    app.nextHandler = nextHandler;
   } else {
     app.get('/', (req,res)=> res.json({status:'ok'}));
   }
