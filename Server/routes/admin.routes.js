@@ -113,6 +113,7 @@ router.post('/blockchain/project-auto-retire', authenticateAdmin, requireAdmin, 
 router.post('/projects/upload-doc', authenticateAdmin, requireAdmin, upload.single('file'), async (req,res)=>{
   try {
     if(!req.file) return res.status(400).json({ success:false, message:'No file provided' });
+    // addFileFromBuffer now auto-falls back to pseudo-CIDs if daemon is unavailable
     const { addFileFromBuffer } = await import('../services/localIpfs.service.js');
     const { cid, uri } = await addFileFromBuffer(req.file.buffer, req.file.originalname);
     return res.json({ success:true, name: req.file.originalname, size: req.file.size, cid, uri });

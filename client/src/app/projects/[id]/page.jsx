@@ -601,6 +601,8 @@ const ProjectDetailContent = ({ params }) => {
                       projectMongoId={project._id}
                       projectIdOnChain={project.blockchain.projectId}
                       pricePerCreditWei={project.blockchain.pricePerCreditWei || '10000000000000000'}
+                      totalCredits={project.blockchain.totalCredits}
+                      soldCredits={project.blockchain.soldCredits}
                     />
                     <Button
                       variant="outline"

@@ -1,6 +1,7 @@
 "use client";
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { ethers } from 'ethers';
+import { blockchainApi } from '../lib/blockchainApi';
 
 // Basic wallet context without TypeScript types
 const WalletContext = createContext({
@@ -35,11 +36,7 @@ export const WalletProvider = ({ children }) => {
     setAddress(addr);
     setChainId(Number(net.chainId));
     try {
-      await fetch('/api/blockchain/wallet/link', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ address: addr, chain: `eip155:${net.chainId}` })
-      });
+      await blockchainApi.linkWallet(addr, `eip155:${net.chainId}`);
     } catch {}
   };
 

@@ -25,10 +25,10 @@ async function main() {
   await tx.wait();
   console.log("Linked certificate to marketplace");
 
-  // Example: register a sample project (id auto if 0)
-  const registerTx = await marketplace.registerProject(0, 10000, ethers.parseEther("0.01"), "ipfs://sampleProjectMetadataHash");
-  await registerTx.wait();
-  console.log("Sample project registered");
+  // NOTE: Do NOT register sample projects here — production projects are
+  // registered via the server's approveAndRegister endpoint, which auto-increments
+  // the on-chain projectId. A hardcoded sample registration here would collide
+  // with real project IDs and waste the first slot.
 }
 
 main().catch((e) => {

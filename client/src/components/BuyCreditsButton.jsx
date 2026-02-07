@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { ethers } from 'ethers';
 import { useWallet } from '../context/WalletContext';
+import { blockchainApi } from '../lib/blockchainApi';
 import { Wallet, CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
 
 // Parse blockchain errors into user-friendly messages
@@ -41,12 +42,14 @@ const parseError = (err) => {
   return { type: 'error', text: msg.length > 150 ? msg.slice(0, 150) + '…' : msg };
 };
 
-export const BuyCreditsButton = ({ projectMongoId, projectIdOnChain, pricePerCreditWei }) => {
+export const BuyCreditsButton = ({ projectMongoId, projectIdOnChain, pricePerCreditWei, totalCredits, soldCredits }) => {
   const { provider, address, connect } = useWallet();
   const [loading, setLoading] = useState(false);
   const [amount, setAmount] = useState(1);
   const [txHash, setTxHash] = useState();
   const [error, setError] = useState(); // { type, text, link?, linkText? }
+
+  const availableCredits = (totalCredits || 0) - (soldCredits || 0);
 
   const totalCost = () => {
     try {
@@ -60,6 +63,12 @@ export const BuyCreditsButton = ({ projectMongoId, projectIdOnChain, pricePerCre
   const handleBuy = async () => {
     setError(undefined);
     setTxHash(undefined);
+
+    // Pre-check: verify enough credits are available before sending tx
+    if (availableCredits > 0 && amount > availableCredits) {
+      setError({ type: 'warning', text: `Only ${availableCredits} credit${availableCredits > 1 ? 's' : ''} available. Please reduce your amount.` });
+      return;
+    }
 
     try {
       let activeProvider = provider;
@@ -99,14 +108,9 @@ export const BuyCreditsButton = ({ projectMongoId, projectIdOnChain, pricePerCre
       // Prepare certificate URI
       let certificateURI = '';
       try {
-        const metaResp = await fetch('/api/blockchain/certificates/prepare', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ projectMongoId, amount, reason: 'purchase' }),
-        });
-        if (metaResp.ok) {
-          const meta = await metaResp.json();
-          certificateURI = meta.certificateURI || '';
+        const metaResult = await blockchainApi.prepareCertificate(projectMongoId, amount);
+        if (metaResult?.certificateURI) {
+          certificateURI = metaResult.certificateURI;
         }
       } catch {}
 
@@ -116,13 +120,9 @@ export const BuyCreditsButton = ({ projectMongoId, projectIdOnChain, pricePerCre
       const receipt = await tx.wait(1);
       setTxHash(receipt.hash);
 
-      // Record purchase on backend
+      // Record purchase on backend (authenticated)
       try {
-        await fetch(`/api/blockchain/projects/${projectMongoId}/record-purchase`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ txHash: receipt.hash }),
-        });
+        await blockchainApi.recordPurchase(projectMongoId, receipt.hash);
       } catch {}
     } catch (e) {
       console.error('Buy credits error:', e);
@@ -161,6 +161,13 @@ export const BuyCreditsButton = ({ projectMongoId, projectIdOnChain, pricePerCre
           × 0.01 ETH = <strong>{totalCost()} ETH</strong>
         </span>
       </div>
+
+      {/* Available credits info */}
+      {availableCredits > 0 && (
+        <p className="text-xs text-gray-500">
+          {availableCredits} credit{availableCredits !== 1 ? 's' : ''} available
+        </p>
+      )}
 
       {/* Buy button */}
       <button

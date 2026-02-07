@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { projectsApi } from '@/lib/projectsApi';
 import { blockchainApi } from '@/lib/blockchainApi';
+import { API_BASE_URL } from '@/lib/api';
 import useCurrency from '@/hooks/useCurrency';
 import {
   Card,
@@ -48,10 +49,6 @@ const AddProjectPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [uploadedImage, setUploadedImage] = useState(null); // { file, preview }
   const [registerOnBlockchain, setRegisterOnBlockchain] = useState(false);
-  const [blockchainCredits, setBlockchainCredits] = useState({
-    totalCredits: '',
-    pricePerCreditWei: '10000000000000000' // 0.01 ETH in wei
-  });
   const [project, setProject] = useState({
     name: "",
     location: "",
@@ -130,8 +127,12 @@ const AddProjectPage = () => {
         const form = new FormData();
         form.append('file', f);
         const xhr = new XMLHttpRequest();
+        const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
         const res = await new Promise((resolve,reject)=>{
-          xhr.open('POST','/api/admin/projects/upload-doc');
+          xhr.open('POST', `${API_BASE_URL}/api/admin/projects/upload-doc`);
+          // Send auth token so authenticateAdmin middleware accepts the request
+          if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+          xhr.withCredentials = true; // include cookies as well
           xhr.upload.onprogress = (ev)=>{
             if(ev.lengthComputable){
               const pct = Math.round((ev.loaded/ev.total)*90)+10; // 10-100
@@ -145,7 +146,17 @@ const AddProjectPage = () => {
           };
           xhr.onreadystatechange = ()=>{
             if(xhr.readyState===4){
-              if(xhr.status>=200 && xhr.status<300) resolve(JSON.parse(xhr.responseText)); else reject(new Error(xhr.statusText||'Upload failed'));
+              if(xhr.status>=200 && xhr.status<300) {
+                resolve(JSON.parse(xhr.responseText));
+              } else {
+                // Parse server error message for better feedback
+                let errMsg = 'Upload failed';
+                try {
+                  const body = JSON.parse(xhr.responseText);
+                  errMsg = body.message || body.error || errMsg;
+                } catch { errMsg = xhr.status === 401 ? 'Not authorised — please log in again' : errMsg; }
+                reject(new Error(errMsg));
+              }
             }
           };
           xhr.send(form);
@@ -700,23 +711,19 @@ const AddProjectPage = () => {
                   ? formatINR(parseInt(project.totalFunding))
                   : "Not set"}
               </div>
-              {project.registerOnBlockchain && (
+              {registerOnBlockchain && derivedCredits > 0 && (
                 <div className="text-sm space-y-1 border-t pt-2">
                   <div>
-                    <span className="font-medium">Credits:</span>{" "}
-                    {project.totalCredits || "n/a"}
+                    <span className="font-medium">Carbon Credits:</span>{" "}
+                    {derivedCredits.toLocaleString()} credits
                   </div>
                   <div>
-                    <span className="font-medium">Price (wei):</span>{" "}
-                    {project.pricePerCreditWei || "n/a"}
+                    <span className="font-medium">Price per Credit:</span>{" "}
+                    0.01 ETH
                   </div>
                   <div>
-                    <span className="font-medium">Metadata URI:</span>{" "}
-                    {project.metadataURI || "n/a"}
-                  </div>
-                  <div>
-                    <span className="font-medium">AutoRetire Bps:</span>{" "}
-                    {project.autoRetireBps || "0"}
+                    <span className="font-medium">Network:</span>{" "}
+                    Sepolia Testnet
                   </div>
                 </div>
               )}

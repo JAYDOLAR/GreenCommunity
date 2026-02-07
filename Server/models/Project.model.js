@@ -30,7 +30,7 @@ const projectSchema = new mongoose.Schema({
   currentFunding: { type: Number, default: 0 },
   contributors: { type: Number, default: 0 }, // Number of contributors
   teamSize: { type: Number, default: 0 }, // Team size
-  carbonOffsetTarget: { type: Number, default: 0 }, // Carbon offset target in tons
+  carbonOffsetTarget: { type: Number, default: 0 }, // Carbon offset target in kg (1 credit = 1 ton = 1000 kg)
   co2Removed: { type: Number, default: 0 }, // CO2 removed in tons
   co2PerRupee: { type: Number, default: 0.001 }, // CO2 offset per rupee
   benefits: [{ type: String }], // Environmental benefits
@@ -61,7 +61,7 @@ const projectSchema = new mongoose.Schema({
     pricePerCreditWei: { type: String }, // store as string to preserve big int
     certificateBaseURI: { type: String },
     contractAddress: { type: String }, // marketplace contract
-    network: { type: String, default: 'localhost' },
+    network: { type: String, default: 'sepolia' },
     lastSyncAt: { type: Date },
     transactions: [{
       txHash: { type: String, index: true },

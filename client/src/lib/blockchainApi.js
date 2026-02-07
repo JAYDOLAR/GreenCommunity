@@ -59,6 +59,12 @@ export const blockchainApi = {
   },
 
   // Certificates
+  async prepareCertificate(projectMongoId, amount, reason = 'purchase') {
+    return apiRequest('/api/blockchain/certificates/prepare', {
+      method: 'POST',
+      body: JSON.stringify({ projectMongoId, amount, reason })
+    });
+  },
   async listCertificates() {
     return apiRequest('/api/blockchain/certificates');
   },
