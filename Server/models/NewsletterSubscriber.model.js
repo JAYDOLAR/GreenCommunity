@@ -58,7 +58,7 @@ const newsletterSubscriberSchema = new mongoose.Schema({
 // Indexes
 newsletterSubscriberSchema.index({ status: 1 });
 newsletterSubscriberSchema.index({ createdAt: -1 });
-newsletterSubscriberSchema.index({ userId: 1 }, { sparse: true });
+// NOTE: userId sparse index is already created by { sparse: true } on the field definition
 
 // Static method to subscribe
 newsletterSubscriberSchema.statics.subscribe = async function(email, options = {}) {
