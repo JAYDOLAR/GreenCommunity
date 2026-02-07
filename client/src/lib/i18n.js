@@ -1131,6 +1131,7 @@ const resources = {
             "time_remaining": "બાકી સમય",
             "contribute_now": "હવે યોગદાન આપો",
             "fully_funded": "સંપૂર્ણ રીતે ફંડેડ",
+            "funding_complete_message": "આ પ્રોજેક્ટે તેનું ફંડિંગ લક્ષ્ય પહોંચી ગયું છે અને હવે યોગદાન સ્વીકારતું નથી.",
             "view_details": "વિગતો જુઓ",
             "certifications": "પ્રમાણપત્રો",
             "project_benefits": "પ્રોજેક્ટ લાભો"
