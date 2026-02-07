@@ -202,6 +202,25 @@ jobs:
       - name: Create ZIP package
         run: |
           cd deployment-package
+
+          # Sanity-check: critical files MUST exist before zipping
+          echo "Verifying deployment package contents..."
+          for f in server.js app.js package.json; do
+            if [ ! -f "$f" ]; then
+              echo "FATAL: $f missing from deployment-package!"
+              echo "Contents:" && ls -la
+              exit 1
+            fi
+          done
+          if [ ! -d "client/.next" ]; then
+            echo "FATAL: client/.next missing from deployment-package!"
+            exit 1
+          fi
+          echo "  server.js  ✓"
+          echo "  app.js     ✓"
+          echo "  package.json ✓"
+          echo "  client/.next ✓"
+
           zip -r -q ../deployment.zip . -x "*.git*"
           echo "ZIP size: $(du -h ../deployment.zip | cut -f1)"
 
@@ -214,45 +233,48 @@ jobs:
 
       - name: Configure and Deploy to Azure
         run: |
-          # Configure app settings
-          # NOTE: Do NOT set WEBSITE_RUN_FROM_PACKAGE=1 — it makes the filesystem
-          #       read-only and conflicts with the custom startup file.
+          RG="Green_Community"
+          APP="greencommunity-app"
+
+          # ── Step 1: Stop the app to prevent race conditions ──
+          # Settings changes trigger restarts. If the app restarts BEFORE the new
+          # zip is deployed, wwwroot is empty → "Cannot find module server.js".
+          echo "Stopping app to apply config safely..."
+          az webapp stop --resource-group $RG --name $APP
+
+          # ── Step 2: Apply all configuration while app is stopped ──
+          echo "Configuring app settings..."
           az webapp config appsettings set \
-            --resource-group Green_Community \
-            --name greencommunity-app \
+            --resource-group $RG \
+            --name $APP \
             --settings \
             SCM_DO_BUILD_DURING_DEPLOYMENT=false \
             WEBSITE_NODE_DEFAULT_VERSION=22.x \
             NODE_ENV=production \
+            WEBSITE_RUN_FROM_PACKAGE=1 \
             WEBSITE_ENABLE_SYNC_UPDATE_SITE=true \
             WEBSITES_CONTAINER_START_TIME_LIMIT=1800 \
-            --output none &
-          CONFIG_PID=$!
+            --output none
 
           az webapp config set \
-            --resource-group Green_Community \
-            --name greencommunity-app \
+            --resource-group $RG \
+            --name $APP \
             --startup-file "node server.js" \
-            --output none &
-          STARTUP_PID=$!
+            --output none
 
-          wait $CONFIG_PID $STARTUP_PID
-
-          # Remove WEBSITE_RUN_FROM_PACKAGE if it was set in a previous deploy
-          az webapp config appsettings delete \
-            --resource-group Green_Community \
-            --name greencommunity-app \
-            --setting-names WEBSITE_RUN_FROM_PACKAGE \
-            --output none 2>/dev/null || true
-
-          # Deploy (synchronous so we get real success/failure feedback)
-          echo "Deploying to Azure..."
+          # ── Step 3: Deploy the zip (app still stopped — no premature starts) ──
+          echo "Deploying zip package..."
           az webapp deploy \
-            --resource-group Green_Community \
-            --name greencommunity-app \
+            --resource-group $RG \
+            --name $APP \
             --src-path deployment.zip \
             --type zip \
+            --restart false \
             --timeout 600
+
+          # ── Step 4: Start the app (picks up new zip + new settings atomically) ──
+          echo "Starting app..."
+          az webapp start --resource-group $RG --name $APP
 
           echo "Deployment completed successfully"
 
