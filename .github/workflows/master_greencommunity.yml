@@ -146,10 +146,11 @@ jobs:
           echo "Creating deployment package..."
           mkdir -p deployment-package/client
 
-          # Copy server files efficiently
+          # Copy server files efficiently (exclude deployment-package.json)
           rsync -a --exclude='node_modules' --exclude='.git*' --exclude='tests/' \
             --exclude='__tests__/' --exclude='*.test.*' --exclude='*.spec.*' \
             --exclude='coverage/' --exclude='*.log' --exclude='*.md' \
+            --exclude='deployment-package.json' \
             Server/ deployment-package/
 
           # Copy Next.js build and essentials
