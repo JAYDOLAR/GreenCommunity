@@ -69,17 +69,26 @@ jobs:
           echo "Client package-lock.json exists: $(test -f client/package-lock.json && echo "✅" || echo "❌")"
           echo "Server package-lock.json exists: $(test -f Server/package-lock.json && echo "✅" || echo "❌")"
 
-      - name: Cache dependencies
+      - name: Cache node_modules
         id: cache-deps
         uses: actions/cache@v4
         with:
           path: |
             client/node_modules
             Server/node_modules
-            client/.next/cache
           key: deps-${{ runner.os }}-${{ hashFiles('client/package-lock.json', 'Server/package-lock.json') }}
           restore-keys: |
             deps-${{ runner.os }}-
+
+      # Separate cache for Next.js build output — survives dependency updates
+      - name: Cache Next.js build
+        uses: actions/cache@v4
+        with:
+          path: client/.next/cache
+          key: nextjs-${{ runner.os }}-${{ hashFiles('client/package-lock.json') }}-${{ hashFiles('client/src/**/*', 'client/public/**/*') }}
+          restore-keys: |
+            nextjs-${{ runner.os }}-${{ hashFiles('client/package-lock.json') }}-
+            nextjs-${{ runner.os }}-
 
       - name: Install dependencies
         run: |
