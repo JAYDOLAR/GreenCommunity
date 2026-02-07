@@ -78,6 +78,14 @@ const ProjectsPage = () => {
   const [projects, setProjects] = useState([]);
   const [syncingId, setSyncingId] = useState(null);
   const [saving, setSaving] = useState(false);
+  // Blockchain registration state
+  const [showRegisterFormFor, setShowRegisterFormFor] = useState(null);
+  const [registerForm, setRegisterForm] = useState({
+    totalCredits: "",
+    pricePerCreditWei: "",
+    metadataURI: "",
+  });
+  const [registeringId, setRegisteringId] = useState(null);
   // Registration flow moved to Add Project page
   // Dashboard-like actions state
   const [showExportOptions, setShowExportOptions] = useState(false);
@@ -1114,6 +1122,78 @@ const ProjectsPage = () => {
                       </label>
                     </div>
                   </div>
+                </div>
+
+                {/* Blockchain Integration Section */}
+                <div className="space-y-4 border-t pt-4">
+                  <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                    <Cpu className="h-4 w-4" />
+                    Blockchain Integration
+                  </h4>
+                  
+                  {selectedProject?.blockchain?.projectId ? (
+                    <div className="space-y-3">
+                      <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          <span className="text-sm font-medium text-green-800">
+                            Project Registered on Blockchain
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4 text-xs">
+                          <div>
+                            <span className="text-gray-600">Project ID:</span>
+                            <div className="font-mono font-bold">#{selectedProject.blockchain.projectId}</div>
+                          </div>
+                          <div>
+                            <span className="text-gray-600">Credits Available:</span>
+                            <div className="font-mono font-bold">
+                              {((selectedProject.blockchain.totalCredits || 0) - (selectedProject.blockchain.soldCredits || 0)).toLocaleString()}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleSyncProject(selectedProject)}
+                          disabled={syncingId === selectedProject._id}
+                        >
+                          <RefreshCcw className="h-3 w-3 mr-1" />
+                          {syncingId === selectedProject._id ? 'Syncing...' : 'Sync Blockchain'}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => window.open(`https://sepolia.etherscan.io/address/0x462EA24B63bf09f522652c1B6550c8B65AfF99E4`, '_blank')}
+                        >
+                          <Eye className="h-3 w-3 mr-1" />
+                          View on Etherscan
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <p className="text-sm text-blue-800 mb-2">
+                          This project is not yet registered on the blockchain. Register it to enable carbon credit trading.
+                        </p>
+                      </div>
+                      <Button
+                        size="sm"
+                        onClick={() => openRegisterForm(selectedProject)}
+                        disabled={isLoading}
+                        className="bg-green-600 hover:bg-green-700"
+                      >
+                        <Cpu className="h-3 w-3 mr-1" />
+                        {isLoading ? 'Registering...' : 'Register on Blockchain'}
+                      </Button>
+                      <p className="text-xs text-gray-500">
+                        Registration will create an ERC1155 token for carbon credits on Sepolia testnet.
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-4">
