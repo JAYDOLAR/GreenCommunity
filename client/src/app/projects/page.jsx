@@ -1220,20 +1220,30 @@ const Projects = () => {
 
                           {/* Action Button */}
                           <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-2">
-                            <Button
-                              className="btn-hero text-xs sm:text-base px-3 sm:px-5 py-2 sm:py-3"
-                              onClick={(e) => {
-                                e.stopPropagation(); // Prevent navigation
-                                e.preventDefault(); // Prevent default behavior
-                                setSelectedProject(project);
-                                setContributionAmount([4150]); // Reset to default ₹4150 (~$50)
-                                setIsLoading(false);
-                                setDialogOpen(true);
-                              }}
-                            >
-                              <Heart className="h-4 w-4 mr-2" />
-                              {t('projects:contribute_now')}
-                            </Button>
+                            {(project.fundingPercentage || fundingPercentage) >= 100 ? (
+                              <Button
+                                disabled
+                                className="bg-green-100 text-green-700 cursor-not-allowed text-xs sm:text-base px-3 sm:px-5 py-2 sm:py-3 opacity-75"
+                              >
+                                <CheckCircle className="h-4 w-4 mr-2" />
+                                {t('projects:fully_funded')}
+                              </Button>
+                            ) : (
+                              <Button
+                                className="btn-hero text-xs sm:text-base px-3 sm:px-5 py-2 sm:py-3"
+                                onClick={(e) => {
+                                  e.stopPropagation(); // Prevent navigation
+                                  e.preventDefault(); // Prevent default behavior
+                                  setSelectedProject(project);
+                                  setContributionAmount([4150]); // Reset to default ₹4150 (~$50)
+                                  setIsLoading(false);
+                                  setDialogOpen(true);
+                                }}
+                              >
+                                <Heart className="h-4 w-4 mr-2" />
+                                {t('projects:contribute_now')}
+                              </Button>
+                            )}
                             <Button
                               variant="outline"
                               className="text-xs sm:text-base px-3 sm:px-5 py-2 sm:py-3"
