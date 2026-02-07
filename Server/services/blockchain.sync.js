@@ -4,7 +4,9 @@ import { getCertificateModel } from '../models/Certificate.model.js';
 import { getSyncStateModel } from '../models/SyncState.model.js';
 import { getProvider, getProjectOnChain } from './blockchain.service.js';
 
-const BATCH_SIZE = 2000;
+// Alchemy free tier caps eth_getLogs at 10-block range.
+// Use env var to override for paid plans (e.g. SYNC_BATCH_SIZE=2000).
+const BATCH_SIZE = parseInt(process.env.SYNC_BATCH_SIZE, 10) || 10;
 const STATE_KEY = 'marketplace_sync';
 
 export async function syncHistoricalEvents() {
@@ -17,8 +19,11 @@ export async function syncHistoricalEvents() {
     const latest = await provider.getBlockNumber();
     let from = state.lastBlock || (latest - 5000 > 0 ? latest - 5000 : 0); // initial window
     const toTarget = latest;
+
+    console.log(`[blockchain.sync] Syncing blocks ${from} -> ${toTarget} (batch=${BATCH_SIZE})`);
+
     while (from < toTarget) {
-      const to = Math.min(from + BATCH_SIZE, toTarget);
+      const to = Math.min(from + BATCH_SIZE - 1, toTarget); // -1: inclusive range
       // Purchase events
       const purchaseLogs = await provider.getLogs({ fromBlock: from, toBlock: to, address: marketplace.target });
       for (const log of purchaseLogs) {
@@ -46,6 +51,8 @@ export async function syncHistoricalEvents() {
       await state.save();
       from = to + 1;
     }
+
+    console.log('[blockchain.sync] Historical sync complete.');
   } catch (e) {
     console.warn('Historical sync failed:', e.message);
   }
