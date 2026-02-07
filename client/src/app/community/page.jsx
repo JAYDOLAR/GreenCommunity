@@ -496,7 +496,7 @@ const Community = () => {
                         <div className="flex flex-wrap gap-2 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
                           <div className="flex items-center gap-1 sm:gap-2">
                             <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
-                            <span>{event.date} at {event.time}</span>
+                            <span>{event.date ? new Date(event.date).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' }) : ''} at {event.time}</span>
                           </div>
                           <div className="flex items-center gap-1 sm:gap-2">
                             <MapPin className="h-3 w-3 sm:h-4 sm:w-4" />

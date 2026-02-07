@@ -72,14 +72,15 @@ export default function Layout({ children }) {
       if (isAuthenticated) {
         try {
           const data = await notificationsAPI.getAll();
-          if (Array.isArray(data)) {
-            setNotifications(data.map(n => ({
+          const items = Array.isArray(data) ? data : (data?.data || []);
+          if (Array.isArray(items)) {
+            setNotifications(items.map(n => ({
               id: n._id || n.id,
               _id: n._id,
               title: n.title || 'Notification',
               message: n.message || n.content || '',
-              time: n.createdAt ? new Date(n.createdAt).toLocaleString() : 'Recently',
-              unread: !n.read
+              time: n.timestamp || n.createdAt ? new Date(n.timestamp || n.createdAt).toLocaleString() : (n.time || 'Recently'),
+              unread: n.unread !== undefined ? n.unread : !n.isRead
             })));
           }
         } catch {

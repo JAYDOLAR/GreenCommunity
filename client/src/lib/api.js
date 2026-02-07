@@ -177,10 +177,10 @@ export const authAPI = {
     return apiRequest('/api/auth/me');
   },
 
-  updatePassword: async (newPassword) => {
+  updatePassword: async (currentPassword, newPassword) => {
     return apiRequest('/api/auth/update-password', {
       method: 'POST',
-      body: JSON.stringify({ newPassword }),
+      body: JSON.stringify({ currentPassword, newPassword }),
     });
   },
 

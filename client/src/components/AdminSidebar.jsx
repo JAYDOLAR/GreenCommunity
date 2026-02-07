@@ -167,14 +167,34 @@ const AdminSidebar = ({ isOpen = false, onClose = () => {} }) => {
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
-  const markAsRead = (id) => {
+  const markAsRead = async (id) => {
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, read: true } : n))
     );
+    try {
+      const serverUrl = getAdminApiUrl();
+      const token = localStorage.getItem('adminToken');
+      await fetch(`${serverUrl}/api/admin/notifications/read?id=${id}`, {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
   };
 
-  const markAllAsRead = () => {
+  const markAllAsRead = async () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    try {
+      const serverUrl = getAdminApiUrl();
+      const token = localStorage.getItem('adminToken');
+      await fetch(`${serverUrl}/api/admin/notifications/read-all`, {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+    }
   };
 
   const getNotificationIcon = (type) => {

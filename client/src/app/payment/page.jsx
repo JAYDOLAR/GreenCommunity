@@ -77,7 +77,7 @@ const Payment = () => {
   // Check if all billing info is completed and valid
   const isFormComplete = () => {
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    const zipRegex = /^[1-9][0-9]{5}$/;
+    const zipRegex = /^[a-zA-Z0-9\s\-]{3,10}$/;
     const cityRegex = /^[a-zA-Z\s]+$/;
     
     return (
@@ -87,7 +87,6 @@ const Payment = () => {
       billingInfo.city && 
       cityRegex.test(billingInfo.city) &&
       billingInfo.country && 
-      billingInfo.country.toLowerCase() === 'india' &&
       billingInfo.zipCode && 
       zipRegex.test(billingInfo.zipCode)
     );
@@ -339,18 +338,19 @@ const Payment = () => {
       return;
     }
 
-    // Country validation - must be India
-    if (billingInfo.country.toLowerCase() !== 'india') {
-      console.log('Country validation failed - not India');
-      toast.error('Currently, payments are only accepted from India.');
+
+    // Country validation
+    if (!billingInfo.country || billingInfo.country.trim().length === 0) {
+      console.log('Country validation failed - empty');
+      toast.error('Please enter your country.');
       return;
     }
 
-    // ZIP code validation for India (6 digits)
-    const zipRegex = /^[1-9][0-9]{5}$/;
+    // ZIP code validation (international format)
+    const zipRegex = /^[a-zA-Z0-9\s\-]{3,10}$/;
     if (!zipRegex.test(billingInfo.zipCode)) {
       console.log('ZIP code validation failed');
-      toast.error('Please enter a valid Indian PIN code (6 digits).');
+      toast.error('Please enter a valid postal/ZIP code (3-10 alphanumeric characters).');
       return;
     }
 

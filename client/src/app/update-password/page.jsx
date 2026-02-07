@@ -6,6 +6,7 @@ import { authAPI } from '../../lib/api';
 import Link from 'next/link';
 
 export default function UpdatePasswordPage() {
+  const [currentPassword, setCurrentPassword] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [submitted, setSubmitted] = useState(false);
@@ -54,7 +55,12 @@ export default function UpdatePasswordPage() {
         sessionStorage.removeItem('resetCode');
       } else {
         // Authenticated user password change
-        await authAPI.updatePassword(password);
+        if (!currentPassword) {
+          setError('Current password is required');
+          setLoading(false);
+          return;
+        }
+        await authAPI.updatePassword(currentPassword, password);
       }
 
       setSubmitted(true);
@@ -85,9 +91,26 @@ export default function UpdatePasswordPage() {
           <p className="text-muted-foreground text-sm mb-4">
             {isResetFlow 
               ? 'Create a new password for your account.'
-              : 'Enter your new password below.'}
+              : 'Enter your current password and choose a new one.'}
           </p>
         </div>
+        {!isResetFlow && (
+          <div>
+            <label htmlFor="currentPassword" className="block text-sm font-medium mb-1 text-foreground">
+              Current Password
+            </label>
+            <input
+              id="currentPassword"
+              type="password"
+              required
+              placeholder="Current Password"
+              autoComplete="current-password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary bg-card text-foreground placeholder:text-muted-foreground"
+            />
+          </div>
+        )}
         <div>
           <label htmlFor="password" className="block text-sm font-medium mb-1 text-foreground">
             New Password

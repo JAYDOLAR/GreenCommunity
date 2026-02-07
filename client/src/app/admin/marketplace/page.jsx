@@ -213,11 +213,13 @@ const MarketplacePage = () => {
       const updateData = {
         name: editForm.name,
         description: editForm.description,
-        price: parseFloat(editForm.price),
+        pricing: {
+          base_price: parseFloat(editForm.price),
+        },
         category: editForm.category,
         status: editForm.status,
         inventory: {
-          quantity: parseInt(editForm.stock) || 0,
+          stock_quantity: parseInt(editForm.stock) || 0,
         },
       };
 
@@ -495,9 +497,13 @@ const MarketplacePage = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Categories</SelectItem>
-                <SelectItem value="lifestyle">Lifestyle</SelectItem>
-                <SelectItem value="technology">Technology</SelectItem>
-                <SelectItem value="fashion">Fashion</SelectItem>
+                <SelectItem value="solar">Solar Products</SelectItem>
+                <SelectItem value="reusable">Reusable Items</SelectItem>
+                <SelectItem value="zero_waste">Zero Waste</SelectItem>
+                <SelectItem value="local">Local Products</SelectItem>
+                <SelectItem value="organic">Organic</SelectItem>
+                <SelectItem value="eco_fashion">Eco Fashion</SelectItem>
+                <SelectItem value="green_tech">Green Tech</SelectItem>
               </SelectContent>
             </Select>
             <Select value={statusFilter} onValueChange={setStatusFilter}>

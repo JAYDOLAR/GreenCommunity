@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import AdminSidebar from '@/components/AdminSidebar';
+import getAdminApiUrl from '@/lib/adminApi';
 import { Bell } from 'lucide-react';
 
 const AdminLayout = ({ children }) => {
@@ -15,32 +16,64 @@ const AdminLayout = ({ children }) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const bellRef = useRef(null);
   const notifPanelRef = useRef(null);
-  const [notifications, setNotifications] = useState(() => {
-    const fallback = [
-      { id: 1, type: 'user', title: 'New User Registration', message: 'John Doe has joined the platform', time: '2 minutes ago', read: false },
-      { id: 2, type: 'project', title: 'Project Milestone', message: 'Urban Garden Project reached 50% completion', time: '1 hour ago', read: false },
-      { id: 3, type: 'order', title: 'New Marketplace Order', message: 'Order #12345 for Eco-friendly Water Bottle', time: '3 hours ago', read: true },
-    ];
-    if (typeof window === 'undefined') return fallback;
-    try {
-      const raw = localStorage.getItem('admin_notifications');
-      if (!raw) return fallback;
-      const parsed = JSON.parse(raw);
-      return Array.isArray(parsed) ? parsed : fallback;
-    } catch {
-      return fallback;
-    }
-  });
+  const [notifications, setNotifications] = useState([]);
   const [notificationsHydrated, setNotificationsHydrated] = useState(false);
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
-  const markAsRead = (id) => {
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+  const fetchMobileNotifications = async () => {
+    try {
+      const serverUrl = getAdminApiUrl();
+      const token = localStorage.getItem('adminToken');
+      const response = await fetch(`${serverUrl}/api/admin/notifications?limit=20`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          setNotifications(result.data.map(n => ({
+            id: n.id,
+            type: n.type,
+            title: n.title,
+            message: n.message,
+            time: n.time,
+            read: n.isRead
+          })));
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching mobile notifications:', error);
+    } finally {
+      setNotificationsHydrated(true);
+    }
   };
 
-  const markAllAsRead = () => {
+  const markAsRead = async (id) => {
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+    try {
+      const serverUrl = getAdminApiUrl();
+      const token = localStorage.getItem('adminToken');
+      await fetch(`${serverUrl}/api/admin/notifications/read?id=${id}`, {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
+  };
+
+  const markAllAsRead = async () => {
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    try {
+      const serverUrl = getAdminApiUrl();
+      const token = localStorage.getItem('adminToken');
+      await fetch(`${serverUrl}/api/admin/notifications/read-all`, {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+    }
   };
 
   useEffect(() => {
@@ -90,22 +123,10 @@ const AdminLayout = ({ children }) => {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    try {
-      const raw = localStorage.getItem('admin_notifications');
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed)) setNotifications(parsed);
-      }
-    } catch {}
-    setNotificationsHydrated(true);
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    try {
-      localStorage.setItem('admin_notifications', JSON.stringify(notifications));
-    } catch {}
-  }, [notifications]);
+    if (isAuthenticated) {
+      fetchMobileNotifications();
+    }
+  }, [isAuthenticated]);
 
   useEffect(() => {
     if (!showNotifications) return;
