@@ -1,41 +1,47 @@
 import { create } from 'kubo-rpc-client';
 import fs from 'fs';
 import path from 'path';
-import { pinJSON } from './ipfs.service.js';
+import { pinJSON, pinFile, ipfsServiceHealth } from './ipfs.service.js';
 
 // ---------------------------------------------------------------------------
-// IPFS client – works in three modes:
-//   1. Local daemon running  → real CIDs via ipfs-http-client
-//   2. External IPFS gateway → real CIDs via IPFS_API_URL env var
-//   3. No daemon available   → deterministic pseudo-CIDs (sha256-based)
+// Unified IPFS service — production-ready
 //
-// Mode 3 is the automatic fallback so production (Azure App Service) works
-// without requiring a separate IPFS daemon process.
+// Priority order for every operation:
+//   1. Pinata cloud API   (if PINATA_JWT env var is set — production mode)
+//   2. Local IPFS daemon  (if running at IPFS_API_URL — local dev)
+//   3. Pseudo-CID offline (last resort — no keys, no daemon, dev only)
+//
+// In production (Azure App Service) you only need the PINATA_JWT secret.
+// Locally, if you run `ipfs daemon` you get real local CIDs; otherwise
+// set PINATA_JWT in .env for the same production behaviour.
 // ---------------------------------------------------------------------------
 
 let ipfs;
-let ipfsDaemonAvailable = false;
+let daemonChecked = false;
+let daemonAvailable = false;
 
-async function ensureIpfs() {
-  if (ipfsDaemonAvailable && ipfs) return ipfs;
+async function ensureLocalDaemon() {
+  // If Pinata is configured, skip the local daemon entirely
+  if (process.env.PINATA_JWT) return null;
+
+  if (daemonChecked) return daemonAvailable ? ipfs : null;
 
   const url = process.env.IPFS_API_URL || 'http://127.0.0.1:5001/api/v0';
   try {
     const client = create({ url, timeout: 3000 });
-    // Quick health-check — if the daemon isn't there this will throw
     await client.version();
     ipfs = client;
-    ipfsDaemonAvailable = true;
-    return ipfs;
+    daemonAvailable = true;
   } catch {
-    ipfsDaemonAvailable = false;
+    daemonAvailable = false;
     ipfs = null;
-    return null;
   }
+  daemonChecked = true;
+  return ipfs;
 }
 
-// Try once on startup (non-blocking)
-ensureIpfs().catch(() => {});
+// Probe once at startup (non-blocking)
+ensureLocalDaemon().catch(() => {});
 
 export function getIpfs() {
   if (!ipfs) throw new Error('IPFS client not available');
@@ -44,45 +50,79 @@ export function getIpfs() {
 
 // ---- Public helpers -------------------------------------------------------
 
+/**
+ * Pin JSON data to IPFS.
+ * Production → Pinata | Dev → local daemon | Fallback → pseudo-CID
+ */
 export async function addJSON(data) {
-  const client = await ensureIpfs();
+  // 1. Pinata (production)
+  if (process.env.PINATA_JWT) {
+    return pinJSON(data);
+  }
+
+  // 2. Local daemon (dev)
+  const client = await ensureLocalDaemon();
   if (client) {
     const { cid } = await client.add({ content: JSON.stringify(data) });
     return { cid: cid.toString(), uri: `ipfs://${cid.toString()}` };
   }
-  // Fallback – pseudo-CID
-  console.warn('[IPFS] Daemon unavailable, using pseudo-CID fallback for JSON');
-  const result = await pinJSON(data);
-  return { cid: result.cid, uri: result.uri };
+
+  // 3. Pseudo-CID (offline dev)
+  console.warn('[IPFS] No Pinata key and no local daemon — using offline pseudo-CID');
+  return pinJSON(data);
 }
 
+/**
+ * Pin a file buffer to IPFS.
+ * Production → Pinata | Dev → local daemon | Fallback → pseudo-CID
+ */
 export async function addFileFromBuffer(buffer, filename) {
-  const client = await ensureIpfs();
+  // 1. Pinata (production)
+  if (process.env.PINATA_JWT) {
+    return pinFile(buffer, filename);
+  }
+
+  // 2. Local daemon (dev)
+  const client = await ensureLocalDaemon();
   if (client) {
     const { cid } = await client.add({ path: filename, content: buffer });
     return { cid: cid.toString(), uri: `ipfs://${cid.toString()}` };
   }
-  // Fallback – hash the file buffer to get a deterministic pseudo-CID
-  console.warn('[IPFS] Daemon unavailable, using pseudo-CID fallback for file:', filename);
-  const result = await pinJSON({
-    name: filename,
-    size: buffer.length,
-    sha256: (await import('crypto')).createHash('sha256').update(buffer).digest('hex'),
-    uploadedAt: new Date().toISOString()
-  });
-  return { cid: result.cid, uri: result.uri };
+
+  // 3. Pseudo-CID (offline dev)
+  console.warn('[IPFS] No Pinata key and no local daemon — using offline pseudo-CID for file:', filename);
+  return pinFile(buffer, filename);
 }
 
+/**
+ * Pin a file from disk path.
+ */
 export async function addFileFromPath(filePath) {
   const buffer = await fs.promises.readFile(filePath);
   return addFileFromBuffer(buffer, path.basename(filePath));
 }
 
+/**
+ * Health check — reports which IPFS mode is active.
+ */
 export async function ipfsHealth() {
-  const client = await ensureIpfs();
-  if (!client) {
-    return { status: 'offline', mode: 'pseudo-cid-fallback', message: 'No IPFS daemon — using SHA-256 pseudo-CIDs' };
+  // Check Pinata first
+  const pinataHealth = await ipfsServiceHealth();
+  if (pinataHealth.status === 'online') {
+    return { status: 'online', mode: 'pinata', ...pinataHealth };
   }
-  const [version, id] = await Promise.all([client.version(), client.id()]);
-  return { status: 'online', version: version.version, commit: version.commit, id: id.id };
+
+  // Check local daemon
+  const client = await ensureLocalDaemon();
+  if (client) {
+    const [version, id] = await Promise.all([client.version(), client.id()]);
+    return { status: 'online', mode: 'local-daemon', version: version.version, id: id.id };
+  }
+
+  // Offline
+  return {
+    status: 'degraded',
+    mode: 'pseudo-cid',
+    message: 'No Pinata key and no local IPFS daemon — using offline pseudo-CIDs (not production-ready)',
+  };
 }

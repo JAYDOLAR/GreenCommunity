@@ -151,6 +151,7 @@ jobs:
             MARKETPLACE_CONTRACT_ADDRESS=${{ secrets.MARKETPLACE_CONTRACT_ADDRESS }} \
             CERTIFICATE_CONTRACT_ADDRESS=${{ secrets.CERTIFICATE_CONTRACT_ADDRESS }} \
             MARKETPLACE_SIGNER_KEY=${{ secrets.MARKETPLACE_SIGNER_KEY }} \
+            PINATA_JWT=${{ secrets.PINATA_JWT }} \
             --output none &
           CONFIG_PID=$!
           
