@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import Razorpay from 'razorpay';
 
 let razorpay;
 
-function getRazorpayInstance() {
+async function getRazorpayInstance() {
   if (!razorpay) {
+    const Razorpay = (await import('razorpay')).default;
     razorpay = new Razorpay({
       key_id: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
       key_secret: process.env.RAZORPAY_KEY_SECRET,
@@ -25,7 +25,10 @@ export async function POST(request) {
     }
 
     if (!process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
-      console.error('Razorpay keys not configured');
+      console.error('Razorpay keys not configured:', {
+        keyId: !!process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        secret: !!process.env.RAZORPAY_KEY_SECRET,
+      });
       return NextResponse.json(
         { success: false, error: 'Payment gateway not configured' },
         { status: 500 }
@@ -43,7 +46,8 @@ export async function POST(request) {
       },
     };
 
-    const order = await getRazorpayInstance().orders.create(options);
+    const instance = await getRazorpayInstance();
+    const order = await instance.orders.create(options);
 
     return NextResponse.json({
       success: true,
@@ -54,7 +58,7 @@ export async function POST(request) {
     return NextResponse.json(
       {
         success: false,
-        error: error.error?.description || 'Failed to create payment order',
+        error: error.error?.description || error.message || 'Failed to create payment order',
       },
       { status: 500 }
     );

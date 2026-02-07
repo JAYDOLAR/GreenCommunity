@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Prevent Next.js from bundling these Node.js packages in API routes
+  serverExternalPackages: ['razorpay'],
   images: {
     unoptimized: true,
     remotePatterns: [
