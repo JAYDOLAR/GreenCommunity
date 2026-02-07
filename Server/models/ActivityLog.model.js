@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { getConnection } from '../config/databases.js';
 
 const activityLogSchema = new mongoose.Schema({
   type: {
@@ -45,4 +46,12 @@ const activityLogSchema = new mongoose.Schema({
 activityLogSchema.index({ createdAt: -1 });
 activityLogSchema.index({ type: 1, createdAt: -1 });
 
-export default mongoose.model('ActivityLog', activityLogSchema);
+const getActivityLogModel = async () => {
+  const conn = await getConnection('ANALYTICS_DB');
+  return conn.model('ActivityLog', activityLogSchema);
+};
+
+const ActivityLog = mongoose.models.ActivityLog || mongoose.model('ActivityLog', activityLogSchema);
+
+export { getActivityLogModel };
+export default ActivityLog;

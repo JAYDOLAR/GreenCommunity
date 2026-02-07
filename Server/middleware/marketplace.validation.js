@@ -172,9 +172,33 @@ export const validateUpdateProduct = [
     .isMongoId()
     .withMessage('Invalid product ID'),
 
-  ...validateCreateProduct.map(validator => 
-    validator.optional ? validator : validator.optional()
-  )
+  // For updates, all fields should be optional
+  body('name')
+    .optional()
+    .trim()
+    .isLength({ min: 3, max: 200 })
+    .withMessage('Product name must be between 3 and 200 characters'),
+  body('description')
+    .optional()
+    .trim()
+    .isLength({ min: 10, max: 2000 })
+    .withMessage('Description must be between 10 and 2000 characters'),
+  body('category')
+    .optional()
+    .isIn(['solar', 'reusable', 'zero_waste', 'local', 'organic', 'eco_fashion', 'green_tech'])
+    .withMessage('Invalid category'),
+  body('pricing.base_price')
+    .optional()
+    .isFloat({ min: 0 })
+    .withMessage('Base price must be a positive number'),
+  body('inventory.stock_quantity')
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage('Stock quantity must be a non-negative integer'),
+  body('status')
+    .optional()
+    .isIn(['active', 'inactive', 'out_of_stock', 'discontinued'])
+    .withMessage('Invalid status')
 ];
 
 export const validateProductId = [
@@ -419,8 +443,8 @@ export const validateCreateOrder = [
 
   body('shippingAddress.zipCode')
     .trim()
-    .matches(/^\d{5}(-\d{4})?$/)
-    .withMessage('Invalid ZIP code format'),
+    .matches(/^[a-zA-Z0-9\s\-]{3,10}$/)
+    .withMessage('Invalid postal/ZIP code format'),
 
   body('shippingAddress.country')
     .trim()

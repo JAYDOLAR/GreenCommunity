@@ -52,11 +52,11 @@ async function createServer() {
 
   // Connect to all MongoDB databases
   if (!isTest) {
-    connectAllDatabases();
-  // Start blockchain listeners (non-fatal if it fails)
-  startBlockchainListeners();
-  // Kick off historical sync (non-blocking)
-  setTimeout(() => { syncHistoricalEvents(); }, 2000);
+    await connectAllDatabases();
+    // Start blockchain listeners (non-fatal if it fails)
+    startBlockchainListeners();
+    // Kick off historical sync (non-blocking)
+    setTimeout(() => { syncHistoricalEvents(); }, 2000);
   }
 
   // Security middleware

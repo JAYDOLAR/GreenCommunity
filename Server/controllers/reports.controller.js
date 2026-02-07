@@ -1,11 +1,12 @@
-import Report from '../models/Report.model.js';
+import { getReportModel } from '../models/Report.model.js';
 import { getUserModel } from '../models/User.model.js';
-import Project from '../models/Project.model.js';
-import Order from '../models/Order.model.js';
+import { getProjectModel } from '../models/Project.model.js';
+import { getOrderModel } from '../models/Order.model.js';
 
 // Get all reports
 export const getReports = async (req, res) => {
   try {
+    const Report = await getReportModel();
     const { type, status, limit = 50 } = req.query;
     
     const filter = {};
@@ -90,6 +91,7 @@ export const getReportTemplates = async (req, res) => {
 // Generate a new report
 export const generateReport = async (req, res) => {
   try {
+    const Report = await getReportModel();
     const { type, timeRange, format } = req.body;
     
     if (!type || !timeRange || !format) {
@@ -185,13 +187,14 @@ async function getUserActivityData(timeRange) {
 
 async function getRevenueData(timeRange) {
   const dateFilter = getDateFilter(timeRange);
+  const Order = await getOrderModel();
   
   const revenueData = await Order.aggregate([
-    { $match: { createdAt: dateFilter.createdAt } },
+    { $match: { created_at: dateFilter.created_at, order_status: { $in: ['confirmed', 'processing', 'shipped', 'delivered'] } } },
     {
       $group: {
         _id: null,
-        totalRevenue: { $sum: '$totalAmount' },
+        totalRevenue: { $sum: '$pricing.total' },
         orderCount: { $sum: 1 }
       }
     }
@@ -206,10 +209,11 @@ async function getRevenueData(timeRange) {
 
 async function getProjectPerformanceData(timeRange) {
   const dateFilter = getDateFilter(timeRange);
+  const Project = await getProjectModel();
   
   const projects = await Project.find(dateFilter);
   const totalFunding = projects.reduce((sum, p) => sum + (p.currentFunding || 0), 0);
-  const totalCarbonOffset = projects.reduce((sum, p) => sum + (p.carbonOffset || 0), 0);
+  const totalCarbonOffset = projects.reduce((sum, p) => sum + (p.impact?.carbonOffset || 0) + (p.co2Removed || 0), 0);
   
   return {
     totalProjects: projects.length,
@@ -221,20 +225,22 @@ async function getProjectPerformanceData(timeRange) {
 
 async function getCarbonImpactData(timeRange) {
   const dateFilter = getDateFilter(timeRange);
+  const Project = await getProjectModel();
   
   const carbonData = await Project.aggregate([
     { $match: dateFilter },
     {
       $group: {
         _id: null,
-        totalCarbonOffset: { $sum: '$carbonOffset' },
+        totalCarbonOffset: { $sum: '$impact.carbonOffset' },
+        totalCo2Removed: { $sum: '$co2Removed' },
         projectCount: { $sum: 1 }
       }
     }
   ]);
   
   return {
-    carbonOffset: carbonData.length > 0 ? carbonData[0].totalCarbonOffset : 0,
+    carbonOffset: carbonData.length > 0 ? (carbonData[0].totalCarbonOffset + carbonData[0].totalCo2Removed) : 0,
     projectCount: carbonData.length > 0 ? carbonData[0].projectCount : 0,
     environmentalImpact: 85000,
     impactGrowth: 25.8
@@ -243,13 +249,14 @@ async function getCarbonImpactData(timeRange) {
 
 async function getMarketplaceData(timeRange) {
   const dateFilter = getDateFilter(timeRange);
+  const Order = await getOrderModel();
   
   const salesData = await Order.aggregate([
-    { $match: { ...dateFilter, orderType: 'marketplace' } },
+    { $match: { created_at: dateFilter.created_at, order_status: { $in: ['confirmed', 'processing', 'shipped', 'delivered'] } } },
     {
       $group: {
         _id: null,
-        totalSales: { $sum: '$totalAmount' },
+        totalSales: { $sum: '$pricing.total' },
         orderCount: { $sum: 1 }
       }
     }
@@ -268,22 +275,22 @@ function getDateFilter(timeRange) {
   
   switch (timeRange) {
     case '7d':
-      startDate = new Date(now.setDate(now.getDate() - 7));
+      startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
       break;
     case '30d':
-      startDate = new Date(now.setDate(now.getDate() - 30));
+      startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
       break;
     case '90d':
-      startDate = new Date(now.setDate(now.getDate() - 90));
+      startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
       break;
     case '1y':
-      startDate = new Date(now.setFullYear(now.getFullYear() - 1));
+      startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
       break;
     default:
-      startDate = new Date(now.setDate(now.getDate() - 30));
+      startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
   }
   
   return {
-    createdAt: { $gte: startDate }
+    created_at: { $gte: startDate }
   };
 }

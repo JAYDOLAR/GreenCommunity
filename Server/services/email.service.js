@@ -2,16 +2,31 @@ import nodemailer from 'nodemailer';
 
 class EmailService {
   constructor() {
-    // Remove spaces from Gmail App Password (they work better without spaces)
-    const cleanPassword = process.env.EMAIL_PASS?.replace(/\s+/g, '') || '';
-    
-    this.transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: cleanPassword
-      }
-    });
+    this.transporter = null;
+  }
+
+  /**
+   * Lazily initialize the transporter to ensure env vars are loaded
+   */
+  _getTransporter() {
+    if (!this.transporter) {
+      const cleanPassword = process.env.EMAIL_PASS?.replace(/\s+/g, '') || '';
+      this.transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: process.env.EMAIL_USER,
+          pass: cleanPassword
+        }
+      });
+    }
+    return this.transporter;
+  }
+
+  /**
+   * Get the sender address for all outgoing emails
+   */
+  _getFrom() {
+    return `"GreenCommunity" <${process.env.EMAIL_USER}>`;
   }
 
   /**
@@ -19,7 +34,7 @@ class EmailService {
    */
   async verifyConnection() {
     try {
-      await this.transporter.verify();
+      await this._getTransporter().verify();
       return { success: true, message: 'Email service connected successfully' };
     } catch (error) {
       return { success: false, message: error.message };
@@ -35,8 +50,7 @@ class EmailService {
   async sendEmailVerification(email, token, clientUrl) {
     const verificationUrl = `${clientUrl}/verify-email?token=${token}`;
     
-    const mailOptions = {
-      to: email,
+    const mailOptions = {      from: this._getFrom(),      to: email,
       subject: 'Email Verification - GreenCommunity',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -57,7 +71,7 @@ class EmailService {
       `
     };
 
-    return await this.transporter.sendMail(mailOptions);
+    return await this._getTransporter().sendMail(mailOptions);
   }
 
   /**
@@ -67,6 +81,7 @@ class EmailService {
    */
   async sendEmailVerificationCode(email, verificationCode) {
     const mailOptions = {
+      from: this._getFrom(),
       to: email,
       subject: 'Email Verification - GreenCommunity',
       html: `
@@ -119,7 +134,7 @@ class EmailService {
       `
     };
 
-    return await this.transporter.sendMail(mailOptions);
+    return await this._getTransporter().sendMail(mailOptions);
   }
 
   /**
@@ -129,6 +144,7 @@ class EmailService {
    */
   async sendPasswordReset(email, resetCode) {
     const mailOptions = {
+      from: this._getFrom(),
       to: email,
       subject: 'Password Reset - GreenCommunity',
       html: `
@@ -181,7 +197,7 @@ class EmailService {
       `
     };
 
-    return await this.transporter.sendMail(mailOptions);
+    return await this._getTransporter().sendMail(mailOptions);
   }
 
   /**
@@ -191,6 +207,7 @@ class EmailService {
    */
   async sendWelcomeEmail(email, name) {
     const mailOptions = {
+      from: this._getFrom(),
       to: email,
       subject: 'Welcome to GreenCommunity!',
       html: `
@@ -204,7 +221,7 @@ class EmailService {
       `
     };
 
-    return await this.transporter.sendMail(mailOptions);
+    return await this._getTransporter().sendMail(mailOptions);
   }
 
   /**
@@ -225,6 +242,7 @@ class EmailService {
     const invoiceNumber = `INV-${orderId || paymentId || Date.now()}`;
     
     const mailOptions = {
+      from: this._getFrom(),
       to: email,
       subject: `Payment Invoice - GreenCommunity Contribution | ${invoiceNumber}`,
       html: `
@@ -340,7 +358,7 @@ class EmailService {
       `
     };
 
-    return await this.transporter.sendMail(mailOptions);
+    return await this._getTransporter().sendMail(mailOptions);
   }
 
   /**
@@ -354,6 +372,7 @@ class EmailService {
       const dataJson = JSON.stringify(userData, null, 2);
       
       const mailOptions = {
+        from: this._getFrom(),
         to: email,
         subject: 'Your GreenCommunity Data Export',
         html: `
@@ -410,7 +429,7 @@ class EmailService {
         ]
       };
 
-      await this.transporter.sendMail(mailOptions);
+      await this._getTransporter().sendMail(mailOptions);
       return { success: true, message: 'Data export email sent successfully' };
     } catch (error) {
       console.error('Error sending data export email:', error);

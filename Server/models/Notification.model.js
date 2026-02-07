@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { getConnection } from '../config/databases.js';
 
 const notificationSchema = new mongoose.Schema({
   type: {
@@ -48,6 +49,12 @@ notificationSchema.index({ createdAt: -1 });
 notificationSchema.index({ type: 1 });
 notificationSchema.index({ isRead: 1 });
 
-const Notification = mongoose.model('Notification', notificationSchema);
+const getNotificationModel = async () => {
+  const conn = await getConnection('MAIN_DB');
+  return conn.model('Notification', notificationSchema);
+};
 
+const Notification = mongoose.models.Notification || mongoose.model('Notification', notificationSchema);
+
+export { getNotificationModel };
 export default Notification;

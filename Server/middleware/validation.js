@@ -122,6 +122,9 @@ export const validateUpdatePasswordWithCode = [
 
 // Update password for authenticated users validation
 export const validateUpdatePassword = [
+  body('currentPassword')
+    .notEmpty()
+    .withMessage('Current password is required for verification'),
   body('newPassword')
     .isLength({ min: 8 })
     .withMessage('Password must be at least 8 characters long')

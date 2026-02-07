@@ -1,7 +1,7 @@
 import { getUserModel } from '../models/User.model.js';
 import { getProjectModel } from '../models/Project.model.js';
 import { getOrderModel } from '../models/Order.model.js';
-import ActivityLog from '../models/ActivityLog.model.js';
+import { getActivityLogModel } from '../models/ActivityLog.model.js';
 
 // Get real-time dashboard statistics
 export const getDashboardStats = async (req, res) => {
@@ -29,13 +29,13 @@ export const getDashboardStats = async (req, res) => {
     const revenueData = await Order.aggregate([
       {
         $match: {
-          payment_status: 'completed'
+          'payment.status': 'completed'
         }
       },
       {
         $group: {
           _id: null,
-          totalRevenue: { $sum: '$total_amount' }
+          totalRevenue: { $sum: '$pricing.total' }
         }
       }
     ]);
@@ -120,6 +120,7 @@ export const getDashboardStats = async (req, res) => {
 // Get recent activity logs
 export const getRecentActivities = async (req, res) => {
   try {
+    const ActivityLog = await getActivityLogModel();
     const limit = parseInt(req.query.limit) || 10;
     
     const activities = await ActivityLog.find()
@@ -145,6 +146,7 @@ export const getRecentActivities = async (req, res) => {
 // Create activity log (for internal use)
 export const createActivity = async (activityData) => {
   try {
+    const ActivityLog = await getActivityLogModel();
     const activity = new ActivityLog(activityData);
     await activity.save();
     return activity;

@@ -54,22 +54,17 @@ export const completeChallenge = async (req, res) => {
     const UserPoints = await getUserPointsModel();
     const UserChallenge = await getUserChallengeModel();
 
-    // Find and update the challenge with atomic increment of participants
-    const challenge = await Challenge.findByIdAndUpdate(
-      id,
-      { $inc: { participants: 1 } }, // Increment participants count
-      { new: true } // Return updated document
-    );
-    
+    const userId = req.user._id;
+
+    // Check if challenge exists and is active first
+    const challenge = await Challenge.findById(id);
     if (!challenge || !challenge.active) {
       return res.status(404).json({ error: 'Challenge not found' });
     }
 
-    const userId = req.user._id;
-    // Prevent duplicate completion
+    // Prevent duplicate completion — check BEFORE incrementing participants
     const exists = await UserChallenge.findOne({ userId, challengeId: id });
     if (exists) {
-      // Return a more helpful error with completion time
       return res.status(409).json({ 
         error: 'Challenge already completed',
         details: {
@@ -79,7 +74,20 @@ export const completeChallenge = async (req, res) => {
         }
       });
     }
-    
+
+    // Record completion first (unique index on userId+challengeId prevents race conditions)
+    try {
+      await UserChallenge.create({ userId, challengeId: id });
+    } catch (dupError) {
+      if (dupError.code === 11000) {
+        return res.status(409).json({ error: 'Challenge already completed' });
+      }
+      throw dupError;
+    }
+
+    // Now safely increment participants count
+    await Challenge.findByIdAndUpdate(id, { $inc: { participants: 1 } });
+
     // Update user points and add to history
     const pointsDoc = await UserPoints.findOneAndUpdate(
       { userId },
@@ -93,9 +101,6 @@ export const completeChallenge = async (req, res) => {
       },
       { upsert: true, new: true }
     );
-
-    // Record completion
-    await UserChallenge.create({ userId, challengeId: id });
 
     res.json({ success: true, totalPoints: pointsDoc.totalPoints });
   } catch (error) {

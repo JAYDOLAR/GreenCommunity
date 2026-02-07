@@ -27,7 +27,7 @@ const shippingAddressSchema = new mongoose.Schema({
     type: String,
     required: true,
     trim: true,
-    match: /^\d{5}(-\d{4})?$/
+    match: /^[a-zA-Z0-9\s\-]{3,10}$/
   },
   country: {
     type: String,

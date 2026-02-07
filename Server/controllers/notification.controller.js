@@ -1,11 +1,13 @@
-import Notification from '../models/Notification.model.js';
+import { getNotificationModel } from '../models/Notification.model.js';
 
 /**
  * Get admin notifications
  */
 export const getNotifications = async (req, res) => {
   try {
+    const Notification = await getNotificationModel();
     const { type, isRead, limit = 20 } = req.query;
+    const cappedLimit = Math.min(parseInt(limit) || 20, 100);
 
     const query = {};
     if (type) query.type = type;
@@ -13,7 +15,7 @@ export const getNotifications = async (req, res) => {
 
     const notifications = await Notification.find(query)
       .sort({ createdAt: -1 })
-      .limit(parseInt(limit))
+      .limit(cappedLimit)
       .populate('userId', 'name email')
       .populate('projectId', 'name')
       .lean();
@@ -49,6 +51,7 @@ export const getNotifications = async (req, res) => {
  */
 export const createNotification = async (req, res) => {
   try {
+    const Notification = await getNotificationModel();
     const { type, title, message, priority, userId, projectId, orderId, metadata } = req.body;
 
     const notification = new Notification({
@@ -83,6 +86,7 @@ export const createNotification = async (req, res) => {
  */
 export const markAsRead = async (req, res) => {
   try {
+    const Notification = await getNotificationModel();
     const { id } = req.query;
 
     const notification = await Notification.findByIdAndUpdate(
@@ -117,6 +121,7 @@ export const markAsRead = async (req, res) => {
  */
 export const markAllAsRead = async (req, res) => {
   try {
+    const Notification = await getNotificationModel();
     await Notification.updateMany(
       { isRead: false },
       { isRead: true }
@@ -141,6 +146,7 @@ export const markAllAsRead = async (req, res) => {
  */
 export const deleteNotification = async (req, res) => {
   try {
+    const Notification = await getNotificationModel();
     const { id } = req.query;
 
     const notification = await Notification.findByIdAndDelete(id);
@@ -186,8 +192,10 @@ function formatTimeAgo(date) {
  */
 export const getUserNotifications = async (req, res) => {
   try {
+    const Notification = await getNotificationModel();
     const userId = req.user._id;
     const { limit = 20 } = req.query;
+    const cappedUserLimit = Math.min(parseInt(limit) || 20, 100);
 
     // Get notifications for this user OR system-wide notifications
     const notifications = await Notification.find({
@@ -197,7 +205,7 @@ export const getUserNotifications = async (req, res) => {
       ]
     })
       .sort({ createdAt: -1 })
-      .limit(parseInt(limit))
+      .limit(cappedUserLimit)
       .lean();
 
     // Format for frontend
@@ -231,6 +239,7 @@ export const getUserNotifications = async (req, res) => {
  */
 export const markUserNotificationAsRead = async (req, res) => {
   try {
+    const Notification = await getNotificationModel();
     const userId = req.user._id;
     const { id } = req.params;
 
@@ -266,6 +275,7 @@ export const markUserNotificationAsRead = async (req, res) => {
  */
 export const markAllUserNotificationsAsRead = async (req, res) => {
   try {
+    const Notification = await getNotificationModel();
     const userId = req.user._id;
 
     await Notification.updateMany(
@@ -292,6 +302,7 @@ export const markAllUserNotificationsAsRead = async (req, res) => {
  */
 export const createUserNotification = async (userId, type, title, message, metadata = {}) => {
   try {
+    const Notification = await getNotificationModel();
     const notification = new Notification({
       type,
       title,

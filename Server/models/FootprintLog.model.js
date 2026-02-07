@@ -57,7 +57,7 @@ const FootprintLogSchema = new Schema(
     metadata: { type: Schema.Types.Mixed },
     notes: { type: String },
     project: { type: Schema.Types.ObjectId, ref: "Project" },
-    community: { type: Schema.Types.ObjectId, ref: "Community" },
+    community: { type: Schema.Types.ObjectId, ref: "Group" },
     selectedDate: { type: Date }, // User's selected date for the activity
     quantity: { type: Number }, // Quantity of the activity
     details: { type: Schema.Types.Mixed }, // Additional activity details

@@ -10,7 +10,7 @@ import { getEventModel } from '../models/Event.model.js';
 import { getChallengeModel } from '../models/Challenge.model.js';
 import { getGroupModel } from '../models/Group.model.js';
 import { getProjectModel } from '../models/Project.model.js';
-import { registerProjectOnChain, setAutoRetireBps, setProjectAutoRetireBps } from '../services/blockchain.service.js';
+import { registerProjectOnChain, getProjectOnChain, setAutoRetireBps, setProjectAutoRetireBps } from '../services/blockchain.service.js';
 
 /**
  * Admin login handler
@@ -309,9 +309,7 @@ export const getDashboardStats = asyncHandler(async (req, res) => {
     // Community statistics
     const totalChallenges = await Challenge.countDocuments();
     const activeChallenges = await Challenge.countDocuments({ 
-      status: 'active',
-      startDate: { $lte: today },
-      endDate: { $gte: today }
+      active: true
     });
     const totalEvents = await Event.countDocuments();
     const upcomingEvents = await Event.countDocuments({ 
@@ -643,7 +641,7 @@ export const createProjectAdmin = asyncHandler(async (req, res) => {
     type: body.type,
     region: body.region || 'unknown',
     description: body.description || '',
-    image: body.image || '',
+    image: body.image ? { url: body.image, uploadedAt: new Date() } : undefined,
     status: (body.status === 'active') ? 'active' : (body.status === 'rejected' ? 'on-hold' : 'planned'),
     fundingGoal: body.totalFunding != null ? Number(body.totalFunding) : (body.fundingGoal != null ? Number(body.fundingGoal) : 0),
     currentFunding: body.currentFunding != null ? Number(body.currentFunding) : 0,
@@ -791,7 +789,7 @@ export const updateProjectAdmin = asyncHandler(async (req, res) => {
   if (body.type !== undefined) updates.type = body.type;
   if (body.region !== undefined) updates.region = body.region || 'unknown';
   if (body.description !== undefined) updates.description = body.description;
-  if (body.image !== undefined) updates.image = body.image;
+  if (body.image !== undefined) updates.image = body.image ? { url: body.image, uploadedAt: new Date() } : undefined;
   if (body.status !== undefined) updates.status = (body.status === 'active') ? 'active' : (body.status === 'rejected' ? 'on-hold' : 'planned');
   if (body.totalFunding !== undefined) updates.fundingGoal = Number(body.totalFunding);
   if (body.fundingGoal !== undefined) updates.fundingGoal = Number(body.fundingGoal);

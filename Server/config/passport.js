@@ -14,6 +14,11 @@ passport.use(new GoogleStrategy({
   try {
     // Get user model from proper database connection
     const User = await getUserModel();
+    
+    // Guard: Google may not return emails for certain account types
+    if (!profile.emails || !profile.emails.length) {
+      return done(new Error('No email address returned from Google. Please ensure your Google account has a verified email.'), null);
+    }
     const email = profile.emails[0].value;
     
     // First, check if user exists with this Google ID

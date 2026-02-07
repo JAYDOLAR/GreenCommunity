@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { getConnection } from '../config/databases.js';
 
 const reportSchema = new mongoose.Schema({
   name: {
@@ -54,4 +55,12 @@ const reportSchema = new mongoose.Schema({
 reportSchema.index({ lastGenerated: -1 });
 reportSchema.index({ type: 1, status: 1 });
 
-export default mongoose.model('Report', reportSchema);
+const getReportModel = async () => {
+  const conn = await getConnection('ANALYTICS_DB');
+  return conn.model('Report', reportSchema);
+};
+
+const Report = mongoose.models.Report || mongoose.model('Report', reportSchema);
+
+export { getReportModel };
+export default Report;

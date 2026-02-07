@@ -52,17 +52,17 @@ export const getConnection = async (dbName) => {
   }
 
   try {
-    const connection = await mongoose.createConnection(process.env.MONGO_URI, {
+    const connection = mongoose.createConnection(process.env.MONGO_URI, {
       dbName: dbFullName,
       maxPoolSize: 5,
       minPoolSize: 1,
       maxIdleTimeMS: 30000,
-      serverSelectionTimeoutMS: 10000,
+      serverSelectionTimeoutMS: 5000,
       socketTimeoutMS: 45000,
-      family: 4, // Force IPv4 — avoids DNS SRV resolution issues on macOS
-      retryWrites: true,
-      retryReads: true,
     });
+
+    // Wait for the connection to actually be established
+    await connection.asPromise();
 
     connections[dbFullName] = connection;
     console.log(`✅ MongoDB connected to ${dbFullName}`);
@@ -96,14 +96,11 @@ export const connectAllDatabases = async () => {
     // First, connect mongoose default connection to auth database
     await mongoose.connect(process.env.MONGO_URI, {
       dbName: DB_CONFIG.AUTH_DB,
-      maxPoolSize: 5,
+      maxPoolSize: 5, // Consistent with other connections
       minPoolSize: 1,
       maxIdleTimeMS: 30000,
-      serverSelectionTimeoutMS: 10000,
+      serverSelectionTimeoutMS: 5000,
       socketTimeoutMS: 45000,
-      family: 4, // Force IPv4 — avoids DNS SRV resolution issues on macOS
-      retryWrites: true,
-      retryReads: true,
     });
     console.log(`✅ Default connection established to ${DB_CONFIG.AUTH_DB}`);
 
@@ -131,6 +128,9 @@ export const connectAllDatabases = async () => {
     // Connect to AI database
     await getConnection('AI_DB');
 
+    // Connect to projects database (for projects, certificates, etc.)
+    await getConnection('PROJECTS_DB');
+
     console.log('🎉 All databases connected successfully');
   } catch (error) {
     console.error('❌ Failed to connect to databases:', error);
@@ -145,6 +145,8 @@ export const closeAllConnections = async () => {
   try {
     const closePromises = Object.values(connections).map(conn => conn.close());
     await Promise.all(closePromises);
+    // Also close the default mongoose connection
+    await mongoose.disconnect();
     console.log('🔒 All database connections closed');
   } catch (error) {
     console.error('❌ Error closing database connections:', error);

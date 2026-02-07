@@ -508,10 +508,34 @@ export const updatePassword = asyncHandler(async (req, res) => {
     return res.status(400).json({ errors: errors.array() });
   }
 
-  const { newPassword } = req.body;
+  const { currentPassword, newPassword } = req.body;
 
   const User = await getUserModel();
-  const user = await User.findById(req.user.id);
+  const user = await User.findById(req.user.id).select('+password');
+
+  if (!user) {
+    return res.status(404).json({ message: 'User not found' });
+  }
+
+  // Google-only users may not have a password set
+  if (!user.password && user.googleId) {
+    return res.status(400).json({ 
+      message: 'Password cannot be changed for Google-only accounts. Please set a password first via "Forgot Password".',
+      code: 'GOOGLE_NO_PASSWORD'
+    });
+  }
+
+  // Verify current password
+  const isMatch = await user.comparePassword(currentPassword);
+  if (!isMatch) {
+    return res.status(401).json({ message: 'Current password is incorrect' });
+  }
+
+  // Prevent reuse of the same password
+  const isSame = await user.comparePassword(newPassword);
+  if (isSame) {
+    return res.status(400).json({ message: 'New password must be different from current password' });
+  }
 
   user.password = newPassword; // Will be hashed by pre-save middleware
   await user.save();
@@ -1461,8 +1485,8 @@ export const deleteUserAccount = asyncHandler(async (req, res) => {
     await Promise.all([
       User.findByIdAndDelete(req.user._id),
       UserInfo.deleteMany({ userId: req.user._id }),
-      FootprintLog.deleteMany({ userId: req.user._id }),
-      Order.deleteMany({ userId: req.user._id }),
+      FootprintLog.deleteMany({ user: req.user._id }),
+      Order.deleteMany({ buyer_id: req.user._id }),
       UserChallenge.deleteMany({ userId: req.user._id }),
       UserPoints.deleteMany({ userId: req.user._id }),
       ChatSession.deleteMany({ userId: req.user._id })

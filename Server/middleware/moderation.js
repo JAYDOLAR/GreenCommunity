@@ -17,7 +17,10 @@ export function moderatePrompt(req, res, next) {
     }
     next();
   } catch (e) {
-    next();
+    console.error('Moderation middleware error:', e.message);
+    // Fail closed — block the request rather than letting it through on error
+    return res.status(500).json({ error: 'Content moderation check failed. Please try again.' });
+  }
   }
 }
 

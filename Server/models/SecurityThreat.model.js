@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { getConnection } from '../config/databases.js';
 
 const securityThreatSchema = new mongoose.Schema({
   type: {
@@ -41,6 +42,12 @@ const securityThreatSchema = new mongoose.Schema({
   timestamps: true
 });
 
-const SecurityThreat = mongoose.model('SecurityThreat', securityThreatSchema);
+const getSecurityThreatModel = async () => {
+  const conn = await getConnection('MAIN_DB');
+  return conn.model('SecurityThreat', securityThreatSchema);
+};
 
+const SecurityThreat = mongoose.models.SecurityThreat || mongoose.model('SecurityThreat', securityThreatSchema);
+
+export { getSecurityThreatModel };
 export default SecurityThreat;

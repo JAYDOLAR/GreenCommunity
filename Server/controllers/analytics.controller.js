@@ -1,7 +1,7 @@
 import { getUserModel } from '../models/User.model.js';
-import Project from '../models/Project.model.js';
-import Order from '../models/Order.model.js';
-import FootprintLog from '../models/FootprintLog.model.js';
+import { getProjectModel } from '../models/Project.model.js';
+import { getOrderModel } from '../models/Order.model.js';
+import { getFootprintLogModel } from '../models/FootprintLog.model.js';
 
 /**
  * Get analytics metrics for admin dashboard
@@ -9,8 +9,10 @@ import FootprintLog from '../models/FootprintLog.model.js';
  */
 export const getAnalyticsMetrics = async (req, res) => {
   try {
-    // Get User model from proper database connection
+    // Get models from proper database connections
     const User = await getUserModel();
+    const Project = await getProjectModel();
+    const Order = await getOrderModel();
     
     const { timeRange = '30d', month, year } = req.query;
 
@@ -86,14 +88,14 @@ export const getAnalyticsMetrics = async (req, res) => {
     const revenueData = await Order.aggregate([
       {
         $match: {
-          createdAt: { $gte: startDate, $lte: endDate },
-          status: { $in: ['completed', 'delivered'] }
+          created_at: { $gte: startDate, $lte: endDate },
+          order_status: { $in: ['confirmed', 'processing', 'shipped', 'delivered'] }
         }
       },
       {
         $group: {
           _id: null,
-          total: { $sum: '$totalPrice' }
+          total: { $sum: '$pricing.total' }
         }
       }
     ]);
@@ -104,14 +106,14 @@ export const getAnalyticsMetrics = async (req, res) => {
     const previousRevenue = await Order.aggregate([
       {
         $match: {
-          createdAt: { $gte: previousStart, $lt: startDate },
-          status: { $in: ['completed', 'delivered'] }
+          created_at: { $gte: previousStart, $lt: startDate },
+          order_status: { $in: ['confirmed', 'processing', 'shipped', 'delivered'] }
         }
       },
       {
         $group: {
           _id: null,
-          total: { $sum: '$totalPrice' }
+          total: { $sum: '$pricing.total' }
         }
       }
     ]);
@@ -125,14 +127,14 @@ export const getAnalyticsMetrics = async (req, res) => {
     const revenueTrendData = await Order.aggregate([
       {
         $match: {
-          createdAt: { $gte: new Date(now.getFullYear(), 0, 1) },
-          status: { $in: ['completed', 'delivered'] }
+          created_at: { $gte: new Date(now.getFullYear(), 0, 1) },
+          order_status: { $in: ['confirmed', 'processing', 'shipped', 'delivered'] }
         }
       },
       {
         $group: {
-          _id: { $month: '$createdAt' },
-          total: { $sum: '$totalPrice' }
+          _id: { $month: '$created_at' },
+          total: { $sum: '$pricing.total' }
         }
       },
       { $sort: { '_id': 1 } }
@@ -183,13 +185,13 @@ export const getAnalyticsMetrics = async (req, res) => {
       {
         $match: {
           status: 'active',
-          'metrics.carbonOffset': { $exists: true }
+          'impact.carbonOffset': { $exists: true }
         }
       },
       {
         $group: {
           _id: null,
-          total: { $sum: '$metrics.carbonOffset' }
+          total: { $sum: '$impact.carbonOffset' }
         }
       }
     ]);
@@ -204,22 +206,21 @@ export const getAnalyticsMetrics = async (req, res) => {
 
     // Get top projects by carbon offset
     const topProjects = await Project.find({ status: 'active' })
-      .sort({ 'metrics.carbonOffset': -1 })
+      .sort({ 'impact.carbonOffset': -1 })
       .limit(5)
-      .select('name metrics.carbonOffset funding.currentAmount funding.targetAmount createdAt')
+      .select('name impact.carbonOffset currentFunding fundingGoal created_at')
       .lean();
 
     const formattedTopProjects = topProjects.map(project => {
-      // Count unique contributors (from orders)
-      const fundingPercentage = project.funding?.targetAmount > 0
-        ? (project.funding.currentAmount / project.funding.targetAmount) * 100
+      const fundingPercentage = project.fundingGoal > 0
+        ? (project.currentFunding / project.fundingGoal) * 100
         : 0;
 
       return {
         name: project.name,
-        carbonOffset: project.metrics?.carbonOffset || 0,
+        carbonOffset: project.impact?.carbonOffset || 0,
         funding: Math.round(fundingPercentage),
-        contributors: 0, // Would need to aggregate from orders
+        contributors: project.contributors || 0,
         growth: 0 // Would need historical data
       };
     });
@@ -305,6 +306,9 @@ export const getAnalyticsMetrics = async (req, res) => {
 export const getGlobalStats = async (req, res) => {
   try {
     const User = await getUserModel();
+    const Project = await getProjectModel();
+    const Order = await getOrderModel();
+    const FootprintLog = await getFootprintLogModel();
     
     // Get total users
     const totalUsers = await User.countDocuments();
@@ -329,7 +333,7 @@ export const getGlobalStats = async (req, res) => {
       { 
         $group: { 
           _id: null, 
-          totalCarbonOffset: { $sum: '$metrics.carbonOffset' },
+          totalCarbonOffset: { $sum: '$impact.carbonOffset' },
           totalProjects: { $sum: 1 }
         } 
       }
@@ -342,7 +346,7 @@ export const getGlobalStats = async (req, res) => {
     const reductionStats = await FootprintLog.aggregate([
       {
         $group: {
-          _id: '$userId',
+          _id: '$user',
           totalEmissions: { $sum: '$emission' }
         }
       },
@@ -364,11 +368,11 @@ export const getGlobalStats = async (req, res) => {
     
     // Get total community contributions
     const orderStats = await Order.aggregate([
-      { $match: { status: { $in: ['completed', 'delivered'] } } },
+      { $match: { order_status: { $in: ['confirmed', 'processing', 'shipped', 'delivered'] } } },
       { 
         $group: { 
           _id: null, 
-          totalContributions: { $sum: '$totalPrice' },
+          totalContributions: { $sum: '$pricing.total' },
           totalOrders: { $sum: 1 }
         } 
       }

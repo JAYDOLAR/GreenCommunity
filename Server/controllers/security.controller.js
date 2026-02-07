@@ -1,11 +1,12 @@
-import SecurityThreat from '../models/SecurityThreat.model.js';
-import SecurityLog from '../models/SecurityLog.model.js';
+import { getSecurityThreatModel } from '../models/SecurityThreat.model.js';
+import { getSecurityLogModel } from '../models/SecurityLog.model.js';
 
 /**
  * Get security threats
  */
 export const getSecurityThreats = async (req, res) => {
   try {
+    const SecurityThreat = await getSecurityThreatModel();
     const { status, severity, limit = 50 } = req.query;
 
     const query = {};
@@ -49,6 +50,7 @@ export const getSecurityThreats = async (req, res) => {
  */
 export const getSecurityLogs = async (req, res) => {
   try {
+    const SecurityLog = await getSecurityLogModel();
     const { action, status, userId, limit = 100 } = req.query;
 
     const query = {};
@@ -92,6 +94,7 @@ export const getSecurityLogs = async (req, res) => {
  */
 export const createSecurityThreat = async (req, res) => {
   try {
+    const SecurityThreat = await getSecurityThreatModel();
     const { type, severity, description, ipAddress, user, location, userAgent, metadata } = req.body;
 
     const threat = new SecurityThreat({
@@ -126,6 +129,7 @@ export const createSecurityThreat = async (req, res) => {
  */
 export const createSecurityLog = async (req, res) => {
   try {
+    const SecurityLog = await getSecurityLogModel();
     const { user, userId, action, ipAddress, userAgent, status, location, metadata } = req.body;
 
     const log = new SecurityLog({
@@ -160,6 +164,7 @@ export const createSecurityLog = async (req, res) => {
  */
 export const updateSecurityThreat = async (req, res) => {
   try {
+    const SecurityThreat = await getSecurityThreatModel();
     const { id } = req.query;
     const { status } = req.body;
 

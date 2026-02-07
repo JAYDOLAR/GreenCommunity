@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { getConnection } from '../config/databases.js';
 
 const securityLogSchema = new mongoose.Schema({
   user: {
@@ -61,6 +62,12 @@ securityLogSchema.index({ createdAt: -1 });
 securityLogSchema.index({ userId: 1 });
 securityLogSchema.index({ action: 1 });
 
-const SecurityLog = mongoose.model('SecurityLog', securityLogSchema);
+const getSecurityLogModel = async () => {
+  const conn = await getConnection('MAIN_DB');
+  return conn.model('SecurityLog', securityLogSchema);
+};
 
+const SecurityLog = mongoose.models.SecurityLog || mongoose.model('SecurityLog', securityLogSchema);
+
+export { getSecurityLogModel };
 export default SecurityLog;

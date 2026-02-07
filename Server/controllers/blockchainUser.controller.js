@@ -4,7 +4,6 @@ import asyncHandler from '../utils/asyncHandler.js';
 import { getProjectOnChain, getCertificate, getProvider, grantFiatCredits } from '../services/blockchain.service.js';
 import { buildAndPinCertificateMetadata } from '../services/certificateMetadata.service.js';
 import { getFiatReceiptModel } from '../models/FiatReceipt.model.js';
-import { getProjectModel as getProjectModelDup } from '../models/Project.model.js'; // duplicate import safeguard (legacy)
 import { ethers } from 'ethers';
 import crypto from 'crypto';
 
