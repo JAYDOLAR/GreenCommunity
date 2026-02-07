@@ -597,7 +597,7 @@ const ProjectsPage = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{projects.length}</div>
-            <p className="text-xs text-muted-foreground">+3 this month</p>
+            <p className="text-xs text-muted-foreground">All projects</p>
           </CardContent>
         </Card>
 
@@ -612,7 +612,7 @@ const ProjectsPage = () => {
             <div className="text-2xl font-bold">
               {projects.filter((p) => p.status === "active").length}
             </div>
-            <p className="text-xs text-muted-foreground">75% of total</p>
+            <p className="text-xs text-muted-foreground">{projects.length > 0 ? Math.round((projects.filter(p => p.status === 'active').length / projects.length) * 100) : 0}% of total</p>
           </CardContent>
         </Card>
 

@@ -673,6 +673,39 @@ export const updateProject = asyncHandler(async (req, res) => {
   }
 });
 
+// Delete project (admin) with Cloudinary image cleanup
+export const deleteProject = asyncHandler(async (req, res) => {
+  try {
+    const Project = await getProjectModel();
+    const { id } = req.params;
+
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ success: false, message: 'Invalid project ID' });
+    }
+
+    const project = await Project.findById(id);
+    if (!project) {
+      return res.status(404).json({ success: false, message: 'Project not found' });
+    }
+
+    // Delete image from Cloudinary if exists
+    if (project.image?.publicId) {
+      try {
+        await deleteImage(project.image.publicId);
+        console.log('Project image deleted from Cloudinary');
+      } catch (deleteError) {
+        console.error('Error deleting project image:', deleteError);
+      }
+    }
+
+    await Project.findByIdAndDelete(id);
+    res.status(200).json({ success: true, message: 'Project deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting project:', error);
+    res.status(500).json({ success: false, message: 'Failed to delete project', error: error.message });
+  }
+});
+
 // Record a verified fiat payment and increment project funding
 export const fundProject = asyncHandler(async (req, res) => {
   const { id } = req.params;

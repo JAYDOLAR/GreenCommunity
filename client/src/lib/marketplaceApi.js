@@ -327,11 +327,12 @@ export const marketplaceApi = {
         formData.append('shipping', JSON.stringify(productData.shipping));
       }
 
+      const token = localStorage.getItem('adminToken') || localStorage.getItem('token');
       const response = await fetch(`${API_BASE_URL}/api/marketplace/products`, {
         method: 'POST',
         headers: {
           // Don't set Content-Type - browser will set it with boundary for FormData
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         },
         credentials: 'include',
         body: formData
@@ -382,10 +383,11 @@ export const marketplaceApi = {
         }
       });
 
+      const token = localStorage.getItem('adminToken') || localStorage.getItem('token');
       const response = await fetch(`${API_BASE_URL}/api/marketplace/products/${productId}`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         },
         credentials: 'include',
         body: formData

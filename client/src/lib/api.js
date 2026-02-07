@@ -9,8 +9,10 @@ export const API_BASE_URL = (() => {
 const apiRequest = async (endpoint, options = {}) => {
   const url = `${apiFallbackManager.getCurrentBaseUrl()}${endpoint}`;
   
-  // Get token from localStorage
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  // Get token from localStorage — prefer adminToken for admin operations
+  const token = typeof window !== 'undefined'
+    ? (localStorage.getItem('adminToken') || localStorage.getItem('token'))
+    : null;
   
   const config = {
     headers: {

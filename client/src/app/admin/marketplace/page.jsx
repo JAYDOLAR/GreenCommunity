@@ -38,7 +38,6 @@ import {
 } from 'lucide-react';
 
 const MarketplacePage = () => {
-  const STATUS_OVERRIDES_KEY = 'admin_marketplace_status_overrides';
   const router = useRouter();
   const { formatPrice, getSymbol } = useCurrency();
   const formatINR = (amount) => formatPrice(amount, 'INR');
@@ -95,25 +94,11 @@ const MarketplacePage = () => {
     return matchesSearch && matchesStatus;
   });
 
-  const applyStatusOverrides = (list) => {
-    try {
-      const raw = localStorage.getItem(STATUS_OVERRIDES_KEY);
-      if (!raw) return list;
-      const overrides = JSON.parse(raw || '{}');
-      return list.map(p => {
-        const pid = p.id || p._id;
-        return overrides[pid] ? { ...p, status: overrides[pid] } : p;
-      });
-    } catch {
-      return list;
-    }
-  };
-
   const fetchMarketplaceData = async () => {
     try {
       const result = await marketplaceApi.getProducts({ page: 1, limit: 1000, inStock: true });
       const list = result?.data?.products || [];
-      setProducts(applyStatusOverrides(list));
+      setProducts(list);
       setOrders([]);
     } catch (error) {
       console.error('Failed to fetch marketplace data:', error);

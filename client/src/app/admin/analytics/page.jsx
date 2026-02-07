@@ -377,41 +377,39 @@ const AnalyticsPage = () => {
   };
 
   const renderUserChart = (chartType) => {
-    // Generate data for full year or specific month
+    // Use real data from the API metrics
+    const monthlyData = metrics.users.data || [];
     const data = [];
     
     if (userChartMonth === -1) {
-      // Show full year data
+      // Show full year data from API
       for (let month = 0; month < 12; month++) {
         const monthName = months[month].label;
-        const baseValue = 100 + (month * 50) + (userChartYear - 2023) * 100;
-        // Use deterministic variation based on month and year instead of Math.random()
-        const variation = 0.85 + ((month + userChartYear) % 10) * 0.03;
-        const users = Math.floor(baseValue * variation);
-        
         data.push({
           month: monthName,
           monthNum: month,
-          users: users,
-          growth: month > 0 ? 5 + ((month + userChartYear) % 15) : 0
+          users: monthlyData[month] || 0,
+          growth: month > 0 && monthlyData[month - 1] > 0
+            ? Math.round(((monthlyData[month] - monthlyData[month - 1]) / monthlyData[month - 1]) * 100)
+            : 0
         });
       }
     } else {
-      // Show specific month data (daily)
+      // For a specific month, show the single month value as a summary
       const selectedMonthName = months.find(m => m.value === userChartMonth)?.label || 'January';
+      const value = monthlyData[userChartMonth] || 0;
       const daysInMonth = new Date(userChartYear, userChartMonth + 1, 0).getDate();
       
+      // Distribute the monthly total across days (approximation since we only have monthly aggregates)
+      const dailyAvg = value / daysInMonth;
       for (let day = 1; day <= daysInMonth; day++) {
-        const baseValue = 100 + (userChartMonth * 50) + (day * 2);
-        // Use deterministic variation based on day, month and year
-        const variation = 0.85 + ((day + userChartMonth + userChartYear) % 10) * 0.03;
-        const users = Math.floor(baseValue * variation);
-        
+        // Create a slight variation around the average for visual interest
+        const dayValue = Math.max(0, Math.round(dailyAvg + (dailyAvg * 0.3 * Math.sin(day * 0.5))));
         data.push({
           day: day,
           month: selectedMonthName,
-          users: users,
-          growth: day > 1 ? 5 + ((day + userChartMonth + userChartYear) % 15) : 0
+          users: dayValue,
+          growth: 0
         });
       }
     }
@@ -529,41 +527,38 @@ const AnalyticsPage = () => {
   };
 
   const renderRevenueChart = (chartType) => {
-    // Generate revenue data for full year or specific month
+    // Use real data from the API metrics
+    const monthlyData = metrics.revenue.data || [];
     const data = [];
     
     if (revenueChartMonth === -1) {
-      // Show full year data
+      // Show full year data from API
       for (let month = 0; month < 12; month++) {
         const monthName = months[month].label;
-        const baseValue = 50000 + (month * 10000) + (revenueChartYear - 2023) * 50000;
-        // Use deterministic variation based on month and year instead of Math.random()
-        const variation = 0.8 + ((month + revenueChartYear) % 10) * 0.04;
-        const revenue = Math.floor(baseValue * variation);
-        
+        const value = monthlyData[month] || 0;
         data.push({
           month: monthName,
           monthNum: month,
-          revenue: revenue / 1000, // Convert to thousands for display
-          growth: month > 0 ? 10 + ((month + revenueChartYear) % 20) : 0
+          revenue: Math.round(value / 1000 * 10) / 10, // Convert to thousands for display
+          growth: month > 0 && monthlyData[month - 1] > 0
+            ? Math.round(((monthlyData[month] - monthlyData[month - 1]) / monthlyData[month - 1]) * 100)
+            : 0
         });
       }
     } else {
-      // Show specific month data (daily)
+      // For a specific month, distribute the monthly total across days
       const selectedMonthName = months.find(m => m.value === revenueChartMonth)?.label || 'January';
       const daysInMonth = new Date(revenueChartYear, revenueChartMonth + 1, 0).getDate();
+      const monthValue = monthlyData[revenueChartMonth] || 0;
+      const dailyAvg = monthValue / daysInMonth;
       
       for (let day = 1; day <= daysInMonth; day++) {
-        const baseValue = 50000 + (revenueChartMonth * 10000) + (day * 500);
-        // Use deterministic variation based on day, month and year
-        const variation = 0.8 + ((day + revenueChartMonth + revenueChartYear) % 10) * 0.04;
-        const revenue = Math.floor(baseValue * variation);
-        
+        const dayValue = Math.max(0, dailyAvg + (dailyAvg * 0.3 * Math.sin(day * 0.7)));
         data.push({
           day: day,
           month: selectedMonthName,
-          revenue: revenue / 1000, // Convert to thousands for display
-          growth: day > 1 ? 10 + ((day + revenueChartMonth + revenueChartYear) % 20) : 0
+          revenue: Math.round(dayValue / 1000 * 10) / 10,
+          growth: 0
         });
       }
     }
@@ -1101,7 +1096,7 @@ const AnalyticsPage = () => {
                     <td className="py-2 px-2">
                       <div className="flex justify-end">
                         <Badge variant="secondary" className="text-[10px] sm:text-xs">
-                          +{Math.floor(Math.random() * 20 + 5)}%
+                          {day.activeUsers > 0 ? `+${Math.round((day.newUsers / day.activeUsers) * 100)}%` : 'N/A'}
                         </Badge>
                       </div>
                     </td>
@@ -1120,60 +1115,8 @@ const AnalyticsPage = () => {
           <CardDescription>User and project distribution by region</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-4 border rounded-lg">
-              <h4 className="font-medium mb-2">North America</h4>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span>Users</span>
-                  <span>45%</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Projects</span>
-                  <span>38%</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Revenue</span>
-                  <span>52%</span>
-                </div>
-              </div>
-            </div>
-            
-            <div className="p-4 border rounded-lg">
-              <h4 className="font-medium mb-2">Europe</h4>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span>Users</span>
-                  <span>32%</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Projects</span>
-                  <span>28%</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Revenue</span>
-                  <span>35%</span>
-                </div>
-              </div>
-            </div>
-            
-            <div className="p-4 border rounded-lg">
-              <h4 className="font-medium mb-2">Asia Pacific</h4>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span>Users</span>
-                  <span>23%</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Projects</span>
-                  <span>34%</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Revenue</span>
-                  <span>13%</span>
-                </div>
-              </div>
-            </div>
+          <div className="flex items-center justify-center py-8 text-muted-foreground">
+            <p className="text-sm">Geographic distribution data is not yet available. This section will populate once location tracking is enabled.</p>
           </div>
         </CardContent>
       </Card>

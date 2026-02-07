@@ -10,6 +10,7 @@ import {
   getNearbyWorkingProjects,
   createProject,
   updateProject,
+  deleteProject,
   fundProject,
 } from "../controllers/projects.controller.js";
 import {
@@ -61,6 +62,11 @@ router.put(
   authenticateAdmin,
   uploadProjectImage.single("image"),
   updateProject
+);
+router.delete(
+  "/:id",
+  authenticateAdmin,
+  deleteProject
 );
 
 // Admin blockchain actions

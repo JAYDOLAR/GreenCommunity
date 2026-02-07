@@ -298,10 +298,11 @@ export const projectsApi = {
         formData.append('documents', JSON.stringify(projectData.documents));
       }
 
+      const token = localStorage.getItem('adminToken') || localStorage.getItem('token');
       const response = await fetch(`${API_BASE_URL}/api/projects`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         },
         credentials: 'include',
         body: formData
@@ -346,10 +347,11 @@ export const projectsApi = {
         }
       });
 
+      const token = localStorage.getItem('adminToken') || localStorage.getItem('token');
       const response = await fetch(`${API_BASE_URL}/api/projects/${projectId}`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         },
         credentials: 'include',
         body: formData
