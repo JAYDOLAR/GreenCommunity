@@ -37,6 +37,8 @@ import {
 } from "lucide-react";
 import AuthGuard from "@/components/AuthGuard";
 import Layout from "@/components/Layout";
+import BuyCreditsButton from "@/components/BuyCreditsButton";
+import { useWallet } from "@/context/WalletContext";
 
 const ProjectDetailContent = ({ params }) => {
   const router = useRouter();
@@ -521,6 +523,43 @@ const ProjectDetailContent = ({ params }) => {
               <h3 className="font-semibold text-foreground mb-2">
                 Make a Contribution
               </h3>
+              
+              {/* Blockchain Carbon Credits Section */}
+              {project.blockchain?.projectId && (
+                <div className="mb-6 p-4 bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                    <h4 className="font-semibold text-green-800">🌱 Blockchain Carbon Credits Available</h4>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 text-sm mb-4">
+                    <div>
+                      <span className="text-gray-600">Credits Available:</span>
+                      <div className="font-mono font-bold text-green-700">
+                        {((project.blockchain.totalCredits || 0) - (project.blockchain.soldCredits || 0)).toLocaleString()}
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Price per Credit:</span>
+                      <div className="font-mono font-bold text-green-700">
+                        {project.blockchain.pricePerCreditWei ? 
+                          `${(parseFloat(project.blockchain.pricePerCreditWei) / 1e18).toFixed(4)} ETH` : 
+                          'Loading...'
+                        }
+                      </div>
+                    </div>
+                  </div>
+                  <BuyCreditsButton 
+                    projectMongoId={project._id}
+                    projectIdOnChain={project.blockchain.projectId}
+                    pricePerCreditWei={project.blockchain.pricePerCreditWei || '10000000000000000'}
+                  />
+                  <p className="text-xs text-gray-600 mt-2">
+                    💡 Blockchain credits provide transparent, verifiable carbon offsets with automatic NFT certificates upon retirement.
+                  </p>
+                </div>
+              )}
+              
+              {/* Traditional INR Funding */}
               <div className="space-y-4">
                 <div>
                   <Label className="text-sm">
