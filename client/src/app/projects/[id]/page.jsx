@@ -37,6 +37,8 @@ import {
   Cpu,
   Eye,
   DollarSign,
+  Sprout,
+  Lightbulb,
 } from "lucide-react";
 import AuthGuard from "@/components/AuthGuard";
 import Layout from "@/components/Layout";
@@ -568,7 +570,7 @@ const ProjectDetailContent = ({ params }) => {
                 <CardHeader className="pb-3">
                   <CardTitle className="text-lg flex items-center gap-2">
                     <Cpu className="h-5 w-5 text-green-600" />
-                    🌱 Blockchain Carbon Credits Available
+                    <Sprout className="h-5 w-5 text-green-600" /> Blockchain Carbon Credits Available
                   </CardTitle>
                   <p className="text-sm text-green-600">Purchase verified carbon offset credits directly with crypto</p>
                 </CardHeader>
@@ -611,8 +613,8 @@ const ProjectDetailContent = ({ params }) => {
                   </div>
                   
                   <div className="p-3 bg-blue-50 rounded-lg">
-                    <p className="text-xs text-blue-700">
-                      💡 These carbon credits are tokenized on Ethereum (Sepolia testnet) as ERC1155 tokens. 
+                    <p className="text-xs text-blue-700 flex items-start gap-1">
+                      <Lightbulb className="h-4 w-4 mt-0.5 shrink-0" /> These carbon credits are tokenized on Ethereum (Sepolia testnet) as ERC1155 tokens. 
                       When you retire credits, you'll receive an NFT certificate as permanent proof of offset.
                     </p>
                   </div>

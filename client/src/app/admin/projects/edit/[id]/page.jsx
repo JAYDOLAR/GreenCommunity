@@ -145,30 +145,31 @@ const EditProjectPage = () => {
 
   const handleRegisterBlockchain = async () => {
     if (!fullProject?._id) return;
-    
-    const totalCredits = prompt('Enter total carbon credits available:');
-    const priceWei = prompt('Enter price per credit in Wei (e.g. 10000000000000000 for 0.01 ETH):');
-    
-    if (!totalCredits || !priceWei) return;
-    
-    // Validate inputs
-    if (isNaN(parseInt(totalCredits)) || parseInt(totalCredits) <= 0) {
-      alert('Total credits must be a positive number');
+
+    // Auto-compute credits from carbonOffsetTarget (1 credit per 1000 kg)
+    const carbonTarget = fullProject.carbonOffsetTarget || parseInt(project.carbonOffsetTarget) || 0;
+    const autoCredits = Math.floor(carbonTarget / 1000);
+
+    if (autoCredits <= 0) {
+      alert('Cannot register: Carbon Offset Target must be set (min 1000 kg = 1 credit).\n\nPlease set the Carbon Offset Target field above and save first.');
       return;
     }
-    
-    if (isNaN(priceWei) || priceWei <= 0) {
-      alert('Price must be a positive number in Wei');
-      return;
-    }
-    
+
+    const confirmed = confirm(
+      `Register project on Sepolia blockchain?\n\n` +
+      `Project: ${fullProject.name || project.name}\n` +
+      `Carbon Offset Target: ${carbonTarget.toLocaleString()} kg\n` +
+      `Credits to mint: ${autoCredits.toLocaleString()} (1 per ton CO₂)\n` +
+      `Price: 0.01 ETH per credit\n` +
+      `Metadata will be pinned to IPFS automatically\n\n` +
+      `Proceed?`
+    );
+    if (!confirmed) return;
+
     try {
       setSyncingBlockchain(true);
-      await blockchainApi.approveRegisterProject(fullProject._id, {
-        totalCredits: parseInt(totalCredits),
-        pricePerCreditWei: priceWei.toString(), // Ensure it's a string
-        metadataURI: `https://green-community.app/api/projects/metadata/${fullProject._id}`
-      });
+      // Server auto-computes credits from carbonOffsetTarget and auto-pins IPFS
+      await blockchainApi.approveRegisterProject(fullProject._id, {});
       
       // Refresh project data
       const res = await projectsApi.getProjectById(id);

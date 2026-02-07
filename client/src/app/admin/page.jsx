@@ -57,14 +57,14 @@ const AdminDashboard = () => {
       const statsUrl = `${API_BASE}/api/admin/dashboard/stats`;
       const activitiesUrl = `${API_BASE}/api/admin/dashboard/activities`;
 
-      console.log('🔍 Fetching dashboard data from:', statsUrl);
+      console.log('[FETCH] Fetching dashboard data from:', statsUrl);
 
       const headers = {
         'Content-Type': 'application/json'
       };
       if (adminToken) {
         headers['Authorization'] = `Bearer ${adminToken}`;
-        console.log('🔑 Using admin token for authentication');
+        console.log('[AUTH] Using admin token for authentication');
       }
 
       // Fetch dashboard stats
@@ -74,10 +74,10 @@ const AdminDashboard = () => {
         credentials: 'include'
       });
 
-      console.log('📊 Stats response status:', statsResponse.status);
+      console.log('[STATS] Stats response status:', statsResponse.status);
 
       if (statsResponse.status === 401 || statsResponse.status === 403) {
-        console.warn('⚠️ Admin auth failed with status', statsResponse.status);
+        console.warn('[WARN] Admin auth failed with status', statsResponse.status);
         if (typeof window !== 'undefined') {
           localStorage.removeItem('adminToken');
           localStorage.removeItem('adminAuthenticated');
@@ -92,51 +92,51 @@ const AdminDashboard = () => {
 
       if (statsResponse.ok) {
         const statsData = await statsResponse.json();
-        console.log('✅ Raw stats data received:', statsData);
+        console.log('[OK] Raw stats data received:', statsData);
         
         if (statsData.success && statsData.stats) {
-          console.log('✅ Dashboard stats loaded successfully:', statsData.stats);
+          console.log('[OK] Dashboard stats loaded successfully:', statsData.stats);
           setDashboardStats(statsData.stats);
         } else {
-          console.warn('⚠️ Invalid stats response format:', statsData);
+          console.warn('[WARN] Invalid stats response format:', statsData);
         }
       } else {
-        console.error('❌ Stats API error:', statsResponse.status, statsResponse.statusText);
+        console.error('[ERROR] Stats API error:', statsResponse.status, statsResponse.statusText);
         const errorText = await statsResponse.text();
-        console.error('❌ Error details:', errorText);
+        console.error('[ERROR] Error details:', errorText);
       }
 
       // Fetch recent activities
-      console.log('🔍 Fetching activities from:', activitiesUrl);
+      console.log('[FETCH] Fetching activities from:', activitiesUrl);
       const activitiesResponse = await fetch(activitiesUrl, {
         method: 'GET',
         headers,
         credentials: 'include'
       });
 
-      console.log('📋 Activities response status:', activitiesResponse.status);
+      console.log('[ACTIVITIES] Activities response status:', activitiesResponse.status);
 
       if (activitiesResponse.ok) {
         const activitiesData = await activitiesResponse.json();
-        console.log('✅ Raw activities data received:', activitiesData);
+        console.log('[OK] Raw activities data received:', activitiesData);
         
         if (activitiesData.success && activitiesData.activities) {
-          console.log('✅ Activities loaded successfully:', activitiesData.activities.length, 'items');
+          console.log('[OK] Activities loaded successfully:', activitiesData.activities.length, 'items');
           setRecentActivities(activitiesData.activities);
         } else {
-          console.warn('⚠️ Invalid activities response format:', activitiesData);
+          console.warn('[WARN] Invalid activities response format:', activitiesData);
         }
       } else {
-        console.error('❌ Activities API error:', activitiesResponse.status, activitiesResponse.statusText);
+        console.error('[ERROR] Activities API error:', activitiesResponse.status, activitiesResponse.statusText);
         const errorText = await activitiesResponse.text();
-        console.error('❌ Error details:', errorText);
+        console.error('[ERROR] Error details:', errorText);
       }
     } catch (error) {
-      console.error('❌ Failed to fetch dashboard data:', error);
-      console.error('❌ Error stack:', error.stack);
+      console.error('[ERROR] Failed to fetch dashboard data:', error);
+      console.error('[ERROR] Error stack:', error.stack);
     } finally {
       setIsLoadingStats(false);
-      console.log('✅ Dashboard data fetch completed');
+      console.log('[OK] Dashboard data fetch completed');
     }
   };
 

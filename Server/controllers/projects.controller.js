@@ -81,13 +81,52 @@ export const getProjects = asyncHandler(async (req, res) => {
 // Admin: approve & register project on-chain
 export const approveAndRegisterProject = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { totalCredits, pricePerCreditWei, metadataURI } = req.body;
+  let { totalCredits, pricePerCreditWei, metadataURI } = req.body;
   const Project = await getProjectModel();
   const project = await Project.findById(id);
   if (!project) return res.status(404).json({ success: false, message: 'Project not found' });
 
   if (project.verified && project.blockchain?.projectId) {
     return res.status(400).json({ success: false, message: 'Already registered' });
+  }
+
+  // Auto-compute totalCredits from carbonOffsetTarget if not provided
+  // 1 credit = 1 ton CO₂ = 1000 kg
+  if (!totalCredits && project.carbonOffsetTarget) {
+    totalCredits = Math.floor(project.carbonOffsetTarget / 1000);
+    if (totalCredits <= 0) totalCredits = 1;
+    console.log(`[BLOCKCHAIN] Auto-computed ${totalCredits} credits from carbonOffsetTarget ${project.carbonOffsetTarget} kg`);
+  }
+  if (!totalCredits || totalCredits <= 0) {
+    return res.status(400).json({ success: false, message: 'Cannot compute credits: set Carbon Offset Target (kg) on the project first' });
+  }
+
+  // Default price: 0.01 ETH per credit
+  if (!pricePerCreditWei) pricePerCreditWei = '10000000000000000';
+
+  // Auto-pin project metadata to IPFS if no metadataURI provided
+  if (!metadataURI) {
+    try {
+      const { pinJSON } = await import('../services/ipfs.service.js');
+      const metadata = {
+        name: project.name,
+        description: project.description,
+        location: project.location,
+        type: project.type,
+        carbonOffsetTarget: project.carbonOffsetTarget,
+        totalCredits,
+        certifications: project.certifications || [],
+        image: project.image?.url || project.image || '',
+        documents: (project.documents || []).map(d => ({ name: d.name, cid: d.cid })),
+        createdAt: new Date().toISOString(),
+      };
+      const pinResult = await pinJSON(metadata);
+      metadataURI = pinResult.uri;
+      console.log(`[IPFS] Pinned project metadata: ${metadataURI}`);
+    } catch (ipfsErr) {
+      console.warn('[IPFS] Pinning failed, using fallback URI:', ipfsErr.message);
+      metadataURI = `https://green-community.app/api/projects/metadata/${id}`;
+    }
   }
 
   // Register on chain
@@ -100,11 +139,11 @@ export const approveAndRegisterProject = asyncHandler(async (req, res) => {
     pricePerCreditWei: pricePerCreditWei.toString(),
     certificateBaseURI: metadataURI,
     contractAddress: process.env.MARKETPLACE_CONTRACT_ADDRESS,
-    network: process.env.BLOCKCHAIN_NETWORK || 'localhost',
+    network: process.env.BLOCKCHAIN_NETWORK || 'sepolia',
     lastSyncAt: new Date()
   };
   await project.save();
-  console.log(`[BLOCKCHAIN] Project registered id=${chainProjectId} tx=${txHash}`);
+  console.log(`[BLOCKCHAIN] Project registered id=${chainProjectId} credits=${totalCredits} tx=${txHash} ipfs=${metadataURI}`);
   res.json({ success: true, txHash, data: project });
 });
 

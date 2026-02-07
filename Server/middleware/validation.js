@@ -150,9 +150,9 @@ export const validateLinkWallet = [
 
 // Approve & register project validation
 export const validateApproveProject = [
-  body('totalCredits').isInt({ min: 1 }).withMessage('totalCredits must be >0'),
-  body('pricePerCreditWei').isString().matches(/^[0-9]+$/).withMessage('pricePerCreditWei numeric string required'),
-  body('metadataURI').isString().withMessage('metadataURI required')
+  body('totalCredits').optional().isInt({ min: 1 }).withMessage('totalCredits must be >0'),
+  body('pricePerCreditWei').optional().isString().matches(/^[0-9]+$/).withMessage('pricePerCreditWei numeric string required'),
+  body('metadataURI').optional().isString().withMessage('metadataURI must be a string')
 ];
 
 // Fiat grant validation

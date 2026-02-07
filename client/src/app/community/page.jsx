@@ -277,7 +277,7 @@ const Community = () => {
                             const result = await challengesAPI.complete(challenge._id);
                             
                             // Show success message
-                            toast.success('🎉 Challenge completed! Points added to your account.');
+                            toast.success('Challenge completed! Points added to your account.');
                             
                             // Refresh all data to ensure consistency
                             const [chData, lbData] = await Promise.all([

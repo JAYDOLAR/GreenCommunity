@@ -35,7 +35,8 @@ import {
   EyeOff,
   Factory,
   Building2,
-  CalendarDays
+  CalendarDays,
+  Star,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
@@ -216,7 +217,7 @@ const Projects = () => {
                 font-weight: bold;
                 font-size: 12px;
               ">
-                ${type === 'forestry' ? '🌲' : type === 'renewable' ? '⚡' : type === 'water' ? '💧' : type === 'agriculture' ? '🌾' : '🌱'}
+                ${type === 'forestry' ? 'F' : type === 'renewable' ? 'R' : type === 'water' ? 'W' : type === 'agriculture' ? 'A' : 'E'}
               </div>
             `,
             className: 'custom-div-icon',
@@ -529,7 +530,7 @@ const Projects = () => {
                 font-weight: bold;
                 font-size: 12px;
               ">
-                🏪
+                V
               </div>
             `,
             className: 'custom-div-icon',
@@ -558,7 +559,7 @@ const Projects = () => {
                 font-weight: bold;
                 font-size: 12px;
               ">
-                🏗️
+                W
               </div>
             `,
             className: 'custom-div-icon',
@@ -587,7 +588,7 @@ const Projects = () => {
                 font-weight: bold;
                 font-size: 12px;
               ">
-                📅
+                E
               </div>
             `,
             className: 'custom-div-icon',
@@ -814,7 +815,7 @@ const Projects = () => {
                       </div>
                       <div className="flex items-center justify-between text-xs text-gray-500">
                         <span>{vendor.totalProductsInStock || 0} in stock</span>
-                        <span>⭐ {(vendor.avgEcoRating || 0).toFixed(1)}</span>
+                        <span className="flex items-center gap-1"><Star className="h-3 w-3 text-yellow-500 fill-current" /> {(vendor.avgEcoRating || 0).toFixed(1)}</span>
                       </div>
                     </div>
                     <div className="text-xs text-gray-500 border-t pt-2">

@@ -35,6 +35,9 @@ import {
   Image as ImageIcon,
   X,
   Cpu,
+  Link2,
+  Pin,
+  AlertTriangle,
 } from "lucide-react";
 
 const AddProjectPage = () => {
@@ -211,14 +214,11 @@ const AddProjectPage = () => {
         const projectId = response?.data?._id || response?.data?.id;
         
         // If blockchain registration is requested, register the project
-        if (registerOnBlockchain && blockchainCredits.totalCredits && projectId) {
+        if (registerOnBlockchain && derivedCredits > 0 && projectId) {
           try {
-            await blockchainApi.approveRegisterProject(projectId, {
-              totalCredits: parseInt(blockchainCredits.totalCredits),
-              pricePerCreditWei: blockchainCredits.pricePerCreditWei,
-              metadataURI: `https://green-community.app/api/projects/metadata/${projectId}`
-            });
-            alert("Project created and registered on blockchain successfully!");
+            // Server auto-computes credits from carbonOffsetTarget and pins metadata to IPFS
+            await blockchainApi.approveRegisterProject(projectId, {});
+            alert(`Project created and registered on blockchain!\n\n${derivedCredits} carbon credits minted on Sepolia\nMetadata pinned to IPFS`);
           } catch (blockchainError) {
             console.error('Blockchain registration failed:', blockchainError);
             alert(`Project created successfully, but blockchain registration failed: ${blockchainError.message}`);
@@ -622,41 +622,54 @@ const AddProjectPage = () => {
                   <input
                     type="checkbox"
                     checked={registerOnBlockchain}
-                    onChange={(e) => setRegisterOnBlockchain(e.target.checked)}
+                    onChange={(e) => {
+                      if (e.target.checked && derivedCredits <= 0) {
+                        alert('Set Carbon Offset Target (min 1000 kg) before enabling blockchain registration.');
+                        return;
+                      }
+                      setRegisterOnBlockchain(e.target.checked);
+                    }}
                     className="rounded"
                   />
                 </div>
                 
                 {registerOnBlockchain && (
-                  <div className="space-y-3 ml-6 p-3 bg-blue-50 rounded-lg">
-                    <p className="text-xs text-blue-800">
-                      This will create carbon credit tokens on Sepolia testnet for crypto payments
+                  <div className="space-y-3 ml-6 p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <p className="text-sm text-green-800 font-medium flex items-center gap-1">
+                      <Link2 className="h-4 w-4" /> Blockchain Registration Summary
                     </p>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-2 gap-3 text-sm">
                       <div>
-                        <label className="text-xs font-medium text-gray-700">Total Credits</label>
-                        <input
-                          type="number"
-                          placeholder="e.g. 10000"
-                          value={blockchainCredits.totalCredits}
-                          onChange={(e) => setBlockchainCredits(prev => ({...prev, totalCredits: e.target.value}))}
-                          className="w-full text-xs p-2 border rounded"
-                        />
+                        <span className="text-gray-600">Carbon Offset Target:</span>
+                        <div className="font-bold">{Number(project.carbonOffsetTarget || 0).toLocaleString()} kg</div>
                       </div>
                       <div>
-                        <label className="text-xs font-medium text-gray-700">Price per Credit (wei)</label>
-                        <input
-                          type="text"
-                          placeholder="10000000000000000"
-                          value={blockchainCredits.pricePerCreditWei}
-                          onChange={(e) => setBlockchainCredits(prev => ({...prev, pricePerCreditWei: e.target.value}))}
-                          className="w-full text-xs p-2 border rounded font-mono"
-                        />
+                        <span className="text-gray-600">Credits to Mint:</span>
+                        <div className="font-bold text-green-700">{derivedCredits.toLocaleString()} credits</div>
+                        <span className="text-xs text-gray-500">(1 credit = 1 ton CO₂)</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">Price per Credit:</span>
+                        <div className="font-bold">0.01 ETH</div>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">Network:</span>
+                        <div className="font-bold">Sepolia Testnet</div>
                       </div>
                     </div>
-                    <p className="text-xs text-gray-500">
-                      Default: 10000000000000000 wei = 0.01 ETH per credit
-                    </p>
+                    <div className="p-2 bg-blue-50 border border-blue-200 rounded text-xs text-blue-800 flex items-start gap-1">
+                      <Pin className="h-3 w-3 mt-0.5 shrink-0" /> Project metadata (name, description, certifications, documents) will be pinned to IPFS automatically during registration.
+                    </div>
+                    {project.documents.length > 0 && (
+                      <div className="p-2 bg-green-100 rounded text-xs text-green-800 flex items-center gap-1">
+                        <CheckCircle className="h-3 w-3 shrink-0" /> {project.documents.filter(d => d.status === 'uploaded').length} document(s) uploaded — will be referenced in blockchain metadata
+                      </div>
+                    )}
+                    {project.documents.length === 0 && (
+                      <div className="p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800 flex items-center gap-1">
+                        <AlertTriangle className="h-3 w-3 shrink-0" /> Upload supporting documents (e.g., Verra Gold Standard certificate) above for stronger verification
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

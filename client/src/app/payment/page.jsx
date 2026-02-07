@@ -266,7 +266,7 @@ const Payment = () => {
             console.log('Payment modal dismissed');
             setIsProcessing(false);
             toast('Payment cancelled', {
-              icon: '⚠️',
+              icon: '⚠',
               style: {
                 background: '#fef3c7',
                 color: '#92400e',

@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { ethers } from 'ethers';
 import { useWallet } from '../context/WalletContext';
+import { Wallet, CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
 
 // Parse blockchain errors into user-friendly messages
 const parseError = (err) => {
@@ -176,7 +177,7 @@ export const BuyCreditsButton = ({ projectMongoId, projectIdOnChain, pricePerCre
             Processing Transaction...
           </>
         ) : (
-          <>🦊 {address ? `Buy ${amount} Credit${amount > 1 ? 's' : ''} with MetaMask` : 'Connect Wallet & Buy'}</>
+          <><Wallet className="h-4 w-4" /> {address ? `Buy ${amount} Credit${amount > 1 ? 's' : ''} with MetaMask` : 'Connect Wallet & Buy'}</>
         )}
       </button>
 
@@ -184,7 +185,7 @@ export const BuyCreditsButton = ({ projectMongoId, projectIdOnChain, pricePerCre
       {txHash && (
         <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-green-600 font-medium">✅ Purchase Successful!</span>
+            <span className="text-green-600 font-medium flex items-center gap-1"><CheckCircle className="h-4 w-4" /> Purchase Successful!</span>
           </div>
           <p className="text-xs text-gray-600 mb-2">
             {amount} carbon credit{amount > 1 ? 's' : ''} purchased. You&apos;ll receive an NFT certificate upon retirement.
@@ -208,7 +209,7 @@ export const BuyCreditsButton = ({ projectMongoId, projectIdOnChain, pricePerCre
           }`}
         >
           <p className={`text-sm font-medium ${error.type === 'warning' ? 'text-yellow-800' : 'text-red-800'}`}>
-            {error.type === 'warning' ? '⚠️' : '❌'} {error.text}
+            {error.type === 'warning' ? <AlertTriangle className="h-4 w-4 inline" /> : <XCircle className="h-4 w-4 inline" />} {error.text}
           </p>
           {error.link && (
             <a

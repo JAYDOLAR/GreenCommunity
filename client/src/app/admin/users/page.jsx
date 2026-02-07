@@ -200,10 +200,10 @@ const UsersPage = () => {
   const fetchUsers = async () => {
     try {
       const adminToken = localStorage.getItem('adminToken');
-      console.log('🔑 Admin token:', adminToken ? 'exists' : 'missing');
+      console.log('[AUTH] Admin token:', adminToken ? 'exists' : 'missing');
       
       const url = `${API_BASE}/api/admin/users?limit=1000&page=1`;
-      console.log('🔍 Fetching users from:', url);
+      console.log('[FETCH] Fetching users from:', url);
       
       const response = await fetch(url, {
         method: 'GET',
@@ -214,14 +214,14 @@ const UsersPage = () => {
         credentials: 'include'
       });
       
-      console.log('📊 Response status:', response.status);
+      console.log('[RESPONSE] Response status:', response.status);
       
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
       
       const data = await response.json();
-      console.log('✅ Response data:', data);
+      console.log('[OK] Response data:', data);
       
       if (data.success && data.users && Array.isArray(data.users)) {
         // Map API response to frontend format
@@ -240,13 +240,13 @@ const UsersPage = () => {
         }));
         
         setUsers(formattedUsers);
-        console.log('✅ Users loaded:', formattedUsers.length, 'users');
+        console.log('[OK] Users loaded:', formattedUsers.length, 'users');
       } else {
-        console.error('❌ API Error:', data.message || 'No users in response');
+        console.error('[ERROR] API Error:', data.message || 'No users in response');
         setUsers([]);
       }
     } catch (error) {
-      console.error('❌ Failed to fetch users:', error);
+      console.error('[ERROR] Failed to fetch users:', error);
       setUsers([]);
     }
   };
