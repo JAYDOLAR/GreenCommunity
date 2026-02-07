@@ -3,8 +3,8 @@ import { getConnection } from '../config/databases.js';
 import { ensureModelRegistered } from '../utils/modelRegistry.js';
 
 const userEventSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
-  eventId: { type: mongoose.Schema.Types.ObjectId, ref: 'Event', required: true, index: true },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  eventId: { type: mongoose.Schema.Types.ObjectId, ref: 'Event', required: true },
   joinedAt: { type: Date, default: Date.now }
 }, { timestamps: true });
 

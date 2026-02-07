@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import session from "express-session";
+import MongoStore from "connect-mongo";
 import passport from "passport";
 import helmet from "helmet";
 import mongoSanitize from "express-mongo-sanitize";
@@ -122,18 +123,29 @@ async function createServer() {
     console.error('❌ CRITICAL: SESSION_SECRET is not set in production environment!');
   }
   
-  app.use(
-    session({
-      secret: sessionSecret || (process.env.NODE_ENV !== 'production' ? 'dev-secret-key-not-for-production' : (() => { throw new Error('SESSION_SECRET is required in production'); })()),
-      resave: false,
-      saveUninitialized: false,
-      cookie: {
-        secure: process.env.NODE_ENV === "production",
-        httpOnly: true,
-        maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      },
-    })
-  );
+  const sessionConfig = {
+    secret: sessionSecret || (process.env.NODE_ENV !== 'production' ? 'dev-secret-key-not-for-production' : (() => { throw new Error('SESSION_SECRET is required in production'); })()),
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: process.env.NODE_ENV === "production",
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    },
+  };
+
+  // Use MongoDB session store in production to avoid MemoryStore memory leaks
+  if (process.env.MONGO_URI) {
+    sessionConfig.store = MongoStore.create({
+      mongoUrl: process.env.MONGO_URI,
+      dbName: 'greencommunity-auth',
+      collectionName: 'sessions',
+      ttl: 24 * 60 * 60, // 24 hours (matches cookie maxAge)
+      autoRemove: 'native',
+    });
+  }
+
+  app.use(session(sessionConfig));
 
   app.use(passport.initialize());
   app.use(passport.session());
