@@ -67,7 +67,7 @@ jobs:
           echo "Client package.json exists: $(test -f client/package.json && echo "✅" || echo "❌")"
           echo "Server package.json exists: $(test -f Server/package.json && echo "✅" || echo "❌")"
           echo "Client package-lock.json exists: $(test -f client/package-lock.json && echo "✅" || echo "❌")"
-          echo "Server package-lock.json exists: $(test -f Server/package-lock.json && echo "✅" || echo "❌")
+          echo "Server package-lock.json exists: $(test -f Server/package-lock.json && echo "✅" || echo "❌")"
 
       - name: Cache dependencies
         id: cache-deps
