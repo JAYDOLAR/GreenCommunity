@@ -76,6 +76,8 @@ const Dashboard = () => {
   const [greetingKey, setGreetingKey] = useState("greeting_morning"); // Default fallback
   const [date, setDate] = useState(new Date());
   const [userGoals, setUserGoals] = useState(null);
+  const [showAllCategories, setShowAllCategories] = useState(false);
+  const [showAllActivities, setShowAllActivities] = useState(false);
 
   const currency = getSymbol(userCurrency);
   // General units removed; only carbonUnits retained elsewhere
@@ -302,13 +304,12 @@ const Dashboard = () => {
   });
 
   // Use configuration for fallback data
-  const displayBreakdown =
-    footprintBreakdown.length > 0
-      ? footprintBreakdown
-      : FALLBACK_EMISSIONS_BREAKDOWN;
+  const allBreakdown = footprintBreakdown.length > 0 ? footprintBreakdown : FALLBACK_EMISSIONS_BREAKDOWN;
+  const displayBreakdown = showAllCategories ? allBreakdown : allBreakdown.slice(0, 4);
 
   // Format recent activities from API data - use recentActivities from hook or fallback to logs
-  const displayActivities = formatRecentActivities(recentActivities, logs);
+  const allActivities = formatRecentActivities(recentActivities, logs);
+  const displayActivities = showAllActivities ? allActivities : allActivities.slice(0, 2);
 
   // Calculate achievements based on real streak data
   const achievements = calculateAchievements(streakData, logs);
@@ -605,6 +606,20 @@ const Dashboard = () => {
                     );
                   })}
                 </div>
+                {allBreakdown.length > 4 && (
+                  <div className="pt-4 border-t mt-4">
+                    <Button 
+                      variant="outline" 
+                      className="w-full"
+                      onClick={() => setShowAllCategories(!showAllCategories)}
+                    >
+                      {showAllCategories ? t("common:show_less") : t("common:view_all")}
+                      <ArrowRight className={`h-4 w-4 ml-2 transition-transform ${
+                        showAllCategories ? "rotate-90" : ""
+                      }`} />
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -669,14 +684,35 @@ const Dashboard = () => {
                         </div>
                       </div>
                     ))}
-                    {logs.length > 3 && (
+                    {allActivities.length > 2 && (
                       <div className="pt-4 border-t">
-                        <Link href="/footprintlog">
-                          <Button variant="outline" className="w-full">
-                            {t("dashboard:view_all_activities")}
+                        {!showAllActivities ? (
+                          <Button 
+                            variant="outline" 
+                            className="w-full"
+                            onClick={() => setShowAllActivities(true)}
+                          >
+                            {t("common:view_all")} ({allActivities.length})
                             <ArrowRight className="h-4 w-4 ml-2" />
                           </Button>
-                        </Link>
+                        ) : (
+                          <div className="flex gap-2">
+                            <Button 
+                              variant="outline" 
+                              className="flex-1"
+                              onClick={() => setShowAllActivities(false)}
+                            >
+                              {t("common:show_less")}
+                              <ArrowRight className="h-4 w-4 ml-2 rotate-90" />
+                            </Button>
+                            <Link href="/footprintlog" className="flex-1">
+                              <Button variant="outline" className="w-full">
+                                {t("dashboard:view_all_activities")}
+                                <ArrowRight className="h-4 w-4 ml-2" />
+                              </Button>
+                            </Link>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
