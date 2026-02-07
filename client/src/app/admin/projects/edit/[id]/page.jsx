@@ -151,11 +151,22 @@ const EditProjectPage = () => {
     
     if (!totalCredits || !priceWei) return;
     
+    // Validate inputs
+    if (isNaN(parseInt(totalCredits)) || parseInt(totalCredits) <= 0) {
+      alert('Total credits must be a positive number');
+      return;
+    }
+    
+    if (isNaN(priceWei) || priceWei <= 0) {
+      alert('Price must be a positive number in Wei');
+      return;
+    }
+    
     try {
       setSyncingBlockchain(true);
       await blockchainApi.approveRegisterProject(fullProject._id, {
         totalCredits: parseInt(totalCredits),
-        pricePerCreditWei: priceWei,
+        pricePerCreditWei: priceWei.toString(), // Ensure it's a string
         metadataURI: `https://green-community.app/api/projects/metadata/${fullProject._id}`
       });
       

@@ -34,6 +34,9 @@ import {
   Droplets,
   Award,
   CheckCircle,
+  Cpu,
+  Eye,
+  DollarSign,
 } from "lucide-react";
 import AuthGuard from "@/components/AuthGuard";
 import Layout from "@/components/Layout";
@@ -596,35 +599,60 @@ const ProjectDetailContent = ({ params }) => {
 
             {/* Blockchain Carbon Credits */}
             {project?.blockchain?.projectId && (
-              <Card className="border-green-200 bg-green-50">
+              <Card className="border-green-200 bg-gradient-to-r from-green-50 to-blue-50">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-lg flex items-center gap-2">
+                    <Cpu className="h-5 w-5 text-green-600" />
                     🌱 Blockchain Carbon Credits Available
                   </CardTitle>
+                  <p className="text-sm text-green-600">Purchase verified carbon offset credits directly with crypto</p>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <span className="text-gray-600">Price per Credit:</span>
-                      <div className="font-bold">0.01 ETH</div>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">Available:</span>
-                      <div className="font-bold">
-                        {((project.blockchain.totalCredits || 0) - (project.blockchain.soldCredits || 0)).toLocaleString()} credits
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="text-center p-3 bg-white rounded-lg border">
+                      <div className="text-2xl font-bold text-green-600">
+                        {((project.blockchain.totalCredits || 0) - (project.blockchain.soldCredits || 0)).toLocaleString()}
                       </div>
+                      <div className="text-sm text-gray-600">Credits Available</div>
+                    </div>
+                    <div className="text-center p-3 bg-white rounded-lg border">
+                      <div className="text-2xl font-bold text-blue-600">
+                        0.01 ETH
+                      </div>
+                      <div className="text-sm text-gray-600">Per Credit</div>
+                    </div>
+                    <div className="text-center p-3 bg-white rounded-lg border">
+                      <div className="text-2xl font-bold text-purple-600">
+                        #{project.blockchain.projectId}
+                      </div>
+                      <div className="text-sm text-gray-600">Blockchain ID</div>
                     </div>
                   </div>
-                  <p className="text-sm text-gray-600">
-                    Purchase carbon credits directly with cryptocurrency for transparent, blockchain-verified carbon offsetting.
-                  </p>
-                  <BuyCreditsButton 
-                    project={project}
-                    className="w-full bg-green-600 hover:bg-green-700"
-                  />
-                  <p className="text-xs text-gray-500">
-                    Transactions verified on Sepolia testnet • MetaMask required
-                  </p>
+                  
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <BuyCreditsButton 
+                      project={project}
+                      className="flex-1 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
+                    >
+                      <Cpu className="h-4 w-4" />
+                      Buy Credits with MetaMask
+                    </BuyCreditsButton>
+                    <Button
+                      variant="outline"
+                      onClick={() => window.open(`https://sepolia.etherscan.io/address/0x462EA24B63bf09f522652c1B6550c8B65AfF99E4`, '_blank')}
+                      className="px-6 py-3 border-green-300 text-green-700 hover:bg-green-50"
+                    >
+                      <Eye className="h-4 w-4 mr-2" />
+                      View on Etherscan
+                    </Button>
+                  </div>
+                  
+                  <div className="p-3 bg-blue-50 rounded-lg">
+                    <p className="text-xs text-blue-700">
+                      💡 These carbon credits are tokenized on Ethereum (Sepolia testnet) as ERC1155 tokens. 
+                      When you retire credits, you'll receive an NFT certificate as permanent proof of offset.
+                    </p>
+                  </div>
                 </CardContent>
               </Card>
             )}
