@@ -527,41 +527,6 @@ const ProjectDetailContent = ({ params }) => {
                 Make a Contribution
               </h3>
               
-              {/* Blockchain Carbon Credits Section */}
-              {project.blockchain?.projectId && (
-                <div className="mb-6 p-4 bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                    <h4 className="font-semibold text-green-800">🌱 Blockchain Carbon Credits Available</h4>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4 text-sm mb-4">
-                    <div>
-                      <span className="text-gray-600">Credits Available:</span>
-                      <div className="font-mono font-bold text-green-700">
-                        {((project.blockchain.totalCredits || 0) - (project.blockchain.soldCredits || 0)).toLocaleString()}
-                      </div>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">Price per Credit:</span>
-                      <div className="font-mono font-bold text-green-700">
-                        {project.blockchain.pricePerCreditWei ? 
-                          `${(parseFloat(project.blockchain.pricePerCreditWei) / 1e18).toFixed(4)} ETH` : 
-                          'Loading...'
-                        }
-                      </div>
-                    </div>
-                  </div>
-                  <BuyCreditsButton 
-                    projectMongoId={project._id}
-                    projectIdOnChain={project.blockchain.projectId}
-                    pricePerCreditWei={project.blockchain.pricePerCreditWei || '10000000000000000'}
-                  />
-                  <p className="text-xs text-gray-600 mt-2">
-                    💡 Blockchain credits provide transparent, verifiable carbon offsets with automatic NFT certificates upon retirement.
-                  </p>
-                </div>
-              )}
-              
               {/* Traditional INR Funding */}
               <div className="space-y-4">
                 <div>
@@ -631,12 +596,10 @@ const ProjectDetailContent = ({ params }) => {
                   
                   <div className="flex flex-col sm:flex-row gap-3">
                     <BuyCreditsButton 
-                      project={project}
-                      className="flex-1 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
-                    >
-                      <Cpu className="h-4 w-4" />
-                      Buy Credits with MetaMask
-                    </BuyCreditsButton>
+                      projectMongoId={project._id}
+                      projectIdOnChain={project.blockchain.projectId}
+                      pricePerCreditWei={project.blockchain.pricePerCreditWei || '10000000000000000'}
+                    />
                     <Button
                       variant="outline"
                       onClick={() => window.open(`https://sepolia.etherscan.io/address/0x462EA24B63bf09f522652c1B6550c8B65AfF99E4`, '_blank')}

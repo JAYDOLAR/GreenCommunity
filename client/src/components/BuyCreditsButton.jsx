@@ -13,8 +13,17 @@ export const BuyCreditsButton = ({ projectMongoId, projectIdOnChain, pricePerCre
   const handleBuy = async () => {
     setError(undefined);
     try {
-      if (!provider) { await connect(); }
-      const signer = await provider.getSigner();
+      let activeProvider = provider;
+      if (!activeProvider) {
+        await connect();
+        // After connect, provider state may not be updated yet, get fresh from window
+        if (typeof window !== 'undefined' && window.ethereum) {
+          activeProvider = new ethers.BrowserProvider(window.ethereum);
+        } else {
+          throw new Error('Please install MetaMask to buy credits');
+        }
+      }
+      const signer = await activeProvider.getSigner();
       const contractAddress = process.env.NEXT_PUBLIC_MARKETPLACE_ADDRESS;
       if (!contractAddress) throw new Error('Marketplace address missing');
       const abi = [
