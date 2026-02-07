@@ -46,14 +46,20 @@ if (!isTest) {
 }
 
 async function createServer() {
-  if (!isTest) {
-    await nextApp.prepare();
-  }
   const app = express();
 
-  // Connect to all MongoDB databases
+  // Health-check endpoint — registered first so it always responds
+  app.get('/api/health', (_req, res) => {
+    res.json({ status: 'ready', uptime: process.uptime() });
+  });
+
   if (!isTest) {
-    await connectAllDatabases();
+    // Run Next.js prepare AND database connections IN PARALLEL
+    // to cut startup time roughly in half
+    await Promise.all([
+      nextApp.prepare(),
+      connectAllDatabases(),
+    ]);
     // Start blockchain listeners (non-fatal if it fails)
     startBlockchainListeners();
     // Kick off historical sync (non-blocking)

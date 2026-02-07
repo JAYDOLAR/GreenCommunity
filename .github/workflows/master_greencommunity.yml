@@ -153,9 +153,10 @@ jobs:
             --exclude='deployment-package.json' \
             Server/ deployment-package/
 
-          # Copy Next.js build and essentials
-          cp -r client/.next client/public client/src deployment-package/client/
+          # Copy Next.js build and essentials (src/ NOT needed at runtime)
+          cp -r client/.next client/public deployment-package/client/
           cp client/package*.json client/next.config.mjs deployment-package/client/
+          [ -f "client/middleware.js" ] && cp client/middleware.js deployment-package/client/
           [ -f "client/jsconfig.json" ] && cp client/jsconfig.json deployment-package/client/
           [ -f "client/components.json" ] && cp client/components.json deployment-package/client/
 
@@ -204,7 +205,9 @@ jobs:
 
       - name: Configure and Deploy to Azure
         run: |
-          # Configure app settings (runs in background)
+          # Configure app settings
+          # NOTE: Do NOT set WEBSITE_RUN_FROM_PACKAGE=1 — it makes the filesystem
+          #       read-only and conflicts with the custom startup file.
           az webapp config appsettings set \
             --resource-group Green_Community \
             --name greencommunity-app \
@@ -212,51 +215,67 @@ jobs:
             SCM_DO_BUILD_DURING_DEPLOYMENT=false \
             WEBSITE_NODE_DEFAULT_VERSION=22.x \
             NODE_ENV=production \
-            WEBSITE_RUN_FROM_PACKAGE=1 \
             WEBSITE_ENABLE_SYNC_UPDATE_SITE=true \
             WEBSITES_CONTAINER_START_TIME_LIMIT=1800 \
             --output none &
           CONFIG_PID=$!
-          
+
           az webapp config set \
             --resource-group Green_Community \
             --name greencommunity-app \
             --startup-file "node server.js" \
             --output none &
           STARTUP_PID=$!
-          
+
           wait $CONFIG_PID $STARTUP_PID
-          
-          # Deploy
+
+          # Remove WEBSITE_RUN_FROM_PACKAGE if it was set in a previous deploy
+          az webapp config appsettings delete \
+            --resource-group Green_Community \
+            --name greencommunity-app \
+            --setting-names WEBSITE_RUN_FROM_PACKAGE \
+            --output none 2>/dev/null || true
+
+          # Deploy (synchronous so we get real success/failure feedback)
           echo "Deploying to Azure..."
           az webapp deploy \
             --resource-group Green_Community \
             --name greencommunity-app \
             --src-path deployment.zip \
             --type zip \
-            --async true
-          
-          echo "Deployment initiated successfully"
+            --timeout 600
+
+          echo "Deployment completed successfully"
 
       - name: Verify deployment
         run: |
-          echo "Waiting for deployment..."
+          echo "Waiting for deployment to settle..."
           sleep 30
-          
-          # Quick health check (3 attempts, 15s apart)
-          for i in 1 2 3; do
-            if curl -f -s -m 15 "https://greencommunity-app.azurewebsites.net" > /dev/null 2>&1; then
-              echo "Application is responding!"
+
+          # Health check: 6 attempts, 20s apart (up to ~2 min)
+          for i in 1 2 3 4 5 6; do
+            echo "Health check attempt $i/6..."
+            HTTP_CODE=$(curl -s -o /dev/null -w '%{http_code}' -m 20 \
+              "https://greencommunity-app.azurewebsites.net/api/health" 2>/dev/null || echo "000")
+            echo "  HTTP status: $HTTP_CODE"
+            if [ "$HTTP_CODE" = "200" ]; then
+              echo "Application is healthy!"
+              curl -s -m 10 "https://greencommunity-app.azurewebsites.net/api/health" || true
               exit 0
             fi
-            [ $i -lt 3 ] && sleep 15
+            [ $i -lt 6 ] && sleep 20
           done
-          
-          # Check app state as fallback
+
+          # Check Azure-side state
           STATUS=$(az webapp show --resource-group Green_Community --name greencommunity-app --query "state" -o tsv 2>/dev/null || echo "Unknown")
           echo "App state: $STATUS"
+          echo "Fetching recent logs..."
+          az webapp log tail --resource-group Green_Community --name greencommunity-app --lines 30 2>/dev/null || true
+
           if [ "$STATUS" = "Running" ]; then
-            echo "App is running. May need additional warm-up time."
+            echo "App is running but health endpoint not yet responding. May need warm-up."
+          else
+            echo "WARNING: App state is $STATUS"
           fi
 
       - name: Deployment summary
