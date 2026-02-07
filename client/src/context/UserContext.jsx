@@ -20,6 +20,9 @@ export function UserProvider({ children }) {
   const [sessionId, setSessionId] = useState(null);
   const [sessionConflict, setSessionConflict] = useState({ type: null, message: '' });
   const [showSessionDialog, setShowSessionDialog] = useState(false);
+  const [tabId, setTabId] = useState(null);
+  const [broadcastChannel, setBroadcastChannel] = useState(null);
+  const [isMainTab, setIsMainTab] = useState(false);
 
   // Helper function to dispatch user data update event
   const dispatchUserDataUpdate = () => {
@@ -28,8 +31,64 @@ export function UserProvider({ children }) {
     }
   };
 
+  // Tab coordination utilities
+  const generateTabId = () => {
+    return `tab_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  };
+
+  const broadcastToOtherTabs = (message) => {
+    if (broadcastChannel) {
+      broadcastChannel.postMessage({ ...message, fromTab: tabId });
+    }
+  };
+
+  const acquireStorageLock = async (key, timeout = 5000) => {
+    const lockKey = `${key}_lock`;
+    const lockValue = `${tabId}_${Date.now()}`;
+    const startTime = Date.now();
+    
+    while (Date.now() - startTime < timeout) {
+      const existingLock = localStorage.getItem(lockKey);
+      if (!existingLock || Date.now() - parseInt(existingLock.split('_')[1]) > 1000) {
+        localStorage.setItem(lockKey, lockValue);
+        // Double-check we got the lock
+        if (localStorage.getItem(lockKey) === lockValue) {
+          return true;
+        }
+      }
+      await new Promise(resolve => setTimeout(resolve, 50));
+    }
+    return false;
+  };
+
+  const releaseStorageLock = (key) => {
+    localStorage.removeItem(`${key}_lock`);
+  };
+
+  const safeLocalStorageUpdate = async (updates) => {
+    if (await acquireStorageLock('userSession')) {
+      try {
+        Object.entries(updates).forEach(([key, value]) => {
+          if (value === null) {
+            localStorage.removeItem(key);
+          } else {
+            localStorage.setItem(key, value);
+          }
+        });
+        
+        // Broadcast the change to other tabs
+        broadcastToOtherTabs({
+          type: 'STORAGE_UPDATED',
+          updates
+        });
+      } finally {
+        releaseStorageLock('userSession');
+      }
+    }
+  };
+
   // Function to update user after login
-  const updateUser = (userData) => {
+  const updateUser = async (userData) => {
     if (userData && checkSessionConflict(userData)) {
       return; // Stop if there's a session conflict
     }
@@ -37,10 +96,12 @@ export function UserProvider({ children }) {
     setUser(userData);
     setIsLoading(false);
 
-    // Persist user data to localStorage for better session management
+    // Persist user data safely across tabs
     if (typeof window !== 'undefined' && userData) {
-      initializeSession(userData);
-      localStorage.setItem('userData', JSON.stringify(userData));
+      await initializeSession(userData);
+      await safeLocalStorageUpdate({
+        'userData': JSON.stringify(userData)
+      });
       // Dispatch event to sync preferences
       dispatchUserDataUpdate();
     }
@@ -56,10 +117,8 @@ export function UserProvider({ children }) {
 
     const currentUserId = userData.id || userData._id;
     const existingUserId = localStorage.getItem('activeUserId');
-    const existingSessionId = localStorage.getItem('sessionId');
-    const currentSessionId = sessionId;
 
-    // Check if trying to login with different account
+    // Only check if trying to login with different account
     if (existingUserId && existingUserId !== currentUserId) {
       setSessionConflict({
         type: 'different_account',
@@ -69,35 +128,29 @@ export function UserProvider({ children }) {
       return true;
     }
 
-    // Check if same account is already active in another tab/window
-    if (existingUserId === currentUserId && existingSessionId && existingSessionId !== currentSessionId) {
-      setSessionConflict({
-        type: 'multiple_tabs',
-        message: 'This account is already open in another tab or window. Please close other tabs to continue.'
-      });
-      setShowSessionDialog(true);
-      return true;
-    }
-
+    // Allow multiple tabs for same user - no conflict
     return false;
   };
 
-  const initializeSession = (userData) => {
+  const initializeSession = async (userData) => {
     if (!userData || typeof window === 'undefined') return;
 
     const newSessionId = generateSessionId();
     setSessionId(newSessionId);
     
-    localStorage.setItem('sessionId', newSessionId);
-    localStorage.setItem('activeUserId', userData.id || userData._id);
-    localStorage.setItem('sessionStart', Date.now().toString());
+    // Safely store user session data
+    await safeLocalStorageUpdate({
+      'activeUserId': userData.id || userData._id,
+      'sessionStart': Date.now().toString()
+    });
   };
 
-  const clearSession = () => {
+  const clearSession = async () => {
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('sessionId');
-      localStorage.removeItem('activeUserId');
-      localStorage.removeItem('sessionStart');
+      await safeLocalStorageUpdate({
+        'activeUserId': null,
+        'sessionStart': null
+      });
     }
     setSessionId(null);
     setSessionConflict({ type: null, message: '' });
@@ -141,9 +194,11 @@ export function UserProvider({ children }) {
       setBackendStatus('connected');
       setIsLocked(false);
 
-      // Update localStorage with fresh data
+      // Update localStorage with fresh data safely
       if (data.user) {
-        localStorage.setItem('userData', JSON.stringify(data.user));
+        await safeLocalStorageUpdate({
+          'userData': JSON.stringify(data.user)
+        });
         // Dispatch event to sync preferences
         dispatchUserDataUpdate();
       }
@@ -169,23 +224,96 @@ export function UserProvider({ children }) {
   };
 
   // Function to clear user on logout
-  const clearUser = () => {
+  const clearUser = async () => {
     setUser(null);
     setIsLoading(false);
-    clearSession();
+    await clearSession();
+    
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('token');
-      localStorage.removeItem('userData');
-      // Clear preferences from localStorage to reset to defaults
-      localStorage.removeItem('preferences');
+      await safeLocalStorageUpdate({
+        'token': null,
+        'userData': null,
+        'preferences': null
+      });
+      
+      // Notify other tabs about logout
+      broadcastToOtherTabs({ type: 'USER_LOGOUT' });
+      
       // Dispatch event so PreferencesContext can reset to defaults
       window.dispatchEvent(new CustomEvent('userLoggedOut'));
     }
   };
 
-  // Handle client-side hydration
+  // Handle client-side hydration and tab initialization
   useEffect(() => {
     setIsClient(true);
+    
+    // Initialize tab coordination
+    if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+      const newTabId = generateTabId();
+      setTabId(newTabId);
+      
+      const channel = new BroadcastChannel('greencommunity_tabs');
+      setBroadcastChannel(channel);
+      
+      // Check if this is the main tab (oldest active tab)
+      const existingTabs = JSON.parse(localStorage.getItem('activeTabs') || '[]');
+      const updatedTabs = [...existingTabs, newTabId];
+      localStorage.setItem('activeTabs', JSON.stringify(updatedTabs));
+      
+      // Set as main tab if it's the first/oldest
+      setIsMainTab(existingTabs.length === 0);
+      
+      // Listen for messages from other tabs
+      channel.onmessage = (event) => {
+        const { type, updates, fromTab } = event.data;
+        
+        if (fromTab === newTabId) return; // Ignore own messages
+        
+        switch (type) {
+          case 'STORAGE_UPDATED':
+            // React to storage updates from other tabs
+            Object.entries(updates).forEach(([key, value]) => {
+              if (key === 'userData' && value) {
+                try {
+                  const userData = JSON.parse(value);
+                  setUser(userData);
+                } catch (e) {
+                  console.warn('Failed to parse user data from other tab');
+                }
+              }
+            });
+            break;
+          case 'USER_LOGOUT':
+            setUser(null);
+            break;
+          case 'TAB_CLOSING':
+            const remainingTabs = JSON.parse(localStorage.getItem('activeTabs') || '[]')
+              .filter(id => id !== event.data.tabId);
+            localStorage.setItem('activeTabs', JSON.stringify(remainingTabs));
+            if (remainingTabs.length > 0 && remainingTabs[0] === newTabId) {
+              setIsMainTab(true);
+            }
+            break;
+        }
+      };
+      
+      // Clean up tab on unload
+      const handleUnload = () => {
+        channel.postMessage({ type: 'TAB_CLOSING', tabId: newTabId });
+        const activeTabs = JSON.parse(localStorage.getItem('activeTabs') || '[]');
+        const updatedTabs = activeTabs.filter(id => id !== newTabId);
+        localStorage.setItem('activeTabs', JSON.stringify(updatedTabs));
+        channel.close();
+      };
+      
+      window.addEventListener('beforeunload', handleUnload);
+      
+      return () => {
+        handleUnload();
+        window.removeEventListener('beforeunload', handleUnload);
+      };
+    }
   }, []);
 
   // Main initialization effect
@@ -323,39 +451,20 @@ export function UserProvider({ children }) {
     }
   }, [user, isClient, hasInitialized, handleOAuthSuccess]); // Use the stable function from hook
 
-  // Monitor session changes in other tabs
+  // Monitor for account changes (simplified - BroadcastChannel handles most coordination)
   useEffect(() => {
-    if (!isClient || !user) return;
-
-    const handleStorageChange = (e) => {
-      if (e.key === 'sessionId' || e.key === 'activeUserId') {
-        const currentUserId = user.id || user._id;
-        const activeUserId = localStorage.getItem('activeUserId');
-        const activeSessionId = localStorage.getItem('sessionId');
-        
-        // If session was cleared or changed to different user
-        if (!activeUserId || (activeUserId !== currentUserId) || (activeSessionId !== sessionId)) {
-          setSessionConflict({
-            type: 'session_expired',
-            message: 'Your session has been terminated. Please login again.'
-          });
-          setShowSessionDialog(true);
-          clearUser();
-        }
-      }
-    };
+    if (!isClient || !user || !isMainTab) return;
 
     const handlePageVisibility = () => {
       if (!document.hidden && user) {
-        // Check session validity when page becomes visible
+        // Only check for different account on main tab when page becomes visible
         const activeUserId = localStorage.getItem('activeUserId');
-        const activeSessionId = localStorage.getItem('sessionId');
         const currentUserId = user.id || user._id;
         
-        if (!activeUserId || activeUserId !== currentUserId || activeSessionId !== sessionId) {
+        if (activeUserId && activeUserId !== currentUserId) {
           setSessionConflict({
             type: 'session_invalid',
-            message: 'Session has been invalidated. Please login again.'
+            message: 'Another account is now active. Please login again.'
           });
           setShowSessionDialog(true);
           clearUser();
@@ -363,22 +472,18 @@ export function UserProvider({ children }) {
       }
     };
 
-    window.addEventListener('storage', handleStorageChange);
     document.addEventListener('visibilitychange', handlePageVisibility);
 
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
       document.removeEventListener('visibilitychange', handlePageVisibility);
     };
-  }, [user, isClient, sessionId]);
+  }, [user, isClient, isMainTab]);
 
-  // Initialize session ID on first load
+  // Initialize user session tracking
   useEffect(() => {
     if (isClient && user && !sessionId) {
-      const existingSessionId = localStorage.getItem('sessionId');
-      if (existingSessionId) {
-        setSessionId(existingSessionId);
-      }
+      const newSessionId = generateSessionId();
+      setSessionId(newSessionId);
     }
   }, [isClient, user, sessionId]);
 

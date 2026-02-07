@@ -16,8 +16,6 @@ const SessionDialog = () => {
     switch (sessionConflict.type) {
       case 'different_account':
         return <Users className="h-12 w-12 text-orange-500" />;
-      case 'multiple_tabs':
-        return <AlertTriangle className="h-12 w-12 text-yellow-500" />;
       case 'session_expired':
       case 'session_invalid':
         return <LogOut className="h-12 w-12 text-red-500" />;
@@ -30,8 +28,6 @@ const SessionDialog = () => {
     switch (sessionConflict.type) {
       case 'different_account':
         return t('auth:different_account_title');
-      case 'multiple_tabs':
-        return t('auth:multiple_tabs_title');
       case 'session_expired':
         return t('auth:session_expired_title');
       case 'session_invalid':
@@ -41,7 +37,7 @@ const SessionDialog = () => {
     }
   };
 
-  const showActions = sessionConflict.type === 'different_account' || sessionConflict.type === 'multiple_tabs';
+  const showActions = sessionConflict.type === 'different_account';
 
   return (
     <Dialog open={showSessionDialog} onOpenChange={setShowSessionDialog}>
@@ -71,10 +67,7 @@ const SessionDialog = () => {
               onClick={() => handleSessionConflict('force_login')}
               className="flex-1 bg-red-600 hover:bg-red-700 text-white"
             >
-              {sessionConflict.type === 'different_account' 
-                ? t('auth:switch_account') 
-                : t('auth:close_other_tabs')
-              }
+              {t('auth:switch_account')}
             </Button>
           </div>
         ) : (
