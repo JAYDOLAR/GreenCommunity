@@ -1,10 +1,17 @@
 import { NextResponse } from 'next/server';
 import Razorpay from 'razorpay';
 
-const razorpay = new Razorpay({
-  key_id: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET,
-});
+let razorpay;
+
+function getRazorpayInstance() {
+  if (!razorpay) {
+    razorpay = new Razorpay({
+      key_id: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+      key_secret: process.env.RAZORPAY_KEY_SECRET,
+    });
+  }
+  return razorpay;
+}
 
 export async function POST(request) {
   try {
@@ -36,7 +43,7 @@ export async function POST(request) {
       },
     };
 
-    const order = await razorpay.orders.create(options);
+    const order = await getRazorpayInstance().orders.create(options);
 
     return NextResponse.json({
       success: true,
