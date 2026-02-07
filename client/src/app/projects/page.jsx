@@ -121,7 +121,7 @@ const Projects = () => {
   const [selectedRegion, setSelectedRegion] = useState('all');
   const [selectedType, setSelectedType] = useState('all');
   const [contributionAmount, setContributionAmount] = useState([4150]); // in INR (~$50)
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [hoveredProject, setHoveredProject] = useState(null);
   const [projects, setProjects] = useState([]);
@@ -1256,7 +1256,15 @@ const Projects = () => {
           </div>
         )}
 
-        {filteredProjects.length === 0 && (
+        {isLoading && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="h-72 w-full bg-gray-100 animate-pulse rounded-lg"></div>
+            ))}
+          </div>
+        )}
+
+        {filteredProjects.length === 0 && !isLoading && (
           <div className="text-center py-8 sm:py-12">
             <div className="text-muted-foreground text-sm sm:text-lg">{t('common:no_data_available')}</div>
             <p className="text-muted-foreground text-xs sm:text-base">{t('common:try_again')}</p>
