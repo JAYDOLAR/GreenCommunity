@@ -3,8 +3,8 @@ import { getConnection } from '../config/databases.js';
 import { ensureModelRegistered } from '../utils/modelRegistry.js';
 
 const userChallengeSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
-  challengeId: { type: mongoose.Schema.Types.ObjectId, ref: 'Challenge', required: true, index: true },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  challengeId: { type: mongoose.Schema.Types.ObjectId, ref: 'Challenge', required: true },
   completedAt: { type: Date, default: Date.now }
 }, { timestamps: true });
 

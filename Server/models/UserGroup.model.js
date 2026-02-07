@@ -3,8 +3,8 @@ import { getConnection } from '../config/databases.js';
 import { ensureModelRegistered } from '../utils/modelRegistry.js';
 
 const userGroupSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
-  groupId: { type: mongoose.Schema.Types.ObjectId, ref: 'Group', required: true, index: true },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  groupId: { type: mongoose.Schema.Types.ObjectId, ref: 'Group', required: true },
   joinedAt: { type: Date, default: Date.now }
 }, { timestamps: true });
 
