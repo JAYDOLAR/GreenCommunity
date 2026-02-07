@@ -634,3 +634,43 @@ export const updateProject = asyncHandler(async (req, res) => {
   }
 });
 
+// Record a verified fiat payment and increment project funding
+export const fundProject = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { amount, paymentId, orderId } = req.body;
+
+  if (!amount || amount <= 0) {
+    return res.status(400).json({ success: false, message: 'Invalid amount' });
+  }
+
+  const Project = await getProjectModel();
+  const project = await Project.findById(id);
+  if (!project) {
+    return res.status(404).json({ success: false, message: 'Project not found' });
+  }
+
+  // Increment currentFunding (capped at fundingGoal if it exists)
+  const prevFunding = project.currentFunding || 0;
+  const goal = project.fundingGoal || Infinity;
+  project.currentFunding = Math.min(prevFunding + amount, goal);
+
+  // Track the contribution
+  if (!project.contributions) project.contributions = [];
+  project.contributions.push({
+    amount,
+    paymentId,
+    orderId,
+    date: new Date(),
+  });
+
+  await project.save();
+  console.log(`[FUND] Project ${project.name}: +₹${amount}  (${prevFunding} → ${project.currentFunding})`);
+
+  res.json({
+    success: true,
+    currentFunding: project.currentFunding,
+    fundingGoal: project.fundingGoal,
+    message: `Successfully recorded ₹${amount} contribution`,
+  });
+});
+

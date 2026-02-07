@@ -10,6 +10,7 @@ import {
   getNearbyWorkingProjects,
   createProject,
   updateProject,
+  fundProject,
 } from "../controllers/projects.controller.js";
 import {
   submitProjectForVerification,
@@ -44,6 +45,9 @@ router.get("/stats", getProjectStats);
 router.get("/region/:region", getProjectsByRegion);
 router.get("/nearby-working", getNearbyWorkingProjects);
 router.get("/:id", getProjectById);
+
+// Payment: update project funding after verified Razorpay payment
+router.post("/:id/fund", fundProject);
 
 // Project creation and update (Admin only)
 router.post(

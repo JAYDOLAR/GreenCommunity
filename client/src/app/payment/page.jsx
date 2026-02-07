@@ -172,16 +172,31 @@ const Payment = () => {
         keyId: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID
       });
 
-      // For development, create a mock order directly
-      const mockOrder = {
-        id: `order_${Date.now()}`,
-        amount: amountInPaise,
-        currency: 'INR'
-      };
+      // Create a real Razorpay order via our API
+      const orderRes = await fetch('/api/payment/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: amountInINR,
+          currency: 'INR',
+          receipt: `rcpt_${projectId}_${Date.now()}`,
+          projectName,
+          projectId,
+        }),
+      });
+
+      const orderData = await orderRes.json();
+      if (!orderData.success || !orderData.order) {
+        toast.error(orderData.error || 'Failed to create payment order. Please try again.');
+        setIsProcessing(false);
+        return;
+      }
+
+      const order = orderData.order;
 
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-        amount: amountInPaise,
+        amount: order.amount,
         currency: 'INR',
         name: 'GreenCommunity',
         description: `Climate contribution to ${projectName}`,
@@ -201,6 +216,7 @@ const Payment = () => {
                 razorpay_payment_id: response.razorpay_payment_id,
                 razorpay_signature: response.razorpay_signature,
                 amount: amountInINR,
+                projectId,
                 projectName,
                 userEmail: user?.email || billingInfo.email,
                 userName: user?.name || 'Valued Contributor',

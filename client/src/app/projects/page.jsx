@@ -392,8 +392,13 @@ const Projects = () => {
 
   const handleContribute = (e, project) => {
     e.stopPropagation(); // Prevent navigation when clicking contribute
-    // Contribute logic here
-    console.log(`Contribute to ${project.name}`);
+    const params = new URLSearchParams({
+      project: project._id || project.id,
+      name: project.name,
+      amount: String(Math.min(1000, Math.max(1, Math.round((project.fundingGoal || 100000) - (project.currentFunding || 0))))),
+      co2Rate: String(project.co2PerRupee || 0.001),
+    });
+    router.push(`/payment?${params.toString()}`);
   };
 
   const getProjectIcon = (type) => {

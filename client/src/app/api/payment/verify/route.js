@@ -8,6 +8,7 @@ export async function POST(request) {
       razorpay_payment_id, 
       razorpay_signature,
       amount,
+      projectId,
       projectName,
       userEmail,
       userName,
@@ -20,24 +21,66 @@ export async function POST(request) {
       amount,
       projectName,
       userEmail,
-      userName,
-      co2Impact
     });
 
-    // For development, always return success
-    // In production, verify the payment signature
-    
-    // Send invoice email after successful payment
+    // ─── Verify Razorpay signature ───────────────────────────────
+    const secret = process.env.RAZORPAY_KEY_SECRET;
+    if (!secret) {
+      console.error('RAZORPAY_KEY_SECRET not set');
+      return NextResponse.json(
+        { success: false, error: 'Payment gateway not configured' },
+        { status: 500 }
+      );
+    }
+
+    const body = razorpay_order_id + '|' + razorpay_payment_id;
+    const expectedSignature = crypto
+      .createHmac('sha256', secret)
+      .update(body)
+      .digest('hex');
+
+    const isAuthentic = expectedSignature === razorpay_signature;
+
+    if (!isAuthentic) {
+      console.error('❌ Signature mismatch – possible tampered payment');
+      return NextResponse.json(
+        { success: false, error: 'Payment verification failed – invalid signature' },
+        { status: 400 }
+      );
+    }
+
+    console.log('✅ Payment signature verified');
+
+    // ─── Update project funding on the server ────────────────────
+    const serverUrl = process.env.SERVER_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+
+    if (projectId) {
+      try {
+        const fundingRes = await fetch(`${serverUrl}/api/projects/${projectId}/fund`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            amount,
+            paymentId: razorpay_payment_id,
+            orderId: razorpay_order_id,
+          }),
+        });
+        if (fundingRes.ok) {
+          console.log('✅ Project funding updated');
+        } else {
+          console.error('⚠️ Failed to update project funding:', await fundingRes.text());
+        }
+      } catch (fundErr) {
+        console.error('⚠️ Funding update error:', fundErr);
+      }
+    }
+
+    // ─── Send invoice email ──────────────────────────────────────
     try {
-      console.log('📧 Attempting to send invoice email...');
-      
-      // Use the backend server directly for sending emails
-      const serverUrl = process.env.SERVER_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      console.log('📧 Sending invoice email...');
       const invoiceResponse = await fetch(`${serverUrl}/api/email/invoice`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: userEmail,
           name: userName,
@@ -50,84 +93,28 @@ export async function POST(request) {
       });
 
       if (invoiceResponse.ok) {
-        console.log('✅ Invoice email sent successfully');
+        console.log('✅ Invoice email sent');
       } else {
-        console.error('❌ Failed to send invoice email:', await invoiceResponse.text());
+        console.error('⚠️ Invoice email failed:', await invoiceResponse.text());
       }
     } catch (emailError) {
-      console.error('❌ Invoice email error:', emailError);
-      // Don't fail the payment verification if email fails
+      console.error('⚠️ Invoice email error:', emailError);
+      // Don't fail the whole flow if email fails
     }
-    
+
     return NextResponse.json({
       success: true,
       verified: true,
       payment_id: razorpay_payment_id,
       order_id: razorpay_order_id,
-      message: `Payment of INR ${amount} for ${projectName} completed successfully`
+      message: `Payment of ₹${amount} for ${projectName} verified successfully`
     });
 
   } catch (error) {
     console.error('Payment verification error:', error);
     return NextResponse.json(
-      { 
-        success: false, 
-        error: 'Payment verification failed' 
-      },
+      { success: false, error: 'Payment verification failed' },
       { status: 500 }
     );
   }
 }
-
-// Example of actual signature verification (commented out)
-/*
-export async function POST(request) {
-  try {
-    const { 
-      razorpay_order_id, 
-      razorpay_payment_id, 
-      razorpay_signature 
-    } = await request.json();
-
-    // Create signature
-    const body = razorpay_order_id + "|" + razorpay_payment_id;
-    const expectedSignature = crypto
-      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
-      .update(body.toString())
-      .digest("hex");
-
-    // Verify signature
-    const isAuthentic = expectedSignature === razorpay_signature;
-
-    if (isAuthentic) {
-      // Payment is verified
-      // Save payment details to database
-      
-      return NextResponse.json({
-        success: true,
-        verified: true,
-        payment_id: razorpay_payment_id,
-        order_id: razorpay_order_id
-      });
-    } else {
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: 'Payment verification failed' 
-        },
-        { status: 400 }
-      );
-    }
-
-  } catch (error) {
-    console.error('Payment verification error:', error);
-    return NextResponse.json(
-      { 
-        success: false, 
-        error: 'Payment verification failed' 
-      },
-      { status: 500 }
-    );
-  }
-}
-*/
