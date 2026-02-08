@@ -47,6 +47,9 @@ import {
 } from '../middleware/validation.js';
 import { authenticate } from '../middleware/auth.js';
 
+// Strip port suffix from req.ip (some proxies send "ip:port" in X-Forwarded-For)
+const ipKeyGenerator = (req) => (req.ip || '127.0.0.1').replace(/:\d+$/, '');
+
 // Rate limiters
 const loginLimiter = rateLimit({
   windowMs: 5 * 60 * 1000, // 5 minutes
@@ -57,7 +60,8 @@ const loginLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
-  skipSuccessfulRequests: true // Don't count successful requests
+  skipSuccessfulRequests: true, // Don't count successful requests
+  keyGenerator: ipKeyGenerator
 });
 
 const forgotPasswordLimiter = rateLimit({
@@ -69,7 +73,8 @@ const forgotPasswordLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
-  skipSuccessfulRequests: true // Don't count successful requests
+  skipSuccessfulRequests: true, // Don't count successful requests
+  keyGenerator: ipKeyGenerator
 });
 
 const router = express.Router();

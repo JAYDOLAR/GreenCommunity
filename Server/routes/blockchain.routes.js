@@ -22,7 +22,9 @@ router.post('/projects/:projectMongoId/sync', authenticateAdmin, syncProject);
 router.get('/certificates/:tokenId', authenticate, getCertificateMetadata);
 router.get('/certificates', authenticate, listMyCertificates);
 // Limit metadata preparation to prevent abuse (10 per 5 minutes per IP)
-const prepareCertLimiter = rateLimit({ windowMs: 5*60*1000, max: 10, standardHeaders: true, legacyHeaders: false });
+// Strip port suffix from req.ip (some proxies send "ip:port" in X-Forwarded-For)
+const ipKeyGenerator = (req) => (req.ip || '127.0.0.1').replace(/:\d+$/, '');
+const prepareCertLimiter = rateLimit({ windowMs: 5*60*1000, max: 10, standardHeaders: true, legacyHeaders: false, keyGenerator: ipKeyGenerator });
 router.post('/certificates/prepare', authenticate, prepareCertLimiter, prepareCertificateMetadata);
 
 // Test-only: simulate purchase + certificate (no ETH required, disabled in production)

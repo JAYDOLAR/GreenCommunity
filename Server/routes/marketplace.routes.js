@@ -33,6 +33,9 @@ import { uploadProductImages } from '../config/cloudinary.marketplace.js';
 
 const router = express.Router();
 
+// Strip port suffix from req.ip (some proxies send "ip:port" in X-Forwarded-For)
+const ipKeyGenerator = (req) => (req.ip || '127.0.0.1').replace(/:\d+$/, '');
+
 // Rate limiters for different operations
 const createProductLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
@@ -42,7 +45,8 @@ const createProductLimiter = rateLimit({
     retryAfter: 60 * 60 * 1000
   },
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
+  keyGenerator: ipKeyGenerator
 });
 
 const searchLimiter = rateLimit({
@@ -53,7 +57,8 @@ const searchLimiter = rateLimit({
     retryAfter: 1 * 60 * 1000
   },
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
+  keyGenerator: ipKeyGenerator
 });
 
 const updateLimiter = rateLimit({
@@ -64,7 +69,8 @@ const updateLimiter = rateLimit({
     retryAfter: 15 * 60 * 1000
   },
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
+  keyGenerator: ipKeyGenerator
 });
 
 // Public routes (no authentication required)
