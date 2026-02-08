@@ -284,12 +284,12 @@ export const BuyCreditsButton = ({ projectMongoId, projectIdOnChain, pricePerCre
             )}
             {mintedTokenId && !isTestTx && (
               <a
-                href={`https://testnets.opensea.io/assets/sepolia/${process.env.NEXT_PUBLIC_CERTIFICATE_ADDRESS || ''}/${mintedTokenId}`}
+                href={`https://sepolia.etherscan.io/nft/${process.env.NEXT_PUBLIC_CERTIFICATE_ADDRESS || ''}/${mintedTokenId}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-xs text-purple-600 hover:underline flex items-center gap-1"
               >
-                View NFT Certificate on OpenSea ↗
+                View NFT Certificate on Etherscan ↗
               </a>
             )}
           </div>
