@@ -127,7 +127,7 @@ const AddProjectPage = () => {
         const form = new FormData();
         form.append('file', f);
         const xhr = new XMLHttpRequest();
-        const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+        const token = typeof window !== 'undefined' ? (localStorage.getItem('adminToken') || localStorage.getItem('token')) : null;
         const res = await new Promise((resolve,reject)=>{
           xhr.open('POST', `${API_BASE_URL}/api/admin/projects/upload-doc`);
           // Send auth token so authenticateAdmin middleware accepts the request

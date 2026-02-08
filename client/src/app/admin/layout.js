@@ -205,7 +205,7 @@ const AdminLayout = ({ children }) => {
             <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
-        <h1 className="font-semibold text-gray-800 text-sm">Admin Panel</h1>
+        <h1 className="font-semibold text-gray-800 text-sm">Green Community</h1>
         <div className="ml-auto flex items-center">
           <button
             ref={bellRef}

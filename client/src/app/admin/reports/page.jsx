@@ -189,14 +189,15 @@ const ReportsPage = () => {
         // Automatically download the generated report
         downloadReport(newReport, reportFormat);
 
-        // Show success popup
-        alert(`Report Generated Successfully!\n\n` +
-          `Report: ${newReport.name}\n` +
-          `Date: ${newReport.lastGenerated}\n` +
-          `Format: ${reportFormat.toUpperCase()}\n` +
-          `Size: ${newReport.size}\n\n` +
-          `The report has been downloaded automatically.`
-        );
+        // Show success popup (only for CSV; PDF opens print dialog automatically)
+        if (reportFormat === 'csv') {
+          alert(`Report Generated Successfully!\n\n` +
+            `Report: ${newReport.name}\n` +
+            `Date: ${newReport.lastGenerated}\n` +
+            `Format: CSV\n\n` +
+            `The CSV file has been downloaded.`
+          );
+        }
       }
     } catch (error) {
       console.error('Error generating report:', error);
@@ -206,274 +207,160 @@ const ReportsPage = () => {
     }
   };
 
+  // Build metric rows from real report.data based on report type
+  const getReportMetricRows = (report) => {
+    const data = report.data || {};
+    switch (report.type) {
+      case 'user-activity':
+        return [
+          ['Total Users', (data.totalUsers ?? 0).toLocaleString()],
+          ['Active Users', (data.activeUsers ?? 0).toLocaleString()],
+          ['User Retention', `${data.userRetention ?? 0}%`],
+          ['Engagement Rate', `${data.engagementRate ?? 0}%`],
+        ];
+      case 'revenue':
+        return [
+          ['Total Revenue', `${getSymbol()}${(data.totalRevenue ?? 0).toLocaleString()}`],
+          ['Order Count', (data.orderCount ?? 0).toLocaleString()],
+          ['Revenue Growth', `+${data.revenueGrowth ?? 0}%`],
+        ];
+      case 'project-performance':
+        return [
+          ['Total Projects', (data.totalProjects ?? 0).toLocaleString()],
+          ['Active Projects', (data.activeProjects ?? 0).toLocaleString()],
+          ['Total Funding', `${getSymbol()}${(data.totalFunding ?? 0).toLocaleString()}`],
+          ['Total Carbon Offset', `${(data.totalCarbonOffset ?? 0).toLocaleString()} kg`],
+        ];
+      case 'carbon-impact':
+        return [
+          ['Carbon Offset', `${(data.carbonOffset ?? 0).toLocaleString()} kg`],
+          ['Project Count', (data.projectCount ?? 0).toLocaleString()],
+          ['Environmental Impact', `${(data.environmentalImpact ?? 0).toLocaleString()} trees`],
+          ['Impact Growth', `+${data.impactGrowth ?? 0}%`],
+        ];
+      case 'marketplace':
+        return [
+          ['Total Sales', `${getSymbol()}${(data.totalSales ?? 0).toLocaleString()}`],
+          ['Order Count', (data.orderCount ?? 0).toLocaleString()],
+          ['Sales Growth', `+${data.salesGrowth ?? 0}%`],
+        ];
+      default:
+        // Generic: render each key-value pair from data
+        return Object.entries(data).map(([key, value]) => [
+          key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase()),
+          typeof value === 'number' ? value.toLocaleString() : String(value),
+        ]);
+    }
+  };
+
   const downloadReport = (report, format = 'pdf') => {
+    const metricRows = getReportMetricRows(report);
+    const dateStr = report.lastGenerated || new Date().toISOString().split('T')[0];
+    const fileName = `${report.name.replace(/\s+/g, '-')}-${dateStr}`;
+
     if (format === 'csv') {
-      // Generate CSV content
-      const csvData = [
+      // Build CSV from real data
+      const csvRows = [
         ['Report Name', report.name],
-        ['Generated Date', report.lastGenerated],
-        ['Time Range', timeRange],
-        ['Description', report.description],
-        [''],
-        ['Metric', 'Value', 'Status', 'Growth'],
-        ['Total Users', '1,247', 'Active', '+12.5%'],
-        ['Total Revenue', `${getSymbol()}1.25M`, 'Growing', '+8.3%'],
-        ['Active Projects', '45', 'Active', '+15.2%'],
-        ['Carbon Offset', '125,000 kg', 'On Track', '+18.7%'],
-        ['Marketplace Sales', `${getSymbol()}450K`, 'Growing', '+22.1%'],
-        ['User Engagement', '78%', 'High', '+5.2%'],
-        ['Project Funding', `${getSymbol()}2.1M`, 'On Track', '+14.3%'],
-        ['Environmental Impact', '85,000 trees', 'Excellent', '+25.8%']
+        ['Generated Date', dateStr],
+        ['Time Range', report.timeRange || timeRange],
+        ['Description', report.description || ''],
+        [],
+        ['Metric', 'Value'],
+        ...metricRows,
       ];
 
-      const csvContent = csvData.map(row => row.join(',')).join('\n');
-      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const escapeCsv = (val) => {
+        const s = String(val ?? '');
+        return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s.replace(/"/g, '""')}"` : s;
+      };
+
+      const csvContent = csvRows.map(row => row.map(escapeCsv).join(',')).join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${report.name.replace(/\s+/g, '-')}-${report.lastGenerated}.csv`;
+      a.download = `${fileName}.csv`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
     } else {
-      // Generate PDF content (HTML that can be printed to PDF)
-      const pdfContent = `
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <title>${report.name}</title>
-            <style>
-              @media print {
-                body { margin: 0; padding: 20px; }
-                .no-print { display: none; }
-              }
-              body { 
-                font-family: Arial, sans-serif; 
-                margin: 20px; 
-                line-height: 1.6;
-                color: #333;
-              }
-              h1 { 
-                color: #2c3e50; 
-                border-bottom: 3px solid #3498db; 
-                padding-bottom: 10px; 
-                margin-bottom: 30px;
-                font-size: 28px;
-              }
-              h2 { 
-                color: #34495e; 
-                margin-top: 30px; 
-                margin-bottom: 15px;
-                font-size: 20px;
-                border-left: 4px solid #3498db;
-                padding-left: 10px;
-              }
-              table { 
-                width: 100%; 
-                border-collapse: collapse; 
-                margin: 20px 0; 
-                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-              }
-              th, td { 
-                border: 1px solid #ddd; 
-                padding: 12px; 
-                text-align: left; 
-              }
-              th { 
-                background-color: #3498db; 
-                color: white; 
-                font-weight: bold;
-              }
-              tr:nth-child(even) { background-color: #f8f9fa; }
-              .metric { 
-                margin: 20px 0; 
-                padding: 20px; 
-                border: 1px solid #ddd; 
-                border-radius: 8px; 
-                background-color: #f8f9fa;
-              }
-              .metric h3 { 
-                margin: 0 0 10px 0; 
-                color: #2c3e50; 
-                font-size: 18px;
-              }
-              .metric p { margin: 8px 0; }
-              .header-info {
-                display: flex;
-                justify-content: space-between;
-                margin-bottom: 30px;
-                padding: 15px;
-                background-color: #ecf0f1;
-                border-radius: 8px;
-              }
-              .status-badge {
-                display: inline-block;
-                padding: 4px 8px;
-                border-radius: 4px;
-                font-size: 12px;
-                font-weight: bold;
-              }
-              .status-active { background-color: #d4edda; color: #155724; }
-              .status-growing { background-color: #d1ecf1; color: #0c5460; }
-              .status-excellent { background-color: #fff3cd; color: #856404; }
-              .summary-grid {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-                gap: 20px;
-                margin: 30px 0;
-              }
-              .summary-card {
-                padding: 20px;
-                border: 1px solid #ddd;
-                border-radius: 8px;
-                background-color: white;
-              }
-              .summary-card h3 {
-                margin: 0 0 10px 0;
-                color: #2c3e50;
-                font-size: 16px;
-              }
-              .summary-card p {
-                margin: 5px 0;
-                font-size: 14px;
-              }
-            </style>
-          </head>
-          <body>
-            <h1>${report.name}</h1>
-            
-            <div class="header-info">
-              <div>
-                <strong>Generated:</strong> ${new Date().toLocaleString()}<br>
-                <strong>Time Range:</strong> ${timeRange}<br>
-                <strong>Report Type:</strong> ${report.name}
-              </div>
-              <div>
-                <strong>Status:</strong> <span class="status-badge status-active">Ready</span><br>
-                <strong>Format:</strong> PDF<br>
-                <strong>Size:</strong> ${report.size}
-              </div>
-            </div>
-            
-            <h2>Report Summary</h2>
-            <div class="metric">
-              <h3>Report Description</h3>
-              <p>${report.description}</p>
-            </div>
-            
-            <h2>Key Metrics Overview</h2>
-            <div class="summary-grid">
-              <div class="summary-card">
-                <h3>User Metrics</h3>
-                <p><strong>Total Users:</strong> 1,247</p>
-                <p><strong>Active Users:</strong> 892</p>
-                <p><strong>Growth Rate:</strong> +12.5%</p>
-              </div>
-              <div class="summary-card">
-                <h3>Financial Metrics</h3>
-                <p><strong>Total Revenue:</strong> ${getSymbol()}1.25M</p>
-                <p><strong>Revenue Growth:</strong> +8.3%</p>
-                <p><strong>Marketplace Sales:</strong> ${getSymbol()}450K</p>
-              </div>
-              <div class="summary-card">
-                <h3>Project Metrics</h3>
-                <p><strong>Active Projects:</strong> 45</p>
-                <p><strong>Project Funding:</strong> ${getSymbol()}2.1M</p>
-                <p><strong>Funding Rate:</strong> +14.3%</p>
-              </div>
-              <div class="summary-card">
-                <h3>Environmental Impact</h3>
-                <p><strong>Carbon Offset:</strong> 125,000 kg</p>
-                <p><strong>Trees Planted:</strong> 85,000</p>
-                <p><strong>Impact Growth:</strong> +25.8%</p>
-              </div>
-            </div>
-            
-            <h2>Detailed Metrics</h2>
-            <table>
-              <thead>
-                <tr>
-                  <th>Metric</th>
-                  <th>Value</th>
-                  <th>Status</th>
-                  <th>Growth</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>Total Users</td>
-                  <td>1,247</td>
-                  <td><span class="status-badge status-active">Active</span></td>
-                  <td>+12.5%</td>
-                </tr>
-                <tr>
-                  <td>Total Revenue</td>
-                  <td>${getSymbol()}1.25M</td>
-                  <td><span class="status-badge status-growing">Growing</span></td>
-                  <td>+8.3%</td>
-                </tr>
-                <tr>
-                  <td>Active Projects</td>
-                  <td>45</td>
-                  <td><span class="status-badge status-active">Active</span></td>
-                  <td>+15.2%</td>
-                </tr>
-                <tr>
-                  <td>Carbon Offset</td>
-                  <td>125,000 kg</td>
-                  <td><span class="status-badge status-active">On Track</span></td>
-                  <td>+18.7%</td>
-                </tr>
-                <tr>
-                  <td>Marketplace Sales</td>
-                  <td>${getSymbol()}450K</td>
-                  <td><span class="status-badge status-growing">Growing</span></td>
-                  <td>+22.1%</td>
-                </tr>
-                <tr>
-                  <td>User Engagement</td>
-                  <td>78%</td>
-                  <td><span class="status-badge status-excellent">High</span></td>
-                  <td>+5.2%</td>
-                </tr>
-                <tr>
-                  <td>Project Funding</td>
-                  <td>${getSymbol()}2.1M</td>
-                  <td><span class="status-badge status-active">On Track</span></td>
-                  <td>+14.3%</td>
-                </tr>
-                <tr>
-                  <td>Environmental Impact</td>
-                  <td>85,000 trees</td>
-                  <td><span class="status-badge status-excellent">Excellent</span></td>
-                  <td>+25.8%</td>
-                </tr>
-              </tbody>
-            </table>
-            
-            <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center; color: #666;">
-              <p><strong>Generated by Green Community Platform</strong></p>
-              <p>This report was automatically generated on ${new Date().toLocaleString()}</p>
-            </div>
-          </body>
-        </html>
-      `;
+      // Generate a proper PDF by opening a print-ready window
+      const tableRows = metricRows
+        .map(([metric, value]) => `<tr><td>${metric}</td><td>${value}</td></tr>`)
+        .join('');
 
-      const blob = new Blob([pdfContent], { type: 'text/html' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${report.name.replace(/\s+/g, '-')}-${report.lastGenerated}.html`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      const htmlContent = `<!DOCTYPE html>
+<html>
+<head>
+  <title>${report.name}</title>
+  <style>
+    @page { margin: 20mm; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 30px; color: #333; line-height: 1.6; }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #22c55e; padding-bottom: 16px; margin-bottom: 24px; }
+    .header h1 { margin: 0; font-size: 26px; color: #166534; }
+    .header-meta { text-align: right; font-size: 13px; color: #555; }
+    .description { background: #f0fdf4; border-left: 4px solid #22c55e; padding: 12px 16px; margin-bottom: 24px; border-radius: 4px; }
+    h2 { color: #166534; font-size: 18px; margin-top: 28px; margin-bottom: 12px; }
+    table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+    th, td { border: 1px solid #d1d5db; padding: 10px 14px; text-align: left; }
+    th { background-color: #22c55e; color: white; font-weight: 600; }
+    tr:nth-child(even) { background-color: #f9fafb; }
+    .footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid #d1d5db; text-align: center; color: #888; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h1>${report.name}</h1>
+      <p style="margin:4px 0 0;color:#555;">Green Community Platform</p>
+    </div>
+    <div class="header-meta">
+      <div><strong>Generated:</strong> ${new Date().toLocaleString()}</div>
+      <div><strong>Period:</strong> ${report.timeRange || timeRange}</div>
+      <div><strong>Format:</strong> ${format.toUpperCase()}</div>
+    </div>
+  </div>
 
-      // Show instructions for PDF conversion
-      setTimeout(() => {
-        alert('HTML file downloaded! To convert to PDF:\n\n1. Open the downloaded HTML file in your browser\n2. Press Ctrl+P (or Cmd+P on Mac)\n3. Select "Save as PDF" in the print dialog\n4. Click "Save"');
-      }, 100);
+  <div class="description">${report.description || ''}</div>
+
+  <h2>Key Metrics</h2>
+  <table>
+    <thead><tr><th>Metric</th><th>Value</th></tr></thead>
+    <tbody>${tableRows}</tbody>
+  </table>
+
+  <div class="footer">
+    <p>Generated by Green Community Platform &mdash; ${new Date().toLocaleString()}</p>
+  </div>
+</body>
+</html>`;
+
+      // Open in a new window and trigger the browser print dialog for proper PDF
+      const printWindow = window.open('', '_blank', 'width=800,height=600');
+      if (printWindow) {
+        printWindow.document.write(htmlContent);
+        printWindow.document.close();
+        // Wait for content to render, then trigger print (Save as PDF)
+        printWindow.onload = () => {
+          setTimeout(() => printWindow.print(), 300);
+        };
+        // Fallback if onload already fired
+        setTimeout(() => printWindow.print(), 500);
+      } else {
+        // Fallback: download as HTML if popup blocked
+        const blob = new Blob([htmlContent], { type: 'text/html' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${fileName}.html`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        alert('Popup was blocked. The report has been downloaded as HTML.\nOpen it and press Ctrl+P / Cmd+P to save as PDF.');
+      }
     }
   };
 

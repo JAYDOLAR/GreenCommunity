@@ -271,12 +271,9 @@ const AdminSidebar = ({ isOpen = false, onClose = () => {} }) => {
       <div className="p-4 border-b border-gray-200 bg-white">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 min-w-0">
-            <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
-              <TreePine className="h-5 w-5 text-white" />
-            </div>
+            <img src="/logo.png" alt="Green Community" className="w-8 h-8 rounded-lg object-contain" />
             <div className="leading-tight">
-              <h2 className="font-bold text-lg text-gray-900">Green Admin</h2>
-              <p className="text-[11px] text-gray-600">Control Panel</p>
+              <h2 className="font-bold text-lg text-gray-900">Green Community</h2>
             </div>
           </div>
           <div className="flex items-center gap-1">
