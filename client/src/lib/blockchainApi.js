@@ -70,7 +70,15 @@ export const blockchainApi = {
   },
   async getCertificateMetadata(tokenId) {
     return apiRequest(`/api/blockchain/certificates/${tokenId}`);
-  }
+  },
+
+  // Test-only: simulate purchase + auto-mint certificate (no ETH/MetaMask needed)
+  async testPurchase(projectMongoId, amount) {
+    return apiRequest(`/api/blockchain/projects/${projectMongoId}/test-purchase`, {
+      method: 'POST',
+      body: JSON.stringify({ amount }),
+    });
+  },
 };
 
 export default blockchainApi;

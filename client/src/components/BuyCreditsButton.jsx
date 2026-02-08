@@ -47,7 +47,11 @@ export const BuyCreditsButton = ({ projectMongoId, projectIdOnChain, pricePerCre
   const [loading, setLoading] = useState(false);
   const [amount, setAmount] = useState(1);
   const [txHash, setTxHash] = useState();
+  const [mintedTokenId, setMintedTokenId] = useState();
+  const [isTestTx, setIsTestTx] = useState(false);
   const [error, setError] = useState(); // { type, text, link?, linkText? }
+
+  const isDev = process.env.NODE_ENV === 'development';
 
   const availableCredits = (totalCredits || 0) - (soldCredits || 0);
 
@@ -63,6 +67,8 @@ export const BuyCreditsButton = ({ projectMongoId, projectIdOnChain, pricePerCre
   const handleBuy = async () => {
     setError(undefined);
     setTxHash(undefined);
+    setMintedTokenId(undefined);
+    setIsTestTx(false);
 
     // Pre-check: verify enough credits are available before sending tx
     if (availableCredits > 0 && amount > availableCredits) {
@@ -101,6 +107,7 @@ export const BuyCreditsButton = ({ projectMongoId, projectIdOnChain, pricePerCre
 
       const abi = [
         'function buyCredits(uint256 projectId, uint256 amount, string certificateURI) payable',
+        'event CertificateMinted(uint256 indexed tokenId, address indexed to, uint256 projectId, uint256 amount, string uri)',
       ];
 
       setLoading(true);
@@ -120,6 +127,22 @@ export const BuyCreditsButton = ({ projectMongoId, projectIdOnChain, pricePerCre
       const receipt = await tx.wait(1);
       setTxHash(receipt.hash);
 
+      // Parse CertificateMinted event from receipt logs
+      try {
+        const iface = new ethers.Interface(abi);
+        for (const log of receipt.logs) {
+          try {
+            const parsed = iface.parseLog({ topics: log.topics, data: log.data });
+            if (parsed?.name === 'CertificateMinted') {
+              setMintedTokenId(parsed.args.tokenId.toString());
+              break;
+            }
+          } catch {
+            // log belongs to a different contract/event — skip
+          }
+        }
+      } catch {}
+
       // Record purchase on backend (authenticated)
       try {
         await blockchainApi.recordPurchase(projectMongoId, receipt.hash);
@@ -127,6 +150,27 @@ export const BuyCreditsButton = ({ projectMongoId, projectIdOnChain, pricePerCre
     } catch (e) {
       console.error('Buy credits error:', e);
       setError(parseError(e));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Test-only: simulated purchase through backend (no ETH / MetaMask needed)
+  const handleTestBuy = async () => {
+    setError(undefined);
+    setTxHash(undefined);
+    setMintedTokenId(undefined);
+    setIsTestTx(false);
+    setLoading(true);
+    try {
+      const result = await blockchainApi.testPurchase(projectMongoId, amount);
+      if (!result?.success) throw new Error(result?.message || 'Test purchase failed');
+      setTxHash(result.txHash);
+      setMintedTokenId(String(result.certificateTokenId));
+      setIsTestTx(true);
+    } catch (e) {
+      console.error('Test purchase error:', e);
+      setError({ type: 'error', text: e.message || 'Test purchase failed' });
     } finally {
       setLoading(false);
     }
@@ -188,23 +232,67 @@ export const BuyCreditsButton = ({ projectMongoId, projectIdOnChain, pricePerCre
         )}
       </button>
 
+      {/* Test Purchase button (development only) */}
+      {isDev && (
+        <button
+          disabled={loading}
+          onClick={handleTestBuy}
+          className="w-full bg-orange-500 hover:bg-orange-600 text-white px-6 py-2.5 rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm"
+        >
+          {loading ? (
+            <>
+              <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+              Processing...
+            </>
+          ) : (
+            <>🧪 Test Purchase (No ETH needed)</>
+          )}
+        </button>
+      )}
+
       {/* Success state */}
       {txHash && (
-        <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+        <div className={`p-3 border rounded-lg ${isTestTx ? 'bg-orange-50 border-orange-200' : 'bg-green-50 border-green-200'}`}>
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-green-600 font-medium flex items-center gap-1"><CheckCircle className="h-4 w-4" /> Purchase Successful!</span>
+            <span className={`font-medium flex items-center gap-1 ${isTestTx ? 'text-orange-600' : 'text-green-600'}`}>
+              <CheckCircle className="h-4 w-4" />
+              {isTestTx ? 'Test Purchase Successful!' : 'Purchase Successful!'}
+            </span>
           </div>
+          {isTestTx && (
+            <p className="text-xs text-orange-500 font-medium mb-1">⚠ Simulated — no real blockchain transaction</p>
+          )}
           <p className="text-xs text-gray-600 mb-2">
-            {amount} carbon credit{amount > 1 ? 's' : ''} purchased. You&apos;ll receive an NFT certificate upon retirement.
+            {amount} carbon credit{amount > 1 ? 's' : ''} purchased and retired.
+            {mintedTokenId
+              ? ` NFT Certificate #${mintedTokenId} has been minted${isTestTx ? ' (simulated)' : ' to your wallet'}!`
+              : ' Your offset is recorded on-chain.'}
           </p>
-          <a
-            href={`https://sepolia.etherscan.io/tx/${txHash}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs text-blue-600 hover:underline flex items-center gap-1"
-          >
-            View transaction on Etherscan ↗
-          </a>
+          <div className="flex flex-col gap-1">
+            {!isTestTx && (
+              <a
+                href={`https://sepolia.etherscan.io/tx/${txHash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-blue-600 hover:underline flex items-center gap-1"
+              >
+                View transaction on Etherscan ↗
+              </a>
+            )}
+            {mintedTokenId && !isTestTx && (
+              <a
+                href={`https://testnets.opensea.io/assets/sepolia/${process.env.NEXT_PUBLIC_CERTIFICATE_ADDRESS || ''}/${mintedTokenId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-purple-600 hover:underline flex items-center gap-1"
+              >
+                View NFT Certificate on OpenSea ↗
+              </a>
+            )}
+          </div>
         </div>
       )}
 

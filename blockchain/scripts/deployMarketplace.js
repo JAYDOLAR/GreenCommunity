@@ -20,10 +20,19 @@ async function main() {
   const marketplaceAddress = await marketplace.getAddress();
   console.log("CarbonCreditMarketplace:", marketplaceAddress);
 
-  // Wire certificate to marketplace
-  const tx = await certificate.setMarketplace(marketplaceAddress);
-  await tx.wait();
-  console.log("Linked certificate to marketplace");
+  // Wire certificate ↔ marketplace (bidirectional)
+  const tx1 = await certificate.setMarketplace(marketplaceAddress);
+  await tx1.wait();
+  console.log("Linked certificate → marketplace (CertificateNFT.setMarketplace)");
+
+  const tx2 = await marketplace.setCertificateContract(certificateAddress);
+  await tx2.wait();
+  console.log("Linked marketplace → certificate (setCertificateContract)");
+
+  // Auto-retire 100% on purchase → every credit bought auto-mints an NFT certificate
+  const tx3 = await marketplace.setAutoRetireBps(10000);
+  await tx3.wait();
+  console.log("Set autoRetireBps = 10000 (100% — every purchase mints NFT certificate)");
 
   // NOTE: Do NOT register sample projects here — production projects are
   // registered via the server's approveAndRegister endpoint, which auto-increments

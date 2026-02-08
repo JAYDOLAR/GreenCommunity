@@ -29,6 +29,7 @@ import blockchainApiRoutes from "./routes/blockchain.routes.js";
 import siteconfigRoutes from "./routes/siteconfig.routes.js";
 import { startBlockchainListeners } from './services/blockchain.listener.js';
 import { syncHistoricalEvents } from './services/blockchain.sync.js';
+import { ensureCertificateLinked } from './services/blockchain.service.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -67,6 +68,8 @@ async function createServer() {
     ]);
     // Start blockchain listeners (non-fatal if it fails)
     startBlockchainListeners();
+    // Ensure certificate contract is linked & auto-mint is enabled
+    ensureCertificateLinked();
     // Kick off historical sync (non-blocking)
     setTimeout(() => { syncHistoricalEvents(); }, 2000);
   }

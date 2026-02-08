@@ -103,3 +103,43 @@ export async function setProjectAutoRetireBps(projectId, bps) {
   return await tx.wait();
 }
 
+/**
+ * Ensure the marketplace contract is correctly linked to the CertificateNFT contract
+ * and that autoRetireBps is set to 10000 (100%) so every credit purchase automatically
+ * mints an NFT certificate to the buyer. Called once at server startup.
+ */
+export async function ensureCertificateLinked() {
+  try {
+    const certAddress = process.env.CERTIFICATE_CONTRACT_ADDRESS;
+    if (!certAddress) {
+      console.warn('[blockchain] CERTIFICATE_CONTRACT_ADDRESS not set — skipping auto-mint setup');
+      return;
+    }
+    const marketplace = getMarketplace();
+
+    // 1. Check if the marketplace already knows about the certificate contract
+    const currentCert = await marketplace.certificate();
+    if (currentCert === ethers.ZeroAddress || currentCert.toLowerCase() !== certAddress.toLowerCase()) {
+      console.log('[blockchain] Linking CertificateNFT to marketplace...');
+      const tx = await marketplace.setCertificateContract(certAddress);
+      await tx.wait();
+      console.log('[blockchain] CertificateNFT linked to marketplace ✓');
+    } else {
+      console.log('[blockchain] CertificateNFT already linked ✓');
+    }
+
+    // 2. Ensure autoRetireBps = 10000 (100% → every purchase auto-mints NFT)
+    const currentBps = await marketplace.autoRetireBps();
+    if (Number(currentBps) !== 10000) {
+      console.log(`[blockchain] Setting autoRetireBps to 10000 (was ${currentBps})...`);
+      const tx = await marketplace.setAutoRetireBps(10000);
+      await tx.wait();
+      console.log('[blockchain] autoRetireBps = 10000 (100% auto-mint) ✓');
+    } else {
+      console.log('[blockchain] autoRetireBps already 10000 ✓');
+    }
+  } catch (err) {
+    console.error('[blockchain] ensureCertificateLinked failed (non-fatal):', err.message);
+  }
+}
+

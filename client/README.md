@@ -40,6 +40,7 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 Environment variable (create `.env.local`):
 ```
 NEXT_PUBLIC_MARKETPLACE_ADDRESS=0xYourMarketplaceContract
+NEXT_PUBLIC_CERTIFICATE_ADDRESS=0xYourCertificateNFTContract
 ```
 
 Wrap the root layout (e.g. `app/layout.tsx`) with the `WalletProvider`:

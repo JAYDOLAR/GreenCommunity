@@ -1,6 +1,6 @@
 import express from 'express';
 import { authenticate, authenticateAdmin } from '../middleware/auth.js';
-import { linkWallet, walletChallenge, recordCryptoPurchase, syncProject, getCertificateMetadata, listMyCertificates, prepareCertificateMetadata, grantFiatOffset } from '../controllers/blockchainUser.controller.js';
+import { linkWallet, walletChallenge, recordCryptoPurchase, syncProject, getCertificateMetadata, listMyCertificates, prepareCertificateMetadata, grantFiatOffset, testPurchase } from '../controllers/blockchainUser.controller.js';
 import { validateRecordPurchase } from '../middleware/validation.js';
 import rateLimit from 'express-rate-limit';
 import { body, validationResult } from 'express-validator';
@@ -24,5 +24,8 @@ router.get('/certificates', authenticate, listMyCertificates);
 // Limit metadata preparation to prevent abuse (10 per 5 minutes per IP)
 const prepareCertLimiter = rateLimit({ windowMs: 5*60*1000, max: 10, standardHeaders: true, legacyHeaders: false });
 router.post('/certificates/prepare', authenticate, prepareCertLimiter, prepareCertificateMetadata);
+
+// Test-only: simulate purchase + certificate (no ETH required, disabled in production)
+router.post('/projects/:projectMongoId/test-purchase', authenticate, testPurchase);
 
 export default router;

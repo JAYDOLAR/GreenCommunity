@@ -4,6 +4,7 @@ import asyncHandler from '../utils/asyncHandler.js';
 import { getProjectOnChain, getCertificate, getProvider, grantFiatCredits } from '../services/blockchain.service.js';
 import { buildAndPinCertificateMetadata } from '../services/certificateMetadata.service.js';
 import { getFiatReceiptModel } from '../models/FiatReceipt.model.js';
+import { getCertificateModel } from '../models/Certificate.model.js';
 import { ethers } from 'ethers';
 import crypto from 'crypto';
 
@@ -69,6 +70,22 @@ export const recordCryptoPurchase = asyncHandler(async (req, res) => {
     // Wait minimal confirmations (optional)
     const receipt = await tx.wait(1);
     if (receipt.status !== 1) return res.status(400).json({ success:false, message:'Transaction failed on-chain' });
+
+    // Parse CertificateMinted event from receipt (auto-minted on purchase)
+    let certificateTokenId = null;
+    try {
+      const cert = getCertificate();
+      for (const log of receipt.logs) {
+        try {
+          const parsed = cert.interface.parseLog({ topics: log.topics, data: log.data });
+          if (parsed?.name === 'CertificateMinted') {
+            certificateTokenId = Number(parsed.args.tokenId);
+            break;
+          }
+        } catch { /* log belongs to a different contract — skip */ }
+      }
+    } catch {}
+
     // Sync on-chain state
     const onChain = await getProjectOnChain(project.blockchain.projectId);
     project.blockchain.soldCredits = Number(onChain.soldCredits);
@@ -79,9 +96,9 @@ export const recordCryptoPurchase = asyncHandler(async (req, res) => {
   }
   // For now store tx hash in an array (create if missing)
   if (!project.blockchain.transactions) project.blockchain.transactions = [];
-  project.blockchain.transactions.push({ txHash, user: req.user._id, at: new Date() });
+  project.blockchain.transactions.push({ txHash, user: req.user._id, at: new Date(), certificateTokenId });
   await project.save();
-  res.json({ success: true, txHash, soldCredits: project.blockchain.soldCredits });
+  res.json({ success: true, txHash, soldCredits: project.blockchain.soldCredits, certificateTokenId });
 });
 
 // Admin: sync a single project from chain
@@ -172,3 +189,74 @@ export const grantFiatOffset = asyncHandler( async (req, res) => {
 });
 
 
+// ─── Test-only: simulate a purchase + certificate mint (no ETH, no on-chain tx) ───
+// Only available when NODE_ENV !== 'production'
+export const testPurchase = asyncHandler(async (req, res) => {
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(403).json({ success: false, message: 'Test purchases are disabled in production' });
+  }
+
+  const { projectMongoId } = req.params;
+  const { amount = 1 } = req.body;
+
+  const Project = await getProjectModel();
+  const project = await Project.findById(projectMongoId);
+  if (!project) return res.status(404).json({ success: false, message: 'Project not found' });
+
+  const projectIdOnChain = project.blockchain?.projectId ?? 0;
+  const walletAddress = req.user.wallet?.address || '0x0000000000000000000000000000000000000000';
+
+  // Generate a fake tx hash and token ID
+  const fakeTxHash = '0xTEST_' + crypto.randomBytes(30).toString('hex');
+  const fakeTokenId = Date.now() % 1000000; // unique-ish token ID
+
+  // Build certificate metadata (real IPFS pin if available, otherwise placeholder)
+  let certificateURI = '';
+  try {
+    const meta = await buildAndPinCertificateMetadata({
+      projectMongoId,
+      amount,
+      reason: 'test-purchase',
+      retirePortion: false,
+    });
+    certificateURI = meta.certificateURI || '';
+  } catch {
+    certificateURI = `https://test-certificate.local/${fakeTokenId}`;
+  }
+
+  // Save a certificate record in the DB (mirrors what blockchain.listener.js does for real events)
+  const Certificate = await getCertificateModel();
+  const certDoc = await Certificate.create({
+    tokenId: fakeTokenId,
+    projectId: projectIdOnChain,
+    owner: walletAddress.toLowerCase(),
+    amount: Number(amount),
+    uri: certificateURI,
+    txHash: fakeTxHash,
+    mintedAt: new Date(),
+  });
+
+  // Track the fake tx on the project
+  if (!project.blockchain) project.blockchain = {};
+  if (!project.blockchain.transactions) project.blockchain.transactions = [];
+  project.blockchain.transactions.push({
+    txHash: fakeTxHash,
+    user: req.user._id,
+    at: new Date(),
+    certificateTokenId: fakeTokenId,
+    isTest: true,
+  });
+  // Bump soldCredits locally (not on-chain, just DB)
+  project.blockchain.soldCredits = (project.blockchain.soldCredits || 0) + Number(amount);
+  await project.save();
+
+  res.json({
+    success: true,
+    test: true,
+    txHash: fakeTxHash,
+    certificateTokenId: fakeTokenId,
+    certificateURI,
+    soldCredits: project.blockchain.soldCredits,
+    certificate: certDoc,
+  });
+});
