@@ -84,7 +84,7 @@ export const ask = async (req, res) => {
 
     const { GoogleGenerativeAI } = await import('@google/generative-ai');
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
     const fullPrompt = [
       SYSTEM_PROMPT,
@@ -145,7 +145,7 @@ export const generateTips = async (req, res) => {
     }
     const { GoogleGenerativeAI } = await import('@google/generative-ai');
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
     const prompt = `Generate 3-5 bullet tips for an Indian household to save money and reduce emissions.
 Inputs (monthly): electricity:${electricity} kWh, gas:${gas} units, petrol:${petrol} liters.
